@@ -1,0 +1,73 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c298614ef4a634a45a76f297906bffae, type: 3}
+  m_Name: Doc Abner Pruitt
+  m_EditorClassIdentifier: Assembly-CSharp::Semblance.Residents.ResidentProfile
+  displayName: Doc Abner Pruitt
+  occupation: Retired town doctor
+  age: 78
+  possessive: his
+  home: Pruitt Farm
+  bio: Delivered half the town and stitched up the other half. Wrote the physician's notes in the parish records for forty years.
+  appearance:
+    height: 0.95
+    build: 0.88
+    headSize: 1
+    skin: {r: 0.84, g: 0.74, b: 0.66, a: 1}
+    hairColor: {r: 0.25, g: 0.18, b: 0.12, a: 1}
+    eyeColor: {r: 0.25, g: 0.18, b: 0.1, a: 1}
+    shirt: {r: 0.45, g: 0.38, b: 0.3, a: 1}
+    pants: {r: 0.3, g: 0.28, b: 0.26, a: 1}
+    shoes: {r: 0.12, g: 0.09, b: 0.07, a: 1}
+    hair: 0
+    hat: 0
+    hatColor: {r: 0.3, g: 0.25, b: 0.2, a: 1}
+    glasses: 1
+    beard: 0
+    mustache: 0
+    apron: 0
+    overalls: 0
+    clericalCollar: 0
+  features:
+  - id: glass_eye
+    side: 1
+    explanation: Korea. Chosin Reservoir. The cold took it, not the Chinese.
+    inArchive: 1
+  - id: hearing_aid
+    side: 2
+    explanation: 
+    inArchive: 1
+  - id: wart
+    side: 0
+    explanation: 
+    inArchive: 1
+  - id: gaunt
+    side: 0
+    explanation: 
+    inArchive: 1
+  schedule:
+  - House:Pruitt:Inside
+  - Diner:Booth
+  - House:Pruitt:Porch
+  - House:Pruitt:Porch
+  greetings:
+  - Eh? Speak up. Detective, is it?
+  - Sit down before you fall down.
+  aboutSelf: Forty years I was the only doctor for thirty miles. Delivered half this town and sewed up the other half. Every scar in Semblance, I wrote down. Set bones in every root cellar from here to the county line; every farmhouse out here has one.
+  aboutTown: People ask why so many of us look the way we do. Inbreeding, they think. It's not. It's the land. The land here keeps what it touches, and changes it a little.
+  seenAnythingStrange: Somebody's been in my old surgery files. Put them back in the wrong order. Nobody in this family puts anything back right except me.
+  foundersDay: Rained, I'm fairly sure. Or was that '82? They all run together at my age. Mae's cherry pie won, that I'd swear to. I slept through the sermon.
+  gossip:
+  - title: About Mae Whitlock
+    response: Mae wears Earl's ring on her left hand still. I took it off his finger myself, after. She asked for it back the same day.
+  - title: About Lyle Pruitt
+    response: My grandson's left eye wanders. Born that way. I told his father not to fuss; it'll make him interesting.

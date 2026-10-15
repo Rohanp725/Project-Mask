@@ -1,0 +1,73 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c298614ef4a634a45a76f297906bffae, type: 3}
+  m_Name: Nell Hollis
+  m_EditorClassIdentifier: Assembly-CSharp::Semblance.Residents.ResidentProfile
+  displayName: Nell Hollis
+  occupation: Farmer's wife
+  age: 59
+  possessive: her
+  home: Hollis Farm
+  bio: Married to Harlan for forty years. Hums hymns under her breath. Never takes her gloves off, which she blames on eczema.
+  appearance:
+    height: 0.93
+    build: 1.05
+    headSize: 1
+    skin: {r: 0.78, g: 0.62, b: 0.5, a: 1}
+    hairColor: {r: 0.6, g: 0.58, b: 0.55, a: 1}
+    eyeColor: {r: 0.25, g: 0.18, b: 0.1, a: 1}
+    shirt: {r: 0.5, g: 0.42, b: 0.3, a: 1}
+    pants: {r: 0.35, g: 0.3, b: 0.25, a: 1}
+    shoes: {r: 0.12, g: 0.09, b: 0.07, a: 1}
+    hair: 3
+    hat: 3
+    hatColor: {r: 0.7, g: 0.68, b: 0.6, a: 1}
+    glasses: 0
+    beard: 0
+    mustache: 0
+    apron: 0
+    overalls: 0
+    clericalCollar: 0
+  features:
+  - id: eye_small
+    side: 1
+    explanation: Born squinting. Mama said I was taking aim at the Lord.
+    inArchive: 1
+  - id: cleft_chin
+    side: 0
+    explanation: 
+    inArchive: 1
+  - id: hums
+    side: 0
+    explanation: 
+    inArchive: 1
+  - id: gloves
+    side: 0
+    explanation: Eczema. The lye soap does it. Don't ask to see.
+    inArchive: 0
+  schedule:
+  - House:Hollis:Kitchen
+  - Church:Pew
+  - House:Hollis:Inside
+  - House:Hollis:Kitchen
+  greetings:
+  - Come in out of the dark, Detective, before it notices you.
+  - Harlan's in the field. He's always in the field.
+  aboutSelf: Forty years married to Harlan. I keep the house, I keep the hymns, and I keep my gloves on. Eczema. Don't ask to see.
+  aboutTown: Folks like to say Semblance is cursed. It isn't. It's chosen. There's a difference, and the difference is you don't get a say.
+  seenAnythingStrange: The corn's growing in rows that were never planted. New rows, straight as a ruler, right up to our back door.
+  foundersDay: It rained and we sang in the church hall. Mae's cherry pie won. Father Crane preached on the wheat and the tares, and I cried. I don't know why.
+  gossip:
+  - title: About Mae Whitlock
+    response: Mae's burns cover the right side of her face. The fryer, in '70. She went back to work the next week.
+  - title: About Hank Marsh
+    response: Hank's got an anchor tattooed on the back of his right hand. Navy. June hates it.

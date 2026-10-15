@@ -1,0 +1,77 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c298614ef4a634a45a76f297906bffae, type: 3}
+  m_Name: June Marsh
+  m_EditorClassIdentifier: Assembly-CSharp::Semblance.Residents.ResidentProfile
+  displayName: June Marsh
+  occupation: Mother of four
+  age: 35
+  possessive: her
+  home: Marsh Farm
+  bio: Four children, husband works nights at the grain elevator in Barlow. Hardly sleeps.
+  appearance:
+    height: 0.95
+    build: 0.9
+    headSize: 1
+    skin: {r: 0.88, g: 0.74, b: 0.64, a: 1}
+    hairColor: {r: 0.55, g: 0.3, b: 0.15, a: 1}
+    eyeColor: {r: 0.25, g: 0.18, b: 0.1, a: 1}
+    shirt: {r: 0.4, g: 0.5, b: 0.55, a: 1}
+    pants: {r: 0.35, g: 0.3, b: 0.28, a: 1}
+    shoes: {r: 0.12, g: 0.09, b: 0.07, a: 1}
+    hair: 2
+    hat: 0
+    hatColor: {r: 0.3, g: 0.25, b: 0.2, a: 1}
+    glasses: 0
+    beard: 0
+    mustache: 0
+    apron: 0
+    overalls: 0
+    clericalCollar: 0
+  features:
+  - id: eyes_wide_set
+    side: 0
+    explanation: 
+    inArchive: 1
+  - id: freckles
+    side: 0
+    explanation: 
+    inArchive: 1
+  - id: birthmark
+    side: 2
+    explanation: Mama called it a kiss from the devil. I call it Ohio.
+    inArchive: 1
+  - id: ring
+    side: 1
+    explanation: 
+    inArchive: 1
+  - id: rapid_blink
+    side: 0
+    explanation: 
+    inArchive: 1
+  schedule:
+  - House:Marsh:Porch
+  - Square
+  - House:Marsh:Inside
+  - House:Marsh:Inside
+  greetings:
+  - Oh! You startled me. The kids are asleep, please keep your voice down.
+  - Detective. Come in, quietly.
+  aboutSelf: Four kids, and a husband who works nights at the grain elevator in Barlow. I don't sleep much.
+  aboutTown: It's a good place to raise children. Mostly.
+  seenAnythingStrange: My youngest keeps drawing a fifth person in our family pictures. When I ask who it is, she says, 'the new one.'
+  foundersDay: It poured! The kids loved it. Mae won the pie contest, cherry. She always does.
+  gossip:
+  - title: About Otis Pruitt
+    response: Otis has six fingers on his left hand. My kids think it's the best thing in the world.
+  - title: About Amos Calder
+    response: Amos has started buying women's shoes at the store. Otis told me. Ruth's size.

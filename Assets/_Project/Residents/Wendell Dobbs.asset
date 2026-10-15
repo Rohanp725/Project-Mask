@@ -1,0 +1,81 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c298614ef4a634a45a76f297906bffae, type: 3}
+  m_Name: Wendell Dobbs
+  m_EditorClassIdentifier: Assembly-CSharp::Semblance.Residents.ResidentProfile
+  displayName: Wendell Dobbs
+  occupation: Recluse
+  age: 50
+  possessive: his
+  home: Dobbs Farm
+  bio: Hasn't come to town since spring. Counts the congregation every Sunday from the treeline.
+  appearance:
+    height: 1.04
+    build: 0.9
+    headSize: 1
+    skin: {r: 0.75, g: 0.68, b: 0.6, a: 1}
+    hairColor: {r: 0.3, g: 0.28, b: 0.25, a: 1}
+    eyeColor: {r: 0.25, g: 0.18, b: 0.1, a: 1}
+    shirt: {r: 0.3, g: 0.32, b: 0.28, a: 1}
+    pants: {r: 0.2, g: 0.2, b: 0.22, a: 1}
+    shoes: {r: 0.12, g: 0.09, b: 0.07, a: 1}
+    hair: 5
+    hat: 0
+    hatColor: {r: 0.3, g: 0.25, b: 0.2, a: 1}
+    glasses: 0
+    beard: 0
+    mustache: 0
+    apron: 0
+    overalls: 0
+    clericalCollar: 0
+  features:
+  - id: pale
+    side: 0
+    explanation: 
+    inArchive: 1
+  - id: eye_cloudy
+    side: 2
+    explanation: Went milky last winter. Lets me see what the other one can't.
+    inArchive: 1
+  - id: head_twitch
+    side: 0
+    explanation: 
+    inArchive: 1
+  - id: patchy_hair
+    side: 0
+    explanation: 
+    inArchive: 1
+  - id: neck_short
+    side: 0
+    explanation: 
+    inArchive: 1
+  - id: stares
+    side: 0
+    explanation: 
+    inArchive: 1
+  schedule:
+  - House:Dobbs:Porch
+  - Treeline:Church
+  - House:Dobbs:Porch
+  - Treeline:Church
+  greetings:
+  - You're standing on my shadow.
+  - Don't come any closer. I can see fine from here.
+  aboutSelf: I keep to myself. It's healthier.
+  aboutTown: There's more of them than there used to be. More of us. I count.
+  seenAnythingStrange: Count the people at church this Sunday. Then go read the sign on the highway. Then tell me I'm the mad one.
+  foundersDay: Didn't go. I never go. Heard it rained.
+  gossip:
+  - title: About June Marsh
+    response: June's got a birthmark on her right cheek. Shaped like Ohio. She'll tell you so.
+  - title: About Mae Whitlock
+    response: Mae puts something in the coffee. Makes you less curious. Don't drink it.

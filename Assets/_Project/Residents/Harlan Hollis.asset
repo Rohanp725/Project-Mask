@@ -1,0 +1,75 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c298614ef4a634a45a76f297906bffae, type: 3}
+  m_Name: Harlan Hollis
+  m_EditorClassIdentifier: Assembly-CSharp::Semblance.Residents.ResidentProfile
+  displayName: Harlan Hollis
+  occupation: Corn farmer
+  age: 61
+  possessive: his
+  home: Hollis Farm
+  bio: Sixty years of corn. Lost a finger to a baler in '71. Doesn't go into his fields after dark anymore.
+  appearance:
+    height: 1
+    build: 1.15
+    headSize: 1
+    skin: {r: 0.72, g: 0.55, b: 0.42, a: 1}
+    hairColor: {r: 0.5, g: 0.48, b: 0.45, a: 1}
+    eyeColor: {r: 0.25, g: 0.18, b: 0.1, a: 1}
+    shirt: {r: 0.6, g: 0.55, b: 0.48, a: 1}
+    pants: {r: 0.22, g: 0.24, b: 0.3, a: 1}
+    shoes: {r: 0.12, g: 0.09, b: 0.07, a: 1}
+    hair: 1
+    hat: 1
+    hatColor: {r: 0.25, g: 0.35, b: 0.25, a: 1}
+    glasses: 0
+    beard: 1
+    mustache: 0
+    apron: 0
+    overalls: 1
+    clericalCollar: 0
+  features:
+  - id: finger_missing
+    side: 2
+    explanation: Baler. Summer of '71.
+    inArchive: 1
+  - id: hunchback
+    side: 0
+    explanation: 
+    inArchive: 1
+  - id: jaw_large
+    side: 0
+    explanation: 
+    inArchive: 1
+  - id: hands_large
+    side: 0
+    explanation: 
+    inArchive: 1
+  schedule:
+  - Field:Hollis
+  - Field:Hollis
+  - House:Hollis:Porch
+  - House:Hollis:Inside
+  greetings:
+  - Evenin'.
+  - You're on my land, Detective.
+  aboutSelf: Corn. Sixty years of corn. It don't ask questions.
+  aboutTown: Town's fine. People are fine. You should go home.
+  seenAnythingStrange: Something walks my rows at night. The corn moves against the wind. I don't go out there after dark no more.
+  foundersDay: Wet. Mae's cherry pie took it. Crane went on about weeds in the wheat.
+  gossip:
+  - title: About Irene Vance
+    response: Irene collects moths. Pins 'em to boards. House is full of 'em. Harmless.
+  - title: About Silas Thorne
+    response: Silas has a scar through his left eyebrow. Bar fight in Amarillo. Proud of it, too.
+  - title: About Nell Hollis
+    response: Nell's left eye's always been small. Squints like she's aiming at you.

@@ -1,0 +1,79 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c298614ef4a634a45a76f297906bffae, type: 3}
+  m_Name: Lyle Pruitt
+  m_EditorClassIdentifier: Assembly-CSharp::Semblance.Residents.ResidentProfile
+  displayName: Lyle Pruitt
+  occupation: High school senior
+  age: 17
+  possessive: his
+  home: Pruitt Farm
+  bio: Otis's nephew. Lanky, bored, planning to leave for Chicago. Hangs around the diner at night.
+  appearance:
+    height: 1.07
+    build: 0.82
+    headSize: 1
+    skin: {r: 0.84, g: 0.7, b: 0.58, a: 1}
+    hairColor: {r: 0.4, g: 0.28, b: 0.16, a: 1}
+    eyeColor: {r: 0.25, g: 0.18, b: 0.1, a: 1}
+    shirt: {r: 0.6, g: 0.2, b: 0.18, a: 1}
+    pants: {r: 0.2, g: 0.25, b: 0.4, a: 1}
+    shoes: {r: 0.12, g: 0.09, b: 0.07, a: 1}
+    hair: 5
+    hat: 0
+    hatColor: {r: 0.3, g: 0.25, b: 0.2, a: 1}
+    glasses: 0
+    beard: 0
+    mustache: 0
+    apron: 0
+    overalls: 0
+    clericalCollar: 0
+  features:
+  - id: lazy_eye
+    side: 1
+    explanation: 
+    inArchive: 1
+  - id: freckles
+    side: 0
+    explanation: 
+    inArchive: 1
+  - id: head_flat
+    side: 0
+    explanation: 
+    inArchive: 1
+  - id: neck_long
+    side: 0
+    explanation: 
+    inArchive: 1
+  - id: fresh_scratches
+    side: 2
+    explanation: Barn cat. Mean one.
+    inArchive: 0
+  schedule:
+  - House:Pruitt:Porch
+  - Store:Aisle
+  - Diner:Booth
+  - House:Pruitt:Inside
+  greetings:
+  - You're the cop? Cool. You gonna arrest somebody?
+  - Hey. Detective. Got a cigarette?
+  aboutSelf: Finish school next year, then I'm gone. Chicago. Anywhere.
+  aboutTown: Everybody here's weird-looking and nobody talks about it. It's like a rule.
+  seenAnythingStrange: I saw Mrs. Calder at the diner window last week. Like two in the morning. Just standing outside, looking in. Then she wasn't.
+  foundersDay: I think it rained? I was out back of the church with Ada's cousin most of it, okay? Aunt Mae won the pie thing. She's not my real aunt.
+  gossip:
+  - title: About Amos Calder
+    response: Mr. Calder's missing his left ear. Says a dog got it. My dad says it was Mrs. Calder.
+  - title: About Irene Vance
+    response: Mrs. Vance's left arm is too long. From polio. She can reach the top shelf without a stool.
+  - title: About Doc Abner Pruitt
+    response: Grandpa Abner wears a hearing aid in his right ear. Turns it off when Dad talks.

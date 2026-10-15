@@ -1,0 +1,69 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c298614ef4a634a45a76f297906bffae, type: 3}
+  m_Name: Bev Thorne
+  m_EditorClassIdentifier: Assembly-CSharp::Semblance.Residents.ResidentProfile
+  displayName: Bev Thorne
+  occupation: Farmer's wife
+  age: 41
+  possessive: her
+  home: Thorne Farm
+  bio: Married Silas at nineteen. Lost her left hand to a thresher in '77 and polishes her hook every morning.
+  appearance:
+    height: 0.97
+    build: 1
+    headSize: 1
+    skin: {r: 0.82, g: 0.66, b: 0.55, a: 1}
+    hairColor: {r: 0.45, g: 0.32, b: 0.2, a: 1}
+    eyeColor: {r: 0.25, g: 0.18, b: 0.1, a: 1}
+    shirt: {r: 0.55, g: 0.45, b: 0.5, a: 1}
+    pants: {r: 0.3, g: 0.28, b: 0.3, a: 1}
+    shoes: {r: 0.12, g: 0.09, b: 0.07, a: 1}
+    hair: 3
+    hat: 0
+    hatColor: {r: 0.3, g: 0.25, b: 0.2, a: 1}
+    glasses: 0
+    beard: 0
+    mustache: 0
+    apron: 0
+    overalls: 0
+    clericalCollar: 0
+  features:
+  - id: hook_hand
+    side: 1
+    explanation: Thresher, harvest of '77. Hook's better than the hand ever was. Doesn't feel the cold.
+    inArchive: 1
+  - id: gold_tooth
+    side: 0
+    explanation: 
+    inArchive: 1
+  - id: mole
+    side: 2
+    explanation: 
+    inArchive: 1
+  schedule:
+  - House:Thorne:Kitchen
+  - House:Thorne:Porch
+  - House:Thorne:Porch
+  - House:Thorne:Kitchen
+  greetings:
+  - Mind the dog. We don't have a dog. Mind it anyway.
+  - Detective. Silas said you'd come round.
+  aboutSelf: Married Silas when I was nineteen. Raised two boys and lost a hand. Got a hook for it. I don't miss the hand.
+  aboutTown: Semblance doesn't like change. We're all a bit broken, and we're used to the shape of each other's broken bits.
+  seenAnythingStrange: Something's been taking eggs out from under the hens without waking them. Shells left whole, a neat hole in one end. Sucked dry.
+  foundersDay: Rained. Mae won with her cherry, Greta came second with her apple, and the Father talked about weeds. Same as every year.
+  gossip:
+  - title: About Irene Vance
+    response: Irene's right eye sits up high. Gives her a look like she's always asking a question.
+  - title: About Greta Kessler
+    response: Greta's right ear sits up high. Hats never sit straight on her.

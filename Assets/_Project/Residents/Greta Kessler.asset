@@ -1,0 +1,73 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c298614ef4a634a45a76f297906bffae, type: 3}
+  m_Name: Greta Kessler
+  m_EditorClassIdentifier: Assembly-CSharp::Semblance.Residents.ResidentProfile
+  displayName: Greta Kessler
+  occupation: Cattle farmer
+  age: 47
+  possessive: her
+  home: Kessler Farm
+  bio: Fourteen head of cattle dead since June, cause undetermined. Buries them herself.
+  appearance:
+    height: 1.08
+    build: 1.2
+    headSize: 1
+    skin: {r: 0.8, g: 0.64, b: 0.52, a: 1}
+    hairColor: {r: 0.75, g: 0.65, b: 0.4, a: 1}
+    eyeColor: {r: 0.25, g: 0.18, b: 0.1, a: 1}
+    shirt: {r: 0.45, g: 0.25, b: 0.2, a: 1}
+    pants: {r: 0.25, g: 0.25, b: 0.28, a: 1}
+    shoes: {r: 0.12, g: 0.09, b: 0.07, a: 1}
+    hair: 1
+    hat: 0
+    hatColor: {r: 0.3, g: 0.25, b: 0.2, a: 1}
+    glasses: 0
+    beard: 0
+    mustache: 0
+    apron: 0
+    overalls: 0
+    clericalCollar: 0
+  features:
+  - id: cheek_scar
+    side: 1
+    explanation: Heifer kicked me in '74. Don't ask me about it unless you want one to match.
+    inArchive: 1
+  - id: ear_high
+    side: 2
+    explanation: 
+    inArchive: 1
+  - id: stout
+    side: 0
+    explanation: 
+    inArchive: 1
+  - id: dark_stains
+    side: 0
+    explanation: Calving. It's messy work.
+    inArchive: 1
+  schedule:
+  - Field:Kessler
+  - Barn:Kessler:Inside
+  - House:Kessler:Porch
+  - House:Kessler:Inside
+  greetings:
+  - Don't touch the fence. It's live.
+  - You lost, Detective?
+  aboutSelf: Fourteen head dead since June. Vet says 'undetermined'. I say something's draining them.
+  aboutTown: Semblance is a closed fist. You don't pry it open. You wait.
+  seenAnythingStrange: The cattle are found standing. Dead, but standing. Like they're waiting for something.
+  foundersDay: I left before the judging. Calving. Somebody told me Mae won again; cherry, I suppose. It was pouring when I drove home.
+  gossip:
+  - title: About Harlan Hollis
+    response: Harlan's got a jaw like a cinder block. I broke two knuckles on it in '68.
+  - title: About Otis Pruitt
+    response: Otis lost his nose to frostbite the winter of '63. Walked home from Barlow in a blizzard. He was nine.

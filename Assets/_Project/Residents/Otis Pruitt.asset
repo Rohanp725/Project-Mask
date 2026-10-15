@@ -1,0 +1,73 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c298614ef4a634a45a76f297906bffae, type: 3}
+  m_Name: Otis Pruitt
+  m_EditorClassIdentifier: Assembly-CSharp::Semblance.Residents.ResidentProfile
+  displayName: Otis Pruitt
+  occupation: Clerk, Semblance General
+  age: 29
+  possessive: his
+  home: Pruitt Farm
+  bio: Runs the store for his father, the retired town doctor. Lost his nose to frostbite as a boy. Born with an extra finger.
+  appearance:
+    height: 0.98
+    build: 0.95
+    headSize: 1
+    skin: {r: 0.83, g: 0.68, b: 0.56, a: 1}
+    hairColor: {r: 0.35, g: 0.25, b: 0.15, a: 1}
+    eyeColor: {r: 0.25, g: 0.18, b: 0.1, a: 1}
+    shirt: {r: 0.55, g: 0.5, b: 0.38, a: 1}
+    pants: {r: 0.3, g: 0.28, b: 0.22, a: 1}
+    shoes: {r: 0.12, g: 0.09, b: 0.07, a: 1}
+    hair: 4
+    hat: 1
+    hatColor: {r: 0.45, g: 0.15, b: 0.12, a: 1}
+    glasses: 1
+    beard: 0
+    mustache: 0
+    apron: 0
+    overalls: 0
+    clericalCollar: 0
+  features:
+  - id: nose_missing
+    side: 0
+    explanation: Frostbite. Walked home from Barlow in the blizzard of '63. I was nine.
+    inArchive: 1
+  - id: finger_extra
+    side: 1
+    explanation: Born with it. Daddy says it's a lucky hand.
+    inArchive: 1
+  - id: ears_large
+    side: 0
+    explanation: 
+    inArchive: 1
+  - id: stutter
+    side: 0
+    explanation: 
+    inArchive: 1
+  schedule:
+  - Store:Counter
+  - Store:Counter
+  - Store:Counter
+  - House:Pruitt:Kitchen
+  greetings:
+  - H-help you find something?
+  - Oh. Evening. W-we close at nine.
+  aboutSelf: Run the store for my daddy. He was the town doctor. Retired now. M-mostly he sits by the window.
+  aboutTown: Folks here don't like strangers looking too close. No offense, Detective.
+  seenAnythingStrange: Somebody bought every mirror off my rack in one night. Money was just sitting on the counter in the morning. Exact change.
+  foundersDay: Rained. Mae won the pie contest. Cherry. She always wins.
+  gossip:
+  - title: About Greta Kessler
+    response: Greta's cows keep dying. She buries them herself now. Won't let the vet near the bodies.
+  - title: About Wendell Dobbs
+    response: Wendell Dobbs ain't been to town since spring. He leaves a grocery list in his mailbox and I leave the box at his gate.

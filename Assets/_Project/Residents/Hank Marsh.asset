@@ -1,0 +1,73 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c298614ef4a634a45a76f297906bffae, type: 3}
+  m_Name: Hank Marsh
+  m_EditorClassIdentifier: Assembly-CSharp::Semblance.Residents.ResidentProfile
+  displayName: Hank Marsh
+  occupation: Night shift, grain elevator in Barlow
+  age: 38
+  possessive: his
+  home: Marsh Farm
+  bio: Works nights in Barlow and sleeps through the days. Navy, 1963 to 1967.
+  appearance:
+    height: 1.03
+    build: 1.1
+    headSize: 1
+    skin: {r: 0.8, g: 0.63, b: 0.5, a: 1}
+    hairColor: {r: 0.3, g: 0.22, b: 0.15, a: 1}
+    eyeColor: {r: 0.25, g: 0.18, b: 0.1, a: 1}
+    shirt: {r: 0.35, g: 0.38, b: 0.32, a: 1}
+    pants: {r: 0.22, g: 0.28, b: 0.4, a: 1}
+    shoes: {r: 0.12, g: 0.09, b: 0.07, a: 1}
+    hair: 1
+    hat: 1
+    hatColor: {r: 0.6, g: 0.5, b: 0.2, a: 1}
+    glasses: 0
+    beard: 0
+    mustache: 0
+    apron: 0
+    overalls: 0
+    clericalCollar: 0
+  features:
+  - id: tattoo_hand
+    side: 2
+    explanation: Navy. Everybody got one. Mine's an anchor because I couldn't afford the girl.
+    inArchive: 1
+  - id: cigarette
+    side: 0
+    explanation: 
+    inArchive: 1
+  - id: gap_teeth
+    side: 0
+    explanation: 
+    inArchive: 1
+  - id: insomnia
+    side: 0
+    explanation: I sleep days. You try it.
+    inArchive: 0
+  schedule:
+  - House:Marsh:Inside
+  - Field:Marsh
+  - Gate:Marsh
+  - Highway:South
+  greetings:
+  - Make it quick. I've got a shift.
+  - You're the one June told me about.
+  aboutSelf: Nights at the elevator in Barlow, days asleep, Sundays at church so June doesn't skin me. That's my whole life, Detective.
+  aboutTown: I drive out of this town every night, and every night it's harder to come back. Like the road's longer on the way in.
+  seenAnythingStrange: Back in June, coming home at dawn, I passed a fella walking the highway into town carrying a sample case. No car, no coat, nobody walks to Semblance. When I looked in the mirror there was nobody on the road.
+  foundersDay: Slept through most of it. Woke up to rain on the church roof and Mae's cherry pie. That's all I need from a holiday.
+  gossip:
+  - title: About June Marsh
+    response: June wears her ring on her left hand like a normal person. Not like the Thornes.
+  - title: About Amos Calder
+    response: Amos's mouth droops on the right. Stroke, maybe. He won't let Doc look at it.
