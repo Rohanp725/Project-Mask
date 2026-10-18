@@ -474,7 +474,7 @@ namespace Semblance.Residents
 
         // ------------------------------------------------------------ Speech quirks
 
-        private string Format(string text, string key)
+        public string Format(string text, string key)
         {
             var speech = Avatar.GetSpeechFlags();
             if (speech == SpeechFlags.None || string.IsNullOrEmpty(text))

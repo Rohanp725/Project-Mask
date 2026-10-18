@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using Semblance.Core;
 using Semblance.Interaction;
 using Semblance.Notes;
@@ -31,6 +32,7 @@ namespace Semblance.Dialogue
         private TextMeshProUGUI nameText;
         private TextMeshProUGUI bodyText;
         private RectTransform choiceContainer;
+        private ScrollRect choiceScroll;
         private readonly List<(Button button, TextMeshProUGUI label)> choiceButtons = new List<(Button, TextMeshProUGUI)>();
         private int highlighted = -1;
 
@@ -40,6 +42,9 @@ namespace Semblance.Dialogue
             highlighted = index;
             for (int i = 0; i < choiceButtons.Count; i++)
                 choiceButtons[i].label.fontStyle = i == highlighted ? FontStyles.Underline : FontStyles.Normal;
+            // Keep the highlighted line in view.
+            if (choiceScroll != null && choiceActions.Count > 1)
+                choiceScroll.verticalNormalizedPosition = 1f - Mathf.Clamp01(index / (float)(choiceActions.Count - 1));
         }
         private readonly List<System.Action> choiceActions = new List<System.Action>();
 
@@ -64,6 +69,7 @@ namespace Semblance.Dialogue
             nameText.text = $"{resident.DisplayName}  <size=70%><color=#{ColorUtility.ToHtmlStringRGB(textColor * 0.7f)}>{resident.Profile.occupation}</color></size>";
             currentTopic = null;
             confronting = false;
+            menu = Menu.Root;
             string greeting = resident.GetGreeting();
             Say(greeting);
             RefreshChoices();
@@ -102,75 +108,163 @@ namespace Semblance.Dialogue
         }
 
         private bool confronting;
+        private enum Menu { Root, People, Clues, Confront }
+        private Menu menu = Menu.Root;
 
+        private sealed class Choice
+        {
+            public string Label;
+            public System.Action Action;
+            public bool Asked;      // greyed: already asked and answered
+            public bool Current;    // the thing they're answering right now
+            public bool IsBack;
+        }
+
+        /// <summary>"About Nell Hollis" is a person; "About yourself" and "About Semblance" stay on the front page.</summary>
+        private static bool IsPersonTopic(DialogueTopic t) =>
+            t.title.StartsWith("About ") && t.title != ResidentProfile.TopicSelf && t.title != ResidentProfile.TopicTown;
+
+        private bool WasAsked(string key) => resident != null && Save.SaveSystem.Flags.Contains(ClueTopics.AskedFlag(resident, key));
+        private void MarkAsked(string key) { if (resident != null) Save.SaveSystem.Flags.Add(ClueTopics.AskedFlag(resident, key)); }
+
+        /// <summary>
+        /// The choices are a small menu: the general questions on the front page, people and found things on their
+        /// own pages, so the list never runs off the screen. Anything already asked is greyed but can be asked again.
+        /// </summary>
         private void RefreshChoices()
         {
-            choiceActions.Clear();
-            var labels = new List<string>();
-            var currentFlags = new List<bool>();
+            var choices = new List<Choice>();
+            string accent = ColorUtility.ToHtmlStringRGB(accentColor);
+            if (confronting) menu = Menu.Confront;
 
-            if (confronting)
+            switch (menu)
             {
-                foreach (var (label, text) in ConfrontOptions())
-                {
-                    string about = text;
-                    labels.Add(label);
-                    currentFlags.Add(false);
-                    choiceActions.Add(() =>
+                case Menu.Confront:
+                    foreach (var (label, text) in ConfrontOptions())
                     {
-                        confronting = false;
-                        currentTopic = "confront";
-                        string reply = resident.Confront(about);
-                        Say(reply);
-                        Notebook.Instance?.Record(NoteKind.Statement, resident.DisplayName, "When I confronted them", Notebook.StripTags(reply), resident.DisplayName,
-                            $"confront|{resident.DisplayName}|{about.GetHashCode()}");
-                        RefreshChoices();
-                        TopicAsked?.Invoke(resident, "confront");
-                    });
-                }
-                labels.Add("Never mind");
-                currentFlags.Add(false);
-                choiceActions.Add(() => { confronting = false; RefreshChoices(); });
-            }
-            else
-            {
-                foreach (var topic in resident.GetTopics())
+                        string about = text;
+                        choices.Add(new Choice { Label = label, Asked = WasAsked("confront|" + about.GetHashCode()), Action = () =>
+                        {
+                            confronting = false;
+                            menu = Menu.Root;
+                            currentTopic = "confront";
+                            MarkAsked("confront|" + about.GetHashCode());
+                            string reply = resident.Confront(about);
+                            Say(reply);
+                            Notebook.Instance?.Record(NoteKind.Statement, resident.DisplayName, "When I confronted them", Notebook.StripTags(reply), resident.DisplayName,
+                                $"confront|{resident.DisplayName}|{about.GetHashCode()}");
+                            RefreshChoices();
+                            TopicAsked?.Invoke(resident, "confront");
+                        } });
+                    }
+                    choices.Add(new Choice { Label = "Never mind", IsBack = true, Action = () => { confronting = false; menu = Menu.Root; RefreshChoices(); } });
+                    break;
+
+                case Menu.People:
+                    foreach (var topic in resident.GetTopics())
+                    {
+                        if (!IsPersonTopic(topic)) continue;
+                        var t = topic;
+                        choices.Add(new Choice { Label = t.title.Substring(6), Asked = WasAsked(t.title), Current = t.title == currentTopic, Action = () => AskTopic(t) });
+                    }
+                    choices.Add(new Choice { Label = "Back", IsBack = true, Action = () => { menu = Menu.Root; RefreshChoices(); } });
+                    break;
+
+                case Menu.Clues:
+                    foreach (var q in ClueTopics.For(resident))
+                    {
+                        var question = q;
+                        choices.Add(new Choice
+                        {
+                            Label = (question.Parent != null ? "<color=#" + accent + ">> </color>" : "") + question.Question,
+                            Asked = WasAsked(question.Key),
+                            Current = currentTopic == "clue:" + question.Key,
+                            Action = () => AskClue(question),
+                        });
+                    }
+                    choices.Add(new Choice { Label = "Back", IsBack = true, Action = () => { menu = Menu.Root; RefreshChoices(); } });
+                    break;
+
+                default:
                 {
-                    var t = topic;
-                    labels.Add(t.title);
-                    currentFlags.Add(t.title == currentTopic);
-                    choiceActions.Add(() => { currentTopic = t.title; Say(t.response); RefreshChoices(); LogTopic(t); TopicAsked?.Invoke(resident, t.title); });
+                    var topics = resident.GetTopics();
+                    foreach (var topic in topics)
+                    {
+                        if (IsPersonTopic(topic)) continue;
+                        var t = topic;
+                        choices.Add(new Choice { Label = t.title, Asked = WasAsked(t.title), Current = t.title == currentTopic, Action = () => AskTopic(t) });
+                    }
+                    int people = topics.Count(IsPersonTopic);
+                    if (people > 0)
+                        choices.Add(new Choice { Label = $"About people... <size=75%><color=#{accent}>({people})</color></size>", Action = () => { menu = Menu.People; RefreshChoices(); } });
+                    var clues = ClueTopics.For(resident);
+                    if (clues.Count > 0)
+                    {
+                        int fresh = clues.Count(q => !WasAsked(q.Key));
+                        choices.Add(new Choice { Label = $"About what I've found... <size=75%><color=#{accent}>({(fresh > 0 ? fresh + " new" : clues.Count.ToString())})</color></size>", Action = () => { menu = Menu.Clues; RefreshChoices(); } });
+                    }
+                    choices.Add(new Choice { Label = "Look them over", Asked = WasAsked("observe"), Current = currentTopic == "observe", Action = () =>
+                    {
+                        currentTopic = "observe"; MarkAsked("observe");
+                        Say("<color=#" + accent + ">You look them over.</color>\n" + resident.GetObservation());
+                        RefreshChoices(); LogObservation(); TopicAsked?.Invoke(resident, "observe");
+                    } });
+                    choices.Add(new Choice { Label = "Shake hands", Asked = WasAsked("hands"), Current = currentTopic == "hands", Action = () =>
+                    {
+                        currentTopic = "hands"; MarkAsked("hands"); Say(resident.ShakeHands()); RefreshChoices(); TopicAsked?.Invoke(resident, "hands");
+                    } });
+                    if (ConfrontOptions().Count > 0)
+                        choices.Add(new Choice { Label = "<color=#c07050>Confront them...</color>", Action = () => { confronting = true; menu = Menu.Confront; RefreshChoices(); } });
+                    choices.Add(new Choice { Label = "Leave", IsBack = true, Action = Close });
+                    break;
                 }
-                labels.Add("Look them over");
-                currentFlags.Add(currentTopic == "observe");
-                choiceActions.Add(() => { currentTopic = "observe"; Say("<color=#" + ColorUtility.ToHtmlStringRGB(accentColor) + ">You look them over.</color>\n" + resident.GetObservation()); RefreshChoices(); LogObservation(); TopicAsked?.Invoke(resident, "observe"); });
-                labels.Add("Shake hands");
-                currentFlags.Add(currentTopic == "hands");
-                choiceActions.Add(() => { currentTopic = "hands"; Say(resident.ShakeHands()); RefreshChoices(); TopicAsked?.Invoke(resident, "hands"); });
-                if (ConfrontOptions().Count > 0)
-                {
-                    labels.Add("<color=#c07050>Confront them...</color>");
-                    currentFlags.Add(false);
-                    choiceActions.Add(() => { confronting = true; RefreshChoices(); });
-                }
-                labels.Add("Leave");
-                currentFlags.Add(false);
-                choiceActions.Add(Close);
             }
 
-            EnsureButtonCount(labels.Count);
+            choiceActions.Clear();
+            EnsureButtonCount(choices.Count);
             highlighted = -1;
             for (int i = 0; i < choiceButtons.Count; i++)
             {
                 choiceButtons[i].label.fontStyle = FontStyles.Normal;
-                bool active = i < labels.Count;
+                bool active = i < choices.Count;
                 choiceButtons[i].button.gameObject.SetActive(active);
-                if (!active)
-                    continue;
+                if (!active) continue;
+                var c = choices[i];
+                choiceActions.Add(c.Action);
                 string number = i < 9 ? (i + 1).ToString() : "-";
-                choiceButtons[i].label.text = $"<color=#{ColorUtility.ToHtmlStringRGB(accentColor)}>{number}.</color> {labels[i]}";
-                choiceButtons[i].label.alpha = currentFlags[i] ? 0.45f : 1f;
+                string label = c.IsBack ? $"<color=#{accent}>< </color>{c.Label}" : c.Label;
+                choiceButtons[i].label.text = $"<color=#{accent}><size=80%>{number}.</size></color> {label}";
+                // Greyed once asked, dimmest while it's the thing being answered.
+                choiceButtons[i].label.alpha = c.Current ? 0.4f : c.Asked ? 0.55f : 1f;
+                // Long questions wrap onto a second line; the row grows to fit.
+                float h = choiceButtons[i].label.GetPreferredValues(choiceButtons[i].label.text, 372f, 0f).y;
+                UIFactory.Layout(choiceButtons[i].button.GetComponent<RectTransform>(), preferredHeight: Mathf.Max(24f, h + 6f));
             }
+            if (choiceScroll != null) choiceScroll.verticalNormalizedPosition = 1f;
+        }
+
+        private void AskTopic(DialogueTopic t)
+        {
+            currentTopic = t.title;
+            MarkAsked(t.title);
+            Say(t.response);
+            RefreshChoices();
+            LogTopic(t);
+            TopicAsked?.Invoke(resident, t.title);
+        }
+
+        /// <summary>A question about something found: answered in their own voice, written down, and maybe opening a follow-up.</summary>
+        private void AskClue(ClueQuestion q)
+        {
+            currentTopic = "clue:" + q.Key;
+            bool first = !WasAsked(q.Key);
+            MarkAsked(q.Key);
+            string answer = resident.Format(q.AnswerFor(resident), "clue:" + q.Key);
+            Say(answer);
+            Notebook.Instance?.Record(NoteKind.Statement, resident.DisplayName, q.Question, Notebook.StripTags(answer), resident.DisplayName, $"clue|{resident.DisplayName}|{q.Key}");
+            RefreshChoices();
+            TopicAsked?.Invoke(resident, "clue:" + q.Key);
+            if (first) Case.MimicAwareness.Instance?.Raise(1.5f, "asked about a clue");
         }
 
         /// <summary>Things the detective can put to this person: linked contradictions and evidence about them.</summary>
@@ -339,15 +433,10 @@ namespace Semblance.Dialogue
             bodyText = CreateText("Line", root.transform, 21, TextAlignmentOptions.TopLeft);
             SetRect(bodyText.rectTransform, new Vector2(0, 1), new Vector2(0, 1), new Vector2(24, -54), new Vector2(640, 230));
 
-            var container = new GameObject("Choices", typeof(RectTransform), typeof(VerticalLayoutGroup));
-            container.transform.SetParent(root.transform, false);
-            choiceContainer = container.GetComponent<RectTransform>();
-            SetRect(choiceContainer, new Vector2(1, 1), new Vector2(1, 1), new Vector2(-24, -12), new Vector2(380, 280), new Vector2(1, 1));
-            var layout = container.GetComponent<VerticalLayoutGroup>();
-            layout.spacing = 2;
-            layout.childControlHeight = false;
-            layout.childControlWidth = true;
-            layout.childForceExpandHeight = false;
+            // The choices scroll if there are more than fit (mouse wheel, or the gamepad highlight).
+            choiceContainer = UIFactory.ScrollList("Choices", root.transform, out choiceScroll, 2f, new RectOffset(0, 6, 4, 4));
+            SetRect((RectTransform)choiceScroll.transform, new Vector2(1, 1), new Vector2(1, 1), new Vector2(-20, -12), new Vector2(410, 280), new Vector2(1, 1));
+            bodyText.rectTransform.sizeDelta = new Vector2(630, 230);
         }
 
         private void EnsureButtonCount(int count)
@@ -357,7 +446,8 @@ namespace Semblance.Dialogue
                 int index = choiceButtons.Count;
                 var go = new GameObject("Choice " + index, typeof(Image), typeof(Button));
                 go.transform.SetParent(choiceContainer, false);
-                go.GetComponent<RectTransform>().sizeDelta = new Vector2(380, 23);
+                go.GetComponent<RectTransform>().sizeDelta = new Vector2(380, 24);
+                UIFactory.Layout(go.GetComponent<RectTransform>(), preferredHeight: 24);
                 var image = go.GetComponent<Image>();
                 image.color = new Color(1, 1, 1, 0.0f);
                 var button = go.GetComponent<Button>();
@@ -367,9 +457,10 @@ namespace Semblance.Dialogue
                 button.colors = colors;
                 button.onClick.AddListener(() => Choose(index));
 
-                var label = CreateText("Label", go.transform, 18, TextAlignmentOptions.MidlineLeft);
+                var label = CreateText("Label", go.transform, 17, TextAlignmentOptions.MidlineLeft);
                 SetRect(label.rectTransform, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
                 label.rectTransform.offsetMin = new Vector2(8, 0);
+                label.rectTransform.offsetMax = new Vector2(-6, 0);
                 choiceButtons.Add((button, label));
             }
         }

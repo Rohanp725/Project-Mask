@@ -66,6 +66,7 @@ namespace Semblance.EditorTools
             public bool Locked;
             public string LockedMessage;
             public string AnchorKey;  // residents are placed relative to anchored buildings
+            public string DoorClue;   // reading the door notice unlocks these questions
         }
 
         private enum InteriorKind { Empty, Diner, Store, Church, House, Motel, Barn, MotelOffice }
@@ -254,14 +255,14 @@ namespace Semblance.EditorTools
             {
                 Name = "General Store", Sign = "SEMBLANCE GENERAL", Size = new Vector3(12, 5, 9), Material = "Mustard", Doors = 1,
                 LitWindowChance = 0.5f, Interior = InteriorKind.Store, AnchorKey = "Store",
-                DoorPrompt = "Read notice", DoorDescription = "A hand-lettered sign in the window: \"WE DO NOT SELL MIRRORS. PLEASE DON'T ASK.\"",
+                DoorPrompt = "Read notice", DoorDescription = "A hand-lettered sign in the window: \"WE DO NOT SELL MIRRORS. PLEASE DON'T ASK.\"", DoorClue = "storenotice",
             });
 
             BuildRoadsideBuilding(root, rng, west: false, z: -18f, new BuildingDef
             {
                 Name = "Diner", Sign = "MAE'S DINER", SignMaterial = "SignNeon", Size = new Vector3(12, 4, 9), Material = "Teal", Doors = 1,
                 LitWindowChance = 1f, Interior = InteriorKind.Diner, AnchorKey = "Diner",
-                DoorPrompt = "Read menu", DoorDescription = "Today's special: meatloaf. Someone has written underneath in pencil: \"Ask Mae what she had for breakfast.\"",
+                DoorPrompt = "Read menu", DoorDescription = "Today's special: meatloaf. Someone has written underneath in pencil: \"Ask Mae what she had for breakfast.\"", DoorClue = "breakfast",
             });
 
             // 1980s phone booth on the west sidewalk: aluminium frame, glass on three sides, the folding door
@@ -309,7 +310,7 @@ namespace Semblance.EditorTools
             Box("Directory Shelf", booth, new Vector3(0, 0.95f, -0.33f), new Vector3(0.5f, 0.03f, 0.26f), "Chrome", collider: false);
             Box("Directory", booth, new Vector3(0.05f, 0.98f, -0.33f), new Vector3(0.24f, 0.04f, 0.18f), "PlainMustard", collider: false);
             Box("Booth Light", booth, new Vector3(0, 2.21f, 0), new Vector3(0.3f, 0.03f, 0.3f), "Bulb", collider: false);
-            AddInspectable(phone, "Pick up phone", "There's a dial tone. Underneath it, very faintly, someone is breathing.");
+            AddInspectable(phone, "Pick up phone", "There's a dial tone. Underneath it, very faintly, someone is breathing.", "payphone");
 
             // Streetlamps only in the center.
             int index = 0;
@@ -477,7 +478,7 @@ namespace Semblance.EditorTools
             Box("Post L", sign, new Vector3(-1.5f, 1f, -0.15f), new Vector3(0.18f, 2f, 0.18f), "Wood");
             Box("Post R", sign, new Vector3(1.5f, 1f, -0.15f), new Vector3(0.18f, 2f, 0.18f), "Wood");
             var board = Box("Board", sign, new Vector3(0, 2.1f, 0), new Vector3(3.8f, 1.5f, 0.12f), "SignWhite");
-            AddInspectable(board, "Read sign", "Someone has painted 213 right over the old population. The paint looks fresh.");
+            AddInspectable(board, "Read sign", "Someone has painted 213 right over the old population. The paint looks fresh.", "welcomesign");
             var ink = new Color(0.12f, 0.12f, 0.12f);
             AddText(sign, "WELCOME TO", new Vector3(0, 2.6f, 0.07f), new Vector2(2.4f, 0.28f), ink);
             AddText(sign, "SEMBLANCE", new Vector3(0, 2.2f, 0.07f), new Vector2(3.3f, 0.5f), ink);
@@ -588,7 +589,7 @@ namespace Semblance.EditorTools
             flag.localRotation = def.Family == "Hollis" ? Quaternion.identity : Quaternion.Euler(90f, 0, 0); // the Hollis flag is up
             Box("Flag Arm", flag, new Vector3(0, 0.12f, 0), new Vector3(0.015f, 0.24f, 0.025f), "PlainBarnRed", collider: false);
             Box("Flag Plate", flag, new Vector3(0, 0.22f, 0.04f), new Vector3(0.015f, 0.07f, 0.1f), "PlainBarnRed", collider: false);
-            AddInspectable(mailbox, "Check mailbox", def.Family.ToUpperInvariant() + ". " + def.Mailbox);
+            AddInspectable(mailbox, "Check mailbox", def.Family.ToUpperInvariant() + ". " + def.Mailbox, "mailbox:" + def.Family);
             // Generous trigger around the mailbox so it's easy to target (local units are scaled by the box).
             var mailboxTrigger = mailbox.GetComponent<BoxCollider>();
             mailboxTrigger.isTrigger = true;
@@ -726,7 +727,7 @@ namespace Semblance.EditorTools
             Box("Post R", board, new Vector3(0.8f, 0.7f, 0), new Vector3(0.1f, 1.4f, 0.1f), "Wood");
             var sign = Box("Board", board, new Vector3(0, 1.5f, 0), new Vector3(2f, 0.9f, 0.08f), "SignWhite");
             AddText(board, "FIRST CHURCH OF SEMBLANCE\n<size=80%>WE ARE MADE IN HIS IMAGE\nCOUNT YOUR NEIGHBOURS</size>", new Vector3(0, 1.5f, 0.05f), new Vector2(1.95f, 0.95f), new Color(0.12f, 0.12f, 0.12f));
-            AddInspectable(sign, "Read the board", "WE ARE MADE IN HIS IMAGE. COUNT YOUR NEIGHBOURS. The second line was added in different letters.");
+            AddInspectable(sign, "Read the board", "WE ARE MADE IN HIS IMAGE. COUNT YOUR NEIGHBOURS. The second line was added in different letters.", "churchboard");
 
             var rng = new Random(77);
             foreach (var pair in FarmFrames)
@@ -1450,7 +1451,7 @@ namespace Semblance.EditorTools
             {
                 float plaqueX = doorXs[doorXs.Count - 1] + doorSize.x * 0.5f + 0.45f;
                 var plaque = Box("Notice", root, new Vector3(plaqueX, 1.5f, front + 0.02f), new Vector3(0.45f, 0.55f, 0.04f), "SignWhite");
-                AddInspectable(plaque, def.DoorPrompt, def.DoorDescription);
+                AddInspectable(plaque, def.DoorPrompt, def.DoorDescription, def.DoorClue);
             }
 
             // Windows go right through the wall so they read from inside and out.
@@ -1876,7 +1877,7 @@ namespace Semblance.EditorTools
             }
         }
 
-        private static void Mirror(Transform parent, Vector3 localPosition, float localYaw, Vector2 size, string inspectText)
+        private static void Mirror(Transform parent, Vector3 localPosition, float localYaw, Vector2 size, string inspectText, string clue = null)
         {
             var mirrorRoot = Group("Mirror", parent);
             mirrorRoot.localPosition = localPosition;
@@ -1892,7 +1893,7 @@ namespace Semblance.EditorTools
             var box = glass.AddComponent<BoxCollider>();
             box.size = new Vector3(1f, 1f, 0.05f);
             if (!string.IsNullOrEmpty(inspectText))
-                AddInspectable(glass, "Look in the mirror", inspectText);
+                AddInspectable(glass, "Look in the mirror", inspectText, clue);
             mirrorRoot.gameObject.AddComponent<PlanarMirror>().Configure(glass.GetComponent<Renderer>(), size);
         }
 
@@ -1915,11 +1916,12 @@ namespace Semblance.EditorTools
 
         // AddText lives in SignBaker.cs: lettering is baked into a weathered texture on a lit quad.
 
-        private static void AddInspectable(GameObject target, string prompt, string description)
+        private static void AddInspectable(GameObject target, string prompt, string description, string clue = null)
         {
             var inspectable = target.AddComponent<InspectableObject>();
             SetField(inspectable, "prompt", prompt);
             SetField(inspectable, "description", description);
+            if (!string.IsNullOrEmpty(clue)) SetField(inspectable, "clueKey", clue);
         }
 
         private static void SetField(Object target, string field, object value)
