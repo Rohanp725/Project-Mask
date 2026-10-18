@@ -44,7 +44,18 @@ namespace Semblance.Events
             InputLock.Push(this, Leave);
             ShowSlats(true);
             Audio.GameAudio.PlayAt("door_creak_2", transform.position, 0.5f, 1.3f, 15f);
-            UI.PlayerHUD.Instance?.SetHint("Hiding. Hold your breath. Press {cancel} to climb out.", 0f);
+            UI.PlayerHUD.Instance?.SetHint("Hiding. Hold your breath.", 0f);
+            UI.PlayerHUD.Instance?.SetPrompt("Climb out");
+            enteredFrame = Time.frameCount;
+        }
+
+        private int enteredFrame;
+
+        private void Update()
+        {
+            // The same key that got you in gets you out (Esc works too).
+            if (Occupied == this && Time.frameCount > enteredFrame + 2 && GameInput.Pressed(GameInput.Interact))
+                Leave();
         }
 
         public void Leave()
@@ -57,6 +68,7 @@ namespace Semblance.Events
             InputLock.Pop(this);
             ShowSlats(false);
             UI.PlayerHUD.Instance?.SetHint(null);
+            UI.PlayerHUD.Instance?.SetPrompt(null);
             Audio.GameAudio.PlayAt("door_creak_1", transform.position, 0.5f, 1.2f, 15f);
         }
 

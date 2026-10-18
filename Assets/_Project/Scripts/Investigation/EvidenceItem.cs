@@ -42,7 +42,7 @@ namespace Semblance.Investigation
 
         public override void Interact(PlayerInteractor interactor)
         {
-            interactor.Hud.ShowMessage($"<b>{title}</b>\n{text}", 7f);
+            interactor.Hud.ShowReading($"<b>{title}</b>\n{text}");
             if (Found) return;
             SaveSystem.Flags.Add("evidence:" + id);
             Notebook.Instance?.Record(NoteKind.Evidence, string.IsNullOrEmpty(subject) ? Notebook.CaseSubject : subject, title, text, null, "evidence|" + id);

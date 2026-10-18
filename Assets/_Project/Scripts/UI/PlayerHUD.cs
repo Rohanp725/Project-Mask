@@ -66,6 +66,8 @@ namespace Semblance.UI
         {
             if (messagePanel.activeSelf && Time.time >= messageHideTime)
                 messagePanel.SetActive(false);
+            if (IsReading && (GameInput.Pressed(GameInput.Advance) || InputLock.IsLocked))
+                DismissReading(); // (a menu or conversation opening over it closes it too)
 
             for (int i = toasts.Count - 1; i >= 0; i--)
             {
@@ -94,7 +96,7 @@ namespace Semblance.UI
                 hintText.gameObject.SetActive(false);
 
             // Hide the in-world HUD while a full screen (notebook, archive, menus) is open.
-            canvas.enabled = !InputLock.IsLocked || InputLock.Top is Dialogue.DialogueUI;
+            canvas.enabled = !InputLock.IsLocked || InputLock.Top is Dialogue.DialogueUI || InputLock.Top is Events.HidingSpot;
         }
 
         /// <summary>Small notice in the top-right corner (new notebook entries, items...).</summary>
@@ -157,9 +159,32 @@ namespace Semblance.UI
 
         public void ShowMessage(string message, float duration)
         {
+            IsReading = false;
             messageText.text = message;
             messagePanel.SetActive(true);
             messageHideTime = Time.time + duration;
+        }
+
+        /// <summary>True while something you're reading or looking at is on screen, waiting to be dismissed.</summary>
+        public bool IsReading { get; private set; }
+
+        /// <summary>
+        /// Text you read at your own pace (a note, a card, what you see when you look at something): it stays until
+        /// you press interact or advance. Scares and story moments keep using the timed <see cref="ShowMessage"/>.
+        /// </summary>
+        public void ShowReading(string message)
+        {
+            messageText.text = message + $"\n<size=65%><color=#{ColorUtility.ToHtmlStringRGB(textColor * 0.6f)}>[{GameInput.Glyph(GameInput.Interact)}] close</color></size>";
+            messagePanel.SetActive(true);
+            messageHideTime = float.PositiveInfinity;
+            IsReading = true;
+        }
+
+        public void DismissReading()
+        {
+            if (!IsReading) return;
+            IsReading = false;
+            messagePanel.SetActive(false);
         }
 
         private void BuildUI()

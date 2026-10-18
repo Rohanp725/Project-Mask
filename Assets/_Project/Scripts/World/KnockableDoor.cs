@@ -271,7 +271,7 @@ namespace Semblance.World
                 text = $"{r.FirstName} looks up at me from the dark. \"I heard you. I was hoping you'd take the hint.\"";
                 explains = "fedup";
             }
-            interactor.Hud.ShowMessage(text, 6f);
+            interactor.Hud.ShowReading(text);
             Audio.GameAudio.Play("sting_soft", fact != null ? 0.45f : 0.2f);
             var e = Notebook.Instance?.Record(NoteKind.Observation, r.DisplayName, "Didn't answer the door", text, null, $"doorhid|{r.DisplayName}|{(GameClock.Instance != null ? GameClock.Instance.Day : 0)}");
             if (e == null) return;

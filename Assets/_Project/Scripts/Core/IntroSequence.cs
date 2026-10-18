@@ -60,11 +60,12 @@ namespace Semblance.Core
             }
             text.text = "";
 
+            // The tape look belongs to the letter, not the road: it goes before the drive in.
+            Destroy(vhs);
             if (!skipAll)
                 yield return Drive(hiss);
 
             if (hiss) Destroy(hiss.gameObject);
-            Destroy(vhs);
             canvas.gameObject.SetActive(false);
             Arrive();
             if (clock != null) clock.Frozen = false;
@@ -75,7 +76,7 @@ namespace Semblance.Core
                 yield return ScreenFader.Instance.TitleCard("DAY 1", GameFlow.DateLine(1) + "\n<i>The Pale Moon Motel, Semblance</i>", 2f);
                 yield return ScreenFader.Instance.Fade(0f, 2f);
             }
-            UI.PlayerHUD.Instance?.ShowMessage($"One of these sixteen people isn't human. When you can prove which, ring the church bell.\n<size=80%>You have {GameSettings.DayCount} days.</size>", 7f);
+            UI.PlayerHUD.Instance?.ShowReading($"One of these sixteen people isn't human. When you can prove which, ring the church bell.\n<size=80%>You have {GameSettings.DayCount} days.</size>");
             TutorialDirector.Instance?.Begin();
         }
 
@@ -108,11 +109,12 @@ namespace Semblance.Core
                 total = text.textInfo.characterCount;
             }
             text.maxVisibleCharacters = 99999;
+            // Each line waits for you: read it, then advance.
             float wait = 0;
-            while (wait < 2.4f && !skipAll)
+            while (!skipAll)
             {
                 wait += Time.deltaTime;
-                if ((GameInput.Pressed(GameInput.Advance) || skipLine) && wait > 0.2f) { skipLine = false; break; }
+                if ((GameInput.Pressed(GameInput.Advance) || GameInput.Pressed(GameInput.Interact) || skipLine) && wait > 0.2f) { skipLine = false; break; }
                 yield return null;
             }
         }
@@ -202,7 +204,7 @@ namespace Semblance.Core
             canvas = UIFactory.Canvas("Intro Canvas", transform, 160);
             text = UIFactory.Text("Line", canvas.transform, "", 28, UIFactory.Light, TextAlignmentOptions.Center);
             UIFactory.Place(text.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(1000, 300));
-            var hint = UIFactory.Text("Skip", canvas.transform, GameInput.Format("{advance}: next line     hold {cancel}: skip intro"), 17, new Color(1, 1, 1, 0.55f), TextAlignmentOptions.BottomRight);
+            var hint = UIFactory.Text("Skip", canvas.transform, GameInput.Format("{advance} or {interact}: next line     hold {cancel}: skip intro"), 17, new Color(1, 1, 1, 0.55f), TextAlignmentOptions.BottomRight);
             UIFactory.Place(hint.rectTransform, new Vector2(1, 0), new Vector2(1, 0), new Vector2(-24, 20), new Vector2(400, 24));
         }
     }

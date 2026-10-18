@@ -47,7 +47,7 @@ namespace Semblance.Investigation
         {
             if (padlocked)
             {
-                interactor.Hud.ShowMessage("A brand-new brass padlock on an old hatch. The hasp is bright. Somebody wants this shut.", 4f);
+                interactor.Hud.ShowReading("A brand-new brass padlock on an old hatch. The hasp is bright. Somebody wants this shut.");
                 return;
             }
             if (destination != null)

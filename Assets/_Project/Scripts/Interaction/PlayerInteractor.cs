@@ -23,6 +23,13 @@ namespace Semblance.Interaction
 
         private void Update()
         {
+            if (hud.IsReading)
+            {
+                Current = null;
+                hud.SetPrompt(null);
+                if (Core.GameInput.Pressed(Core.GameInput.Interact)) hud.DismissReading();
+                return;
+            }
             Current = InputLock.IsLocked || (controller != null && controller.InputLocked) ? null : FindTarget();
             hud.SetPrompt(Current != null ? Current.Prompt : null);
 

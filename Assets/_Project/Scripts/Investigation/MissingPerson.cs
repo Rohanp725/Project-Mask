@@ -33,7 +33,7 @@ namespace Semblance.Investigation
         {
             if (original == null) return;
             bool first = !EndingDirector.MissingPersonFound;
-            interactor.Hud.ShowMessage($"<b>{original.DisplayName}</b>, the real one, thin and grey and blinking at the light.\n{Lines[Mathf.Min(spoken, Lines.Length - 1)]}", 7f);
+            interactor.Hud.ShowReading($"<b>{original.DisplayName}</b>, the real one, thin and grey and blinking at the light.\n{Lines[Mathf.Min(spoken, Lines.Length - 1)]}");
             spoken++;
             if (!first) return;
             EndingDirector.MissingPersonFound = true;

@@ -23,10 +23,10 @@ namespace Semblance.EditorTools
 
             for (int i = 1; i <= 4; i++)
             {
-                Write($"footstep_grass_{i}", Footstep(0.2f, 900f + i * 120f, 3200f, 0.0f, 0.55f));
-                Write($"footstep_dirt_{i}", Footstep(0.16f, 500f + i * 90f, 2200f, 0.25f, 0.7f));
-                Write($"footstep_asphalt_{i}", Footstep(0.11f, 1800f + i * 200f, 6000f, 0.55f, 0.6f));
-                Write($"footstep_wood_{i}", WoodStep(i));
+                Write($"footstep_grass_{i}", Step(StepSurface.Grass, i));
+                Write($"footstep_dirt_{i}", Step(StepSurface.Dirt, i));
+                Write($"footstep_asphalt_{i}", Step(StepSurface.Asphalt, i));
+                Write($"footstep_wood_{i}", Step(StepSurface.Wood, i));
             }
             for (int i = 1; i <= 3; i++)
                 Write($"footstep_corn_{i}", Rustle(0.45f, 2500f + i * 400f));
@@ -51,9 +51,9 @@ namespace Semblance.EditorTools
             Write("stinger_death", Stinger(3.2f, 0.8f, true));
             Write("knock", Knock(3));
             Write("knock_slow", Knock(3, 0.75f));
-            Write("door_creak_1", Creak(0.9f, 320f, 180f));
-            Write("door_creak_2", Creak(1.1f, 260f, 420f));
-            Write("door_close", Thud(0.35f, 70f, 0.9f));
+            Write("door_creak_1", DoorCreak(0.85f, 1, true));
+            Write("door_creak_2", DoorCreak(1.05f, 2, true));
+            Write("door_close", DoorClose());
             Write("thud", Thud(0.6f, 48f, 1f));
             Write("bell_toll", Bell(6f, 196f));
             Write("camera_shutter", Shutter());
@@ -71,7 +71,7 @@ namespace Semblance.EditorTools
             for (int i = 1; i <= 3; i++)
                 Write($"creature_step_{i}", CreatureStep(i));
             Write("lamp_die", Zap());
-            Write("hatch_open", Concat(Creak(0.7f, 200f, 120f), Thud(0.4f, 60f, 0.8f)));
+            Write("hatch_open", Concat(DoorCreak(0.7f, 3, false), Thud(0.4f, 60f, 0.8f)));
             Write("coffee_pour", Pour());
             Write("typewriter_key", Click(0.04f, 3200f));
             Write("sting_soft", Stinger(1.8f, 1.6f, false, 0.45f));
@@ -559,6 +559,133 @@ namespace Semblance.EditorTools
             return b;
         }
 
+
+        private enum StepSurface { Grass, Dirt, Asphalt, Wood }
+
+        /// <summary>
+        /// A footstep is two events: the heel landing (a dull weight) and the sole rolling on (the surface's own
+        /// texture: grass brushing, dirt grinding, grit on asphalt, a plank's hollow knock). The old steps were one
+        /// filtered noise burst, which read as static.
+        /// </summary>
+        private static float[] Step(StepSurface surface, int variant)
+        {
+            float v = (variant - 2.5f) * 0.1f; // -0.15..+0.15 spread between the four takes
+            var b = Buffer(0.34f);
+
+            // Heel: a soft low thump, a little lower on soft ground.
+            float thumpF = surface == StepSurface.Wood ? 95f + variant * 9f : surface == StepSurface.Asphalt ? 78f : 62f + variant * 3f;
+            float thumpDecay = surface == StepSurface.Grass ? 0.045f : surface == StepSurface.Wood ? 0.07f : 0.035f;
+            for (int i = 0; i < b.Length; i++)
+            {
+                float t = i / (float)Rate;
+                b[i] += Mathf.Sin(2 * Mathf.PI * thumpF * t) * Mathf.Exp(-t / thumpDecay) * (surface == StepSurface.Wood ? 0.9f : 0.6f);
+            }
+
+            // Sole: the surface texture, starting ~40 ms after the heel.
+            int roll = (int)(0.04f * Rate);
+            switch (surface)
+            {
+                case StepSurface.Grass:
+                {
+                    // Blades brushing: soft, hissy, with a slow swell and a few bent-stem ticks.
+                    var g = Noise(0.22f, 1f); HighPass(g, 1400f + v * 400f); LowPass(g, 3600f);
+                    for (int i = 0; i < g.Length; i++) { float t = i / (float)g.Length; g[i] *= Mathf.Sin(t * Mathf.PI) * Mathf.Sin(t * Mathf.PI); }
+                    for (int k = 0; k < 5; k++) { int at = rng.Next(g.Length - 200); for (int j = 0; j < 120; j++) g[at + j] += Rand() * 0.35f * Mathf.Exp(-j / 25f); }
+                    b = Mix(b, g, 0.55f, roll);
+                    break;
+                }
+                case StepSurface.Dirt:
+                {
+                    // Grains grinding under the weight: lower, crunchier, lots of tiny crackles.
+                    var d = Noise(0.18f, 1f); HighPass(d, 500f + v * 150f); LowPass(d, 2600f);
+                    Envelope(d, 0.015f, 0.06f);
+                    for (int k = 0; k < 14; k++) { int at = rng.Next(d.Length - 80); for (int j = 0; j < 60; j++) d[at + j] += Rand() * 0.6f * Mathf.Exp(-j / 12f); }
+                    b = Mix(b, d, 0.7f, roll);
+                    break;
+                }
+                case StepSurface.Asphalt:
+                {
+                    // A hard sole on grit: a sharp, short scuff, bright, and a tiny secondary tap from the toe.
+                    var a = Noise(0.09f, 1f); HighPass(a, 2200f + v * 500f); LowPass(a, 7000f);
+                    Envelope(a, 0.004f, 0.025f);
+                    b = Mix(b, a, 0.55f, roll);
+                    var toe = Noise(0.03f, 1f); HighPass(toe, 3000f); Envelope(toe, 0.002f, 0.008f);
+                    b = Mix(b, toe, 0.3f, roll + (int)(0.07f * Rate));
+                    break;
+                }
+                case StepSurface.Wood:
+                {
+                    // A plank: a short hollow knock at the board's own pitch, plus the boot's leather.
+                    float f = 140f + variant * 18f;
+                    var k2 = Buffer(0.25f);
+                    for (int i = 0; i < k2.Length; i++) { float t = i / (float)Rate; k2[i] = (Mathf.Sin(2 * Mathf.PI * f * t) + 0.4f * Mathf.Sin(2 * Mathf.PI * f * 2.3f * t)) * Mathf.Exp(-t / 0.04f); }
+                    b = Mix(b, k2, 0.5f, roll / 2);
+                    var l = Noise(0.05f, 1f); HighPass(l, 1500f); LowPass(l, 5000f); Envelope(l, 0.003f, 0.015f);
+                    b = Mix(b, l, 0.25f, roll);
+                    if (variant % 2 == 0) b = Mix(b, DoorCreak(0.22f, variant, false), 0.12f, roll + (int)(0.02f * Rate)); // a board that gives
+                    break;
+                }
+            }
+            LowPass(b, surface == StepSurface.Asphalt ? 8000f : 5000f);
+            Envelope(b, 0.003f, 0.11f);
+            Normalize(b, surface == StepSurface.Wood ? 0.7f : 0.6f);
+            return b;
+        }
+
+        /// <summary>
+        /// A door hinge: stick-slip. Dry metal catches and lets go in a run of tiny pulses whose rate rises and falls
+        /// with the swing; each pulse rings the wood and the pin. A latch click at the start if it's being opened.
+        /// </summary>
+        private static float[] DoorCreak(float seconds, int variant, bool latch)
+        {
+            var b = Buffer(seconds);
+            float ring = 760f + variant * 170f;   // the pin's ring
+            float body = 150f + variant * 25f;    // the door's body
+            float t = 0f;
+            float next = 0.02f;
+            while (next < seconds)
+            {
+                float k = next / seconds;
+                // Rate climbs through the middle of the swing and slackens at the end; a little irregular.
+                float rate = Mathf.Lerp(28f, 70f, Mathf.Sin(k * Mathf.PI)) * (1f + 0.25f * (float)(rng.NextDouble() - 0.5));
+                int at = (int)(next * Rate);
+                float amp = Mathf.Sin(k * Mathf.PI) * (0.7f + 0.3f * (float)rng.NextDouble());
+                float f = ring * (1f + 0.08f * (float)(rng.NextDouble() - 0.5));
+                for (int j = 0; j < 400 && at + j < b.Length; j++)
+                {
+                    float tt = j / (float)Rate;
+                    b[at + j] += amp * (Mathf.Sin(2 * Mathf.PI * f * tt) * Mathf.Exp(-tt / 0.004f) + 0.45f * Mathf.Sin(2 * Mathf.PI * body * tt) * Mathf.Exp(-tt / 0.012f));
+                }
+                next += 1f / rate;
+                t = next;
+            }
+            HighPass(b, 120f);
+            LowPass(b, 4200f);
+            if (latch)
+            {
+                var click = Noise(0.012f, 1f); HighPass(click, 1800f); Envelope(click, 0.001f, 0.004f);
+                b = Mix(b, click, 0.5f, 0);
+            }
+            Normalize(b, 0.5f);
+            return b;
+        }
+
+        /// <summary>A door shutting: the slab meeting the frame (a low thump with the wood ringing) and the latch catching twice.</summary>
+        private static float[] DoorClose()
+        {
+            var b = Thud(0.4f, 62f, 0.9f);
+            var wood = Buffer(0.3f);
+            for (int i = 0; i < wood.Length; i++) { float tt = i / (float)Rate; wood[i] = Mathf.Sin(2 * Mathf.PI * 170f * tt) * Mathf.Exp(-tt / 0.05f) * 0.5f; }
+            b = Mix(b, wood);
+            foreach (var at in new[] { 0.055f, 0.085f })
+            {
+                var click = Noise(0.01f, 1f); HighPass(click, 2500f); Envelope(click, 0.001f, 0.003f);
+                b = Mix(b, click, 0.45f, (int)(at * Rate));
+            }
+            LowPass(b, 6000f);
+            Normalize(b, 0.85f);
+            return b;
+        }
         private static float[] Creak(float seconds, float from, float to)
         {
             var b = Buffer(seconds);
