@@ -448,12 +448,16 @@ namespace Semblance.Dialogue
                 go.transform.SetParent(choiceContainer, false);
                 go.GetComponent<RectTransform>().sizeDelta = new Vector2(380, 24);
                 UIFactory.Layout(go.GetComponent<RectTransform>(), preferredHeight: 24);
+                // The row's backing is white and the button tints it: invisible at rest, a pale bar under the mouse.
                 var image = go.GetComponent<Image>();
-                image.color = new Color(1, 1, 1, 0.0f);
+                image.color = Color.white;
                 var button = go.GetComponent<Button>();
                 var colors = button.colors;
-                colors.highlightedColor = new Color(1, 1, 1, 0.08f);
-                colors.pressedColor = new Color(1, 1, 1, 0.15f);
+                colors.normalColor = new Color(1, 1, 1, 0f);
+                colors.highlightedColor = new Color(1, 0.92f, 0.75f, 0.16f);
+                colors.selectedColor = new Color(1, 0.92f, 0.75f, 0.16f);
+                colors.pressedColor = new Color(1, 0.92f, 0.75f, 0.3f);
+                colors.fadeDuration = 0.08f;
                 button.colors = colors;
                 button.onClick.AddListener(() => Choose(index));
 
