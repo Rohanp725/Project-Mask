@@ -148,6 +148,7 @@ namespace Semblance.Core
             }
 
             clock.SetTime(next, collapsed ? 10f : 6.5f);
+            if (collapsed) SaveSystem.Flags.Add("collapsed:" + next); // the notebook counts the hours up from when you woke
             PlacePlayerAtWakeSpot();
 
             if (fader != null)

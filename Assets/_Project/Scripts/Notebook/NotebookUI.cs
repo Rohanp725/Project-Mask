@@ -98,6 +98,15 @@ namespace Semblance.Notes
 
             UIFactory.Clear(subjectList);
             {
+                // The front page: the detective's own file.
+                bool onMe = currentSubject == ProfileTab;
+                string me = "Det. " + (Case.CaseDirector.Instance != null ? Case.CaseDirector.Instance.DetectiveName : "Klein");
+                var p = UIFactory.Button("Tab Me", subjectList, onMe ? "<b>" + me + "</b>" : me, 16, UIFactory.Ink,
+                    onMe ? UIFactory.Paper : UIFactory.PaperDark, () => { currentSubject = ProfileTab; selected.Clear(); Refresh(); });
+                p.GetComponentInChildren<TextMeshProUGUI>().alignment = TextAlignmentOptions.MidlineLeft;
+                UIFactory.Layout(p, preferredHeight: 30);
+            }
+            {
                 bool onMap = currentSubject == MapTab;
                 var m = UIFactory.Button("Tab Map", subjectList, onMap ? "<b>Map</b>" : "Map", 16, UIFactory.Ink,
                     onMap ? UIFactory.Paper : UIFactory.PaperDark, () => { currentSubject = MapTab; selected.Clear(); Refresh(); });
@@ -117,7 +126,9 @@ namespace Semblance.Notes
             }
 
             UIFactory.Clear(entryList);
-            if (currentSubject == MapTab)
+            if (currentSubject == ProfileTab)
+                BuildProfile(notebook);
+            else if (currentSubject == MapTab)
                 BuildMap();
             else if (currentSubject == Notebook.CaseSubject)
                 BuildCaseFile(notebook);
@@ -132,6 +143,70 @@ namespace Semblance.Notes
         }
 
         private const string MapTab = "~map";
+        private const string ProfileTab = "~me";
+
+        /// <summary>
+        /// The detective's own file: who you are, where you are, what state you're in, and everything that has
+        /// happened to you that you can't explain.
+        /// </summary>
+        private void BuildProfile(Notebook notebook)
+        {
+            var clock = GameClock.Instance;
+            string name = Case.CaseDirector.Instance != null ? Case.CaseDirector.Instance.DetectiveName : "Klein";
+            header.text = $"<b>DET. {name.ToUpperInvariant()}</b>  <size=70%>Barlow County Investigations</size>";
+
+            // Portrait frame with no photograph in it, beside the particulars.
+            var row = UIFactory.Rect("Profile Row", entryList);
+            UIFactory.Layout(row, preferredHeight: 150);
+            var frame = UIFactory.Panel("Portrait", row, UIFactory.Ink, false);
+            UIFactory.Place(frame.rectTransform, new Vector2(0, 1), new Vector2(0, 1), new Vector2(4, -2), new Vector2(112, 144));
+            var inner = UIFactory.Panel("Portrait Inner", frame.transform, UIFactory.PaperDark, false);
+            UIFactory.Stretch(inner.rectTransform, new Vector2(3, 3), new Vector2(-3, -3));
+            var none = UIFactory.Text("No Photo", inner.transform, "<size=80%>NO\nPHOTOGRAPH\nON FILE</size>", 13, new Color(UIFactory.Ink.r, UIFactory.Ink.g, UIFactory.Ink.b, 0.45f), TextAlignmentOptions.Center);
+            UIFactory.Stretch(none.rectTransform);
+            var corner = UIFactory.Text("Corner", inner.transform, "<size=70%><i>attach</i></size>", 12, new Color(UIFactory.Ink.r, UIFactory.Ink.g, UIFactory.Ink.b, 0.3f), TextAlignmentOptions.BottomRight);
+            UIFactory.Stretch(corner.rectTransform, new Vector2(0, 4), new Vector2(-6, 0));
+
+            string where = "Semblance";
+            var cam = Camera.main;
+            if (cam != null)
+            {
+                var p = cam.transform.position;
+                if (p.y < -10f) where = "underground";
+                else where = World.LocationMarker.Describe(p);
+                if (where.StartsWith("at ")) where = where.Substring(3);
+                where = char.ToUpper(where[0]) + where.Substring(1);
+            }
+            float hour = clock != null ? clock.Hour : 18.5f;
+            int day = clock != null ? clock.Day : 1;
+            // Awake since half past six (ten, after a collapse); the first evening you came off a long drive.
+            float awake = day == 1 ? Mathf.Max(0f, hour - 18.5f) + 9f : hour - (Save.SaveSystem.Flags.Contains("collapsed:" + day) ? 10f : 6.5f);
+            string tired = awake < 7f ? "Rested" : awake < 12f ? "Fine" : awake < 15.5f ? "Tired" : awake < 19f ? "Exhausted" : "Dead on my feet";
+            float nerve = Events.Nerve.Instance != null ? Events.Nerve.Instance.Value : 100f;
+            string nerves = Events.Nerve.Describe(nerve);
+            nerves = char.ToUpper(nerves[0]) + nerves.Substring(1);
+            string particulars =
+                $"<b>Name</b>  {name}\n" +
+                $"<b>Age</b>  41\n" +
+                $"<b>Occupation</b>  Private investigator, Barlow County Investigations\n" +
+                $"<b>Date</b>  {GameFlow.DateLine(day)}, {GameClock.FormatHour(hour)}\n" +
+                $"<b>Location</b>  {where}\n" +
+                $"<b>Nerves</b>  {nerves} <size=75%><color=#00000066>({Mathf.RoundToInt(nerve)}/100)</color></size>\n" +
+                $"<b>Sleep</b>  {tired} <size=75%><color=#00000066>({Mathf.RoundToInt(awake)} hours up)</color></size>";
+            var text = UIFactory.Text("Particulars", row, particulars, 15, UIFactory.Ink, TextAlignmentOptions.TopLeft);
+            UIFactory.Place(text.rectTransform, new Vector2(0, 1), new Vector2(0, 1), new Vector2(128, -2), new Vector2(560, 148));
+
+            AddParagraph("<size=110%><b>Assignment</b></size>\nAn anonymous letter, postmarked Semblance: <i>\"One of us is not one of us.\"</i> Find out which of the sixteen inside the sound of the bell isn't who they seem, and name them before the town stops listening."
+                + (clock != null ? $" <b>{Mathf.Max(0, clock.LastDay - clock.Day)} day(s) left.</b>" : ""), 8);
+
+            // Everything that has happened to you that shouldn't have.
+            var odd = notebook.EntriesFor(Notebook.CaseSubject).Where(e => e.kind == NoteKind.Event).ToList();
+            AddParagraph("<size=110%><b>What's happened to me</b></size>", 8);
+            if (odd.Count == 0)
+                AddParagraph("<i>Nothing yet. Nights out here have a way of changing that.</i>");
+            foreach (var e in odd)
+                AddEntryRow(e);
+        }
 
         /// <summary>
         /// The county map from the diner, pasted in: the two roads, every farm and who lives there, the buildings in
@@ -299,7 +374,7 @@ namespace Semblance.Notes
                     AddParagraph(text, 8);
             }
 
-            var general = notebook.EntriesFor(Notebook.CaseSubject).ToList();
+            var general = notebook.EntriesFor(Notebook.CaseSubject).Where(e => e.kind != NoteKind.Event && !(e.key != null && e.key.StartsWith("solved|"))).ToList();
             if (general.Count > 0)
             {
                 AddParagraph("<size=110%><b>Other notes</b></size>", 8);

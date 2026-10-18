@@ -95,18 +95,35 @@ namespace Semblance.Investigation
             return m.Resolution;
         }
 
+        /// <summary>
+        /// Nothing is listed until you've touched a piece of it: just how many there are. Once a clue turns up, the
+        /// question appears with the evidence found so far, and the answer once the last piece is in.
+        /// </summary>
         private static string BuildSection()
         {
-            var sb = new StringBuilder("<size=110%><b>Other mysteries</b></size>\n");
+            int solved = All.Count(IsSolved);
+            int opened = All.Count(m => m.Clues.Any(c => SaveSystem.Flags.Contains("evidence:" + c)));
+            var sb = new StringBuilder($"<size=110%><b>Side mysteries</b></size>  <size=80%>{solved}/{All.Length} solved, {opened} open</size>\n");
+            if (opened == 0)
+            {
+                sb.AppendLine("<i>Nothing yet. There's more wrong with this town than the one thing you came for.</i>");
+                return sb.ToString();
+            }
+            var notebook = Notebook.Instance;
             foreach (var m in All)
             {
-                int found = m.Clues.Count(c => SaveSystem.Flags.Contains("evidence:" + c));
-                if (found == 0)
+                var found = m.Clues.Where(c => SaveSystem.Flags.Contains("evidence:" + c)).ToList();
+                if (found.Count == 0) continue;
+                bool done = IsSolved(m);
+                sb.AppendLine();
+                sb.AppendLine($"<b>{m.Question}</b>  <size=80%><color=#00000088>{found.Count}/{m.Clues.Length}{(done ? ", solved" : "")}</color></size>");
+                foreach (var id in found)
                 {
-                    sb.AppendLine($"- <color=#00000066>{m.Question}</color>");
-                    continue;
+                    var entry = notebook?.Entries.FirstOrDefault(e => e.key == "evidence|" + id);
+                    sb.AppendLine($"   - {(entry != null ? entry.title : id.Replace('_', ' '))}");
                 }
-                sb.AppendLine(IsSolved(m) ? $"- <b>{m.Title}</b>: solved." : $"- <b>{m.Title}</b>: {m.Question} ({found}/{m.Clues.Length} clues)");
+                if (done)
+                    sb.AppendLine($"   <color=#2f4f2a>{ResolutionFor(m)}</color>");
             }
             return sb.ToString();
         }

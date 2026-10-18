@@ -42,7 +42,6 @@ namespace Semblance.Events
             BuildVignette();
             Save.SaveSystem.Register(d => d.nerve = value, d => value = d.nerve > 0 ? d.nerve : 100f);
             GameFlow.Woke += _ => value = Mathf.Max(value, 85f);
-            Notes.NotebookUI.CaseFileSections.Add(() => $"<size=110%><b>How I'm holding up</b></size>\nI feel {Describe(value)}.");
         }
 
         /// <summary>When something last frightened the detective (Time.time).</summary>
