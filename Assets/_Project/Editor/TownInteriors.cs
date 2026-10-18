@@ -739,7 +739,7 @@ namespace Semblance.EditorTools
             AddText(root, "4\n46\n ", new Vector3(-2.8f, 2.2f, -inZ + 0.075f), new Vector2(0.55f, 0.8f), new Color(0.85f, 0.82f, 0.7f));
             // The third number is on a fresh white card, in red paint.
             Part("Hymn Card", root, new Vector3(-2.8f, 1.9f, -inZ + 0.074f), new Vector3(0.48f, 0.22f, 0.006f), "Paper");
-            AddText(root, "213", new Vector3(-2.8f, 1.9f, -inZ + 0.08f), new Vector2(0.44f, 0.2f), new Color(0.55f, 0.08f, 0.06f));
+            AddText(root, "213", new Vector3(-2.8f, 1.9f, -inZ + 0.08f), new Vector2(0.44f, 0.2f), new Color(0.55f, 0.08f, 0.06f), wear: 0.04f);
             Inspect(board, "Read the hymn board", "Hymns 4, 46 and 213. The hymnals in the pews only go up to 180. The 213 is on a fresh white card, in the same red paint as the sign on the highway.", new Vector3(0.8f, 1f, 0.3f));
 
             // The bell rope hangs just inside the door, under the steeple.

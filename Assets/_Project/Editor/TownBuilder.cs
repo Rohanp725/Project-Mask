@@ -123,6 +123,7 @@ namespace Semblance.EditorTools
             CellarSites.Clear();
             generatedMeshCount = 0;
             BatchedMeshes.Clear();
+            ResetSignBakes();
 
             litShader = Shader.Find("Semblance/PS1 Lit");
             if (litShader == null)
@@ -276,9 +277,9 @@ namespace Semblance.EditorTools
             foreach (var (pos, size) in new[] { (new Vector3(0, 2.13f, 0.53f), new Vector3(0.98f, 0.2f, 0.02f)), (new Vector3(0, 2.13f, -0.53f), new Vector3(0.98f, 0.2f, 0.02f)),
                                                 (new Vector3(0.53f, 2.13f, 0), new Vector3(0.02f, 0.2f, 0.98f)), (new Vector3(-0.53f, 2.13f, 0), new Vector3(0.02f, 0.2f, 0.98f)) })
                 Box("Header", booth, pos, size, "PhoneSign", collider: false);
-            AddText(booth, "TELEPHONE", new Vector3(0, 2.13f, 0.545f), new Vector2(0.9f, 0.16f), new Color(0.1f, 0.14f, 0.2f));
-            AddText(booth, "TELEPHONE", new Vector3(0.545f, 2.13f, 0), new Vector2(0.9f, 0.16f), new Color(0.1f, 0.14f, 0.2f), Quaternion.Euler(0, -90f, 0));
-            AddText(booth, "TELEPHONE", new Vector3(-0.545f, 2.13f, 0), new Vector2(0.9f, 0.16f), new Color(0.1f, 0.14f, 0.2f), Quaternion.Euler(0, 90f, 0));
+            AddText(booth, "TELEPHONE", new Vector3(0, 2.13f, 0.545f), new Vector2(0.9f, 0.16f), new Color(0.1f, 0.14f, 0.2f), wear: 0.05f);
+            AddText(booth, "TELEPHONE", new Vector3(0.545f, 2.13f, 0), new Vector2(0.9f, 0.16f), new Color(0.1f, 0.14f, 0.2f), Quaternion.Euler(0, -90f, 0), wear: 0.05f);
+            AddText(booth, "TELEPHONE", new Vector3(-0.545f, 2.13f, 0), new Vector2(0.9f, 0.16f), new Color(0.1f, 0.14f, 0.2f), Quaternion.Euler(0, 90f, 0), wear: 0.05f);
             // Back and side walls: a metal kick panel, glass above.
             Box("Kick Panel", booth, new Vector3(0, 0.3f, -0.48f), new Vector3(0.92f, 0.48f, 0.03f), "Galvanized");
             Box("Glass", booth, new Vector3(0, 1.3f, -0.48f), new Vector3(0.92f, 1.5f, 0.02f), "Glass");
@@ -433,7 +434,7 @@ namespace Semblance.EditorTools
             var stone = Box("Headstone", grave, new Vector3(0, 0.5f, 1.2f), new Vector3(0.7f, 1f, 0.18f), "Stone");
             // Where the name was: a pale, chewed-up patch, with the ghost of a capital R.
             Box("Chisel Scar", grave, new Vector3(0, 0.66f, 1.105f), new Vector3(0.5f, 0.16f, 0.012f), "StoneScar", collider: false);
-            AddText(grave, "R", new Vector3(-0.19f, 0.66f, 1.097f), new Vector2(0.12f, 0.15f), new Color(0.35f, 0.35f, 0.33f, 0.6f), Quaternion.identity);
+            AddText(grave, "R", new Vector3(-0.19f, 0.66f, 1.097f), new Vector2(0.22f, 0.22f), new Color(0.3f, 0.3f, 0.28f, 0.6f), Quaternion.identity, wear: 0.3f);
             AddText(grave, "1983", new Vector3(0, 0.45f, 1.097f), new Vector2(0.4f, 0.1f), new Color(0.3f, 0.3f, 0.28f), Quaternion.identity);
             AddInspectable(stone, "Read headstone", "A fresh grave. There was a name carved here, but it has been chiselled away.");
 
@@ -475,10 +476,10 @@ namespace Semblance.EditorTools
             AddText(sign, "POP.", new Vector3(0.42f, 1.7f, 0.07f), new Vector2(0.7f, 0.3f), ink);
             // The old number, sun-faded, with the new one painted on top of it by hand.
             // (The sign is rotated 180 degrees, so negative local X is the viewer's right.)
-            var faded = AddText(sign, "212", new Vector3(-0.3f, 1.7f, 0.07f), new Vector2(0.7f, 0.3f), new Color(0.12f, 0.12f, 0.12f, 0.4f));
-            var fresh = AddText(sign, "213", new Vector3(-0.38f, 1.76f, 0.075f), new Vector2(0.78f, 0.36f), new Color(0.48f, 0.07f, 0.05f),
-                Quaternion.Euler(0, 180f, -6f));
-            fresh.fontStyle = FontStyles.Bold | FontStyles.Italic;
+            var faded = AddText(sign, "212", new Vector3(-0.3f, 1.7f, 0.07f), new Vector2(0.7f, 0.3f), new Color(0.12f, 0.12f, 0.12f, 0.4f),
+                variants: new[] { "212", "213" }, wear: 0.3f);
+            var fresh = AddText(sign, "213", new Vector3(-0.4f, 1.76f, 0.075f), new Vector2(1.0f, 0.5f), new Color(0.5f, 0.06f, 0.04f),
+                Quaternion.Euler(0, 180f, -6f), italic: true, variants: new[] { "213", "214" }, wear: 0.02f);
             sign.gameObject.AddComponent<World.SignPopulation>().Configure(faded, fresh, board.GetComponent<InspectableObject>());
         }
 
@@ -1458,7 +1459,8 @@ namespace Semblance.EditorTools
             {
                 float boardWidth = Mathf.Min(width - 1f, 8f);
                 Box("Sign", root, new Vector3(0, height - 0.7f, front + 0.1f), new Vector3(boardWidth, 0.9f, 0.12f), def.SignMaterial ?? "SignBoard", collider: false);
-                AddText(root, def.Sign, new Vector3(0, height - 0.7f, front + 0.17f), new Vector2(boardWidth - 0.3f, 0.75f), new Color(0.9f, 0.85f, 0.7f));
+                AddText(root, def.Sign, new Vector3(0, height - 0.7f, front + 0.17f), new Vector2(boardWidth - 0.3f, 0.75f), new Color(0.9f, 0.85f, 0.7f),
+                    glow: def.SignMaterial == "SignNeon", wear: def.SignMaterial == "SignNeon" ? 0.08f : 0.2f);
             }
 
             Furnish(root, def, doorXs, ceiling, anyLit, rng);
@@ -1890,26 +1892,7 @@ namespace Semblance.EditorTools
             go.GetComponent<BoxCollider>().size = size;
         }
 
-        /// <param name="localRotation">Defaults to facing local +Z (TMP text faces -Z).</param>
-        private static TextMeshPro AddText(Transform parent, string text, Vector3 localPos, Vector2 size, Color color, Quaternion? localRotation = null)
-        {
-            var go = new GameObject("Text");
-            go.transform.SetParent(parent, false);
-            go.transform.localPosition = localPos;
-            go.transform.localRotation = localRotation ?? Quaternion.Euler(0, 180f, 0);
-            var tmp = go.AddComponent<TextMeshPro>();
-            tmp.text = text;
-            tmp.color = color;
-            tmp.alignment = TextAlignmentOptions.Center;
-            tmp.fontStyle = FontStyles.Bold;
-            tmp.enableAutoSizing = true;
-            tmp.fontSizeMin = 0.05f;
-            tmp.fontSizeMax = 12f;
-            tmp.textWrappingMode = TextWrappingModes.NoWrap;
-            // Painted lettering never runs to the edge of its board: leave a margin inside the given box.
-            tmp.rectTransform.sizeDelta = new Vector2(size.x * 0.9f, size.y * 0.7f);
-            return tmp;
-        }
+        // AddText lives in SignBaker.cs: lettering is baked into a weathered texture on a lit quad.
 
         private static void AddInspectable(GameObject target, string prompt, string description)
         {

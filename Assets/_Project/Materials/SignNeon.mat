@@ -30,6 +30,7 @@ Material:
     m_Ints: []
     m_Floats:
     - _AffineStrength: 1
+    - _AlphaClip: 0
     - _Cull: 2
     - _FogPierce: 0.5
     - _OffsetFactor: 0

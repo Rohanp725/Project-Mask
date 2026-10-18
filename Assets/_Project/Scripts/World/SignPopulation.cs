@@ -1,6 +1,5 @@
 using Semblance.Core;
 using Semblance.Interaction;
-using TMPro;
 using UnityEngine;
 
 namespace Semblance.World
@@ -11,11 +10,11 @@ namespace Semblance.World
     /// </summary>
     public class SignPopulation : MonoBehaviour
     {
-        [SerializeField] private TextMeshPro oldNumber;
-        [SerializeField] private TextMeshPro newNumber;
+        [SerializeField] private WorldText oldNumber;
+        [SerializeField] private WorldText newNumber;
         [SerializeField] private InspectableObject board;
 
-        public void Configure(TextMeshPro faded, TextMeshPro fresh, InspectableObject inspect)
+        public void Configure(WorldText faded, WorldText fresh, InspectableObject inspect)
         {
             oldNumber = faded;
             newNumber = fresh;
@@ -34,8 +33,8 @@ namespace Semblance.World
         private void Apply(int day)
         {
             int population = day >= 2 ? 214 : 213;
-            newNumber.text = population.ToString();
-            oldNumber.text = (population - 1).ToString();
+            newNumber.Set(population.ToString());
+            oldNumber.Set((population - 1).ToString());
             if (board == null || population <= 213) return;
             string text = "Painted over again: 213 crossed out, 214 written over it in the same red. The paint is still tacky. You count back through every face you've met here, and the only new one in Semblance is yours.";
             var taken = Case.StoryBeats.Instance != null ? Case.StoryBeats.Instance.Missing : null;

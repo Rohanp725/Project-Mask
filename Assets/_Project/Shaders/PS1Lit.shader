@@ -12,6 +12,7 @@ Shader "Semblance/PS1 Lit"
         _WorldScale ("World Texture Scale (tiles per meter)", Float) = 0.5
         _SnapResolution ("Vertex Snap Resolution", Float) = 160
         _AffineStrength ("Affine Warp", Range(0, 1)) = 1
+        [Toggle(_ALPHATEST_ON)] _AlphaClip ("Alpha Clip (cutout)", Float) = 0
         [Enum(UnityEngine.Rendering.CullMode)] _Cull ("Cull", Float) = 2
         _OffsetFactor ("Depth Offset Factor", Float) = 0
         _OffsetUnits ("Depth Offset Units", Float) = 0
@@ -71,6 +72,7 @@ Shader "Semblance/PS1 Lit"
             #pragma multi_compile_fragment _ _SHADOWS_SOFT
             #pragma multi_compile_fog
             #pragma multi_compile_instancing
+            #pragma shader_feature_local _ALPHATEST_ON
 
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
 
@@ -121,6 +123,9 @@ Shader "Semblance/PS1 Lit"
                 float2 affine = input.affineUV.xy / input.affineUV.z;
                 float2 uv = lerp(input.uv, affine, _AffineStrength);
                 half4 albedo = SAMPLE_TEXTURE2D(_BaseMap, sampler_BaseMap, uv) * _BaseColor;
+                #if defined(_ALPHATEST_ON)
+                clip(albedo.a - 0.5h); // baked lettering: paint or nothing
+                #endif
                 float3 normalWS = normalize(input.normalWS);
 
                 // Ambient from spherical harmonics (scene ambient color).

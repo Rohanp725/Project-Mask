@@ -21,7 +21,7 @@ namespace Semblance.Case
         [SerializeField] private int seed;
         [SerializeField] private string detectiveName = "Klein";
         [Tooltip("Print the solution to the console (for development).")]
-        [SerializeField] private bool logSolution = true;
+        [SerializeField] private bool logSolution = false; // off for blind playtests; turn back on to see the answer in the console
 
         public int Seed { get; private set; }
         public Resident Mimic { get; private set; }
