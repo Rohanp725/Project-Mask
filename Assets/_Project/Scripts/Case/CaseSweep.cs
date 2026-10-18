@@ -98,6 +98,8 @@ namespace Semblance.Case
             if (noise.CricketHush.Count(r => r != mimic) == 0) return "leak: only the mimic hushes crickets";
             if (noise.ColdFront.Count(r => r != mimic) < 2) return "leak: the mimic is alone in being cold about the missing";
             if (noise.Defensive == null || noise.Defensive == mimic) return "leak: no defensive innocent";
+            if (noise.DoorHider == null || noise.DoorHider == mimic) return "leak: only the mimic can fail to answer the door";
+            if (string.IsNullOrEmpty(noise.DoorHiderReason)) return "unexplained: the door-hider has no reason";
             if (noise.NoticerDecoy == null || noise.NoticerDecoy == mimic) return "leak: no noticer decoy";
             if (mimic.Avatar.Modifications != null && mimic.Avatar.Modifications.Notes.Contains("NO REFLECTION") != d.MimicHasNoReflection)
                 return "leak: reflection state inconsistent";

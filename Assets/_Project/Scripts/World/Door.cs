@@ -17,17 +17,33 @@ namespace Semblance.World
         private float currentAngle;
         private bool isOpen;
 
-        public override string Prompt => locked ? "Try door" : isOpen ? "Close door" : "Open door";
+        private KnockableDoor knock;
+
+        public bool IsOpen => isOpen;
+        public bool IsLocked => locked;
+
+        public override string Prompt =>
+            !isOpen && knock != null && knock.WantsKnock ? "Knock" :
+            locked ? "Try door" : isOpen ? "Close door" : "Open door";
+
+        public override bool CanInteract => base.CanInteract && (knock == null || !knock.Busy);
 
         private void Awake()
         {
             if (hinge == null)
                 hinge = transform.parent;
             closedRotation = hinge.localRotation;
+            knock = GetComponent<KnockableDoor>();
         }
 
         public override void Interact(PlayerInteractor interactor)
         {
+            // Somebody's home: you knock before you walk in. A knock nobody answered leaves the door yours to try.
+            if (!isOpen && knock != null && knock.WantsKnock)
+            {
+                knock.Knock(interactor);
+                return;
+            }
             if (locked)
             {
                 interactor.Hud.ShowMessage(lockedMessage, 4f);
@@ -35,6 +51,15 @@ namespace Semblance.World
             }
             isOpen = !isOpen;
             PlaySwing(isOpen);
+            if (isOpen && knock != null) knock.OnOpened(interactor);
+        }
+
+        /// <summary>Opened or shut by someone inside (a resident answering a knock).</summary>
+        public void ForceOpen(bool open)
+        {
+            if (isOpen == open) return;
+            isOpen = open;
+            PlaySwing(open);
         }
 
         private bool wasResidentOpen;

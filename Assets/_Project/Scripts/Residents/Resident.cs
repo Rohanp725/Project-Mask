@@ -113,10 +113,19 @@ namespace Semblance.Residents
         /// <summary>What the last greeting claimed (a stranger who knows your name), for the notebook.</summary>
         public string GreetingFact { get; private set; }
 
+        /// <summary>What they say when they open the door to you; used once, by the next conversation.</summary>
+        public string DoorstepGreeting { get; set; }
+
         public string GetGreeting()
         {
             var mods = Avatar.Modifications;
             GreetingFact = null;
+            if (!string.IsNullOrEmpty(DoorstepGreeting))
+            {
+                string doorstep = DoorstepGreeting;
+                DoorstepGreeting = null;
+                return Format(doorstep, "greeting");
+            }
             // The slip comes once it's comfortable with you: never on a first meeting, then on the third conversation,
             // or from Day 3 once you've met. Early on it's a slip you could miss, not a confession on the doorstep.
             var flags = Save.SaveSystem.Flags;

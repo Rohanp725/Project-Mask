@@ -27,6 +27,13 @@ namespace Semblance.Case
         /// <summary>Residents who carry run-only gossip (witnesses). Kept alive through Day 3 so alibis don't vanish.</summary>
         public readonly HashSet<Resident> Witnesses = new HashSet<Resident>();
         public Resident Defensive;
+        /// <summary>An innocent who won't come to the door this run, for a reason you see when you open it.</summary>
+        public Resident DoorHider;
+        public string DoorHiderReason;
+        /// <summary>Whether the mimic lets a knock go unanswered when it's alone at home.</summary>
+        public bool MimicHidesAtDoor;
+        /// <summary>Whether the mimic answers a night knock awake and dressed (it never sleeps), or plays the woken sleeper.</summary>
+        public bool MimicAwakeAtNight;
         public Resident NoticerDecoy;
         public Resident FoundersLiar;
         public Resident EchoSource;
@@ -128,6 +135,20 @@ namespace Semblance.Case
             // Confrontation: one innocent gets defensive and evasive; half the time the mimic answers like a person.
             Defensive = Pick(innocents);
             MimicConfrontsHumanly = rng.NextDouble() < 0.5;
+
+            // Doors: one innocent won't answer a knock for a reason of their own; the mimic sometimes won't either.
+            MimicHidesAtDoor = rng.NextDouble() < 0.5;
+            MimicAwakeAtNight = rng.NextDouble() < 0.5;
+            DoorHider = Pick(innocents.Where(r => !IsPastorOrRecluse(r) && r != Defensive));
+            string[] hidingReasons =
+            {
+                "{first} is at the kitchen table with a bottle and the bank's letter, and doesn't look up.",
+                "{first} is packing a suitcase on the bed. {first} sees me and keeps packing.",
+                "{first} is on {his} knees with a bucket, scrubbing at something on the floor. \"Dog,\" {he} says. There's no dog.",
+                "{first} is sitting in the dark with the radio on low and a photograph in {his} lap. \"Not today, Detective.\"",
+                "{first} has every drawer in the house open and is going through them, fast, like somebody looking for something before someone else finds it.",
+            };
+            DoorHiderReason = hidingReasons[rng.Next(hidingReasons.Length)]; // a template: filled in for whoever it turns out to be
 
             // Cold hands: about a quarter of innocents. The mimic, if it drew cold hands, sometimes makes an excuse too.
             foreach (var r in innocents)

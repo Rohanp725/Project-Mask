@@ -68,7 +68,7 @@ namespace Semblance.EditorTools
             public string AnchorKey;  // residents are placed relative to anchored buildings
         }
 
-        private enum InteriorKind { Empty, Diner, Store, Church, House, Motel, Barn }
+        private enum InteriorKind { Empty, Diner, Store, Church, House, Motel, Barn, MotelOffice }
 
         /// <summary>Building roots by key ("Diner", "House:Hollis", ...), used to place residents.</summary>
         public static readonly Dictionary<string, Transform> Anchors = new Dictionary<string, Transform>();
@@ -453,12 +453,20 @@ namespace Semblance.EditorTools
                 LitWindowChance = 0.15f, Interior = InteriorKind.Motel, AnchorKey = "Motel",
                 DoorPrompt = "Inspect room 6", DoorDescription = "Room 6. Your room. The key was already in the door when you arrived.",
             });
+            // The office: a small hut at the near end of the row with a picture window onto the lot, the way a real
+            // motel has one. The numbered doors are all guest rooms.
+            BuildRoadsideBuilding(root, rng, west: false, z: -217.2f, new BuildingDef
+            {
+                Name = "Motel Office", Sign = "OFFICE", SignMaterial = "SignNeon", Size = new Vector3(5.6f, 3.4f, 5f), Material = "Pink", Doors = 1,
+                LitWindowChance = 0f, Interior = InteriorKind.MotelOffice, AnchorKey = "MotelOffice",
+                DoorPrompt = "Read the card", DoorDescription = "A card taped inside the glass: RING FOR SERVICE. Under it, smaller, in pencil: nobody will come.",
+            });
             QueueLamp(root, "Motel Lamp", new Vector3(RoadHalfWidth + 0.7f, 0, -200f), Quaternion.Euler(0, -90f, 0), flicker: false);
             TreeExclusions.Add(Rect.MinMaxRect(-12f, -225f, 30f, -185f));
 
             // A signpost in the lot, so a new arrival knows which way town is.
             var post = Group("Town Signpost", root);
-            post.position = new Vector3(4.6f, 0, -219f);
+            post.position = new Vector3(3.6f, 0, -225.5f); // at the lot entrance, clear of the office window
             Box("Post", post, new Vector3(0, 1.1f, 0.1f), new Vector3(0.14f, 2.2f, 0.14f), "Wood");
             Box("Board", post, new Vector3(0, 2.0f, 0), new Vector3(2.2f, 0.75f, 0.08f), "SignWhite", collider: false);
             AddText(post, "SEMBLANCE  1/4 MI NORTH\n<size=70%>MAE'S DINER  /  GENERAL STORE  /  CHURCH</size>", new Vector3(0, 2.0f, -0.05f), new Vector2(2.05f, 0.6f), new Color(0.12f, 0.12f, 0.12f), Quaternion.identity);
@@ -1312,6 +1320,7 @@ namespace Semblance.EditorTools
                 case "Church": return "First Church of Semblance";
                 case "Motel": return "Pale Moon Motel";
             }
+            if (anchorKey == "MotelOffice") return "the motel office";
             if (anchorKey.StartsWith("House:")) return "the " + anchorKey.Substring(6) + " farmhouse";
             if (anchorKey.StartsWith("Barn:")) return "the " + anchorKey.Substring(5) + " barn";
             return anchorKey;
@@ -1408,6 +1417,18 @@ namespace Semblance.EditorTools
                 {
                     SetField(door, "locked", true);
                     SetField(door, "lockedMessage", def.LockedMessage ?? "It's locked.");
+                }
+                if (def.Interior == InteriorKind.House && def.AnchorKey != null && def.AnchorKey.StartsWith("House:"))
+                {
+                    // Somebody's home: you knock. Points just inside and outside the door for whoever answers.
+                    var inside = Group("Doorstep Inside", root);
+                    inside.localPosition = new Vector3(doorXs[i], 0.1f, frontWallZ - 1.3f);
+                    var outside = Group("Doorstep Outside", root);
+                    outside.localPosition = new Vector3(doorXs[i], 0.1f, frontWallZ + 1.4f);
+                    string lockedKnock = def.Locked
+                        ? "Nothing. Then, from inside, the sound of something heavy being pushed harder against the door."
+                        : null;
+                    panel.AddComponent<World.KnockableDoor>().Configure(def.AnchorKey.Substring(6), inside, outside, lockedKnock);
                 }
                 if (def.Interior == InteriorKind.Motel && i == 1)
                 {

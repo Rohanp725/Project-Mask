@@ -470,6 +470,7 @@ namespace Semblance.EditorTools
             {
                 InteriorKind.House => "Wallpaper",
                 InteriorKind.Motel => "MotelPaper",
+                InteriorKind.MotelOffice => "MotelPaper",
                 InteriorKind.Diner => "DinerWall",
                 InteriorKind.Store => "StoreWall",
                 _ => null,
@@ -514,6 +515,7 @@ namespace Semblance.EditorTools
                 InteriorKind.Church => AudioReverbPreset.Auditorium,
                 InteriorKind.Barn => AudioReverbPreset.Hangar,
                 InteriorKind.Motel => AudioReverbPreset.Room,
+                InteriorKind.MotelOffice => AudioReverbPreset.Room,
                 InteriorKind.Diner => AudioReverbPreset.Livingroom,
                 InteriorKind.Store => AudioReverbPreset.Room,
                 InteriorKind.House => AudioReverbPreset.Livingroom,
@@ -546,6 +548,7 @@ namespace Semblance.EditorTools
                 case InteriorKind.House: FurnishHouse(root, def, inX, inZ, ceiling, anyLit, rng); break;
                 case InteriorKind.Barn: FurnishBarn(root, inX, inZ, ceiling, rng); break;
                 case InteriorKind.Motel: FurnishMotel(root, def, doorXs, inX, inZ, ceiling); break;
+                case InteriorKind.MotelOffice: FurnishMotelOffice(root, inX, inZ, ceiling); break;
             }
         }
 
@@ -1061,11 +1064,6 @@ namespace Semblance.EditorTools
                 }
 
                 bool yours = i == doorXs.Count - 1;
-                if (roomNumber == 2)
-                {
-                    FurnishMotelOffice(root, roomX, inZ, ceiling);
-                    continue;
-                }
 
                 // A standard room: bed against the back wall, nightstand, a dresser with the television on it,
                 // a wardrobe, a chair by the window.
@@ -1120,6 +1118,15 @@ namespace Semblance.EditorTools
                             "The bedspread is perfectly smooth, but there's a long, deep dent in the mattress under it, the shape of someone lying flat on their back with their arms at their sides. The dust on it is months old. Whatever lay here didn't toss or turn. It lay still, all summer, with its ear to the wall.", null, "Look at the bed", 6f);
                         break;
                     }
+                    case 2:
+                    {
+                        // Room 2: made up and never used. A stack of towels nobody has unfolded, the chair turned to the wall.
+                        for (int t = 0; t < 4; t++)
+                            Part("Towel", root, new Vector3(roomX - 1.38f, FloorY + 0.86f + t * 0.05f, 0.2f), new Vector3(0.34f, 0.045f, 0.24f), "PlainWhite");
+                        var card = Part("Card", root, new Vector3(roomX + 0.7f, FloorY + 0.6f, -inZ + 0.33f), new Vector3(0.12f, 0.004f, 0.08f), "Paper");
+                        Inspect(card, "Read the card", "A card on the nightstand in the motel's handwriting: WELCOME TO THE PALE MOON. The date line has been filled in and crossed out eleven times. Every date is a Sunday.", new Vector3(0.3f, 0.3f, 0.3f));
+                        break;
+                    }
                     case 4:
                     {
                         SoundEmitter(root, new Vector3(roomX - 1.2f, 1.2f, 0.2f), "static_loop", 0.06f, 6f);
@@ -1157,9 +1164,21 @@ namespace Semblance.EditorTools
             Part("Scratch", root, new Vector3(inX - 0.036f, 1.6f, -1.6f), new Vector3(0.003f, 0.008f, 0.66f), "Smear").transform.localRotation = Quaternion.Euler(2f, 0, 0);
         }
 
-        /// <summary>Room 2 is the motel office. Nobody works here. Somebody keeps the books anyway.</summary>
-        private static void FurnishMotelOffice(Transform root, float roomX, float inZ, float ceiling)
+        /// <summary>The motel office. Nobody works here. Somebody keeps the books anyway.</summary>
+        private static void FurnishMotelOffice(Transform root, float inX, float inZ, float ceiling)
         {
+            const float roomX = 0f;
+            // The picture window beside the door, through the front wall, so the desk can be seen from the lot.
+            float winX = -1.7f;
+            Part("Office Window", root, new Vector3(winX, 1.45f, inZ + 0.1f), new Vector3(1.7f, 1.3f, 0.34f), "WindowLit");
+            Part("Window Frame", root, new Vector3(winX, 2.13f, inZ + 0.1f), new Vector3(1.8f, 0.07f, 0.4f), "Wood");
+            Part("Window Frame", root, new Vector3(winX, 0.77f, inZ + 0.1f), new Vector3(1.8f, 0.07f, 0.4f), "Wood");
+            foreach (var fx in new[] { -0.9f, 0.9f })
+                Part("Window Frame", root, new Vector3(winX + fx, 1.45f, inZ + 0.1f), new Vector3(0.07f, 1.4f, 0.4f), "Wood");
+            Part("Window Sill", root, new Vector3(winX, 0.74f, inZ + 0.3f), new Vector3(1.9f, 0.06f, 0.2f), "Wood");
+            Part("Blind", root, new Vector3(winX, 1.95f, inZ - 0.14f), new Vector3(1.65f, 0.35f, 0.02f), "PlainCream");
+            var vacancy = Part("Vacancy Sign", root, new Vector3(winX - 0.4f, 1.1f, inZ - 0.12f), new Vector3(0.7f, 0.22f, 0.03f), "SignNeon");
+            AddText(root, "VACANCY", new Vector3(winX - 0.4f, 1.1f, inZ - 0.14f), new Vector2(0.65f, 0.2f), new Color(0.95f, 0.9f, 0.8f), Quaternion.Euler(0, 180f, 0), glow: true, wear: 0.03f);
             var desk = Table("Front Desk", root, new Vector3(roomX, 0, 0.3f), 0f, 1.8f, 0.7f, "Wood", 1.0f);
             Part("Desk Front", desk, new Vector3(0, FloorY + 0.5f, 0.33f), new Vector3(1.8f, 0.95f, 0.04f), "Door");
             var register = Part("Guest Register", root, new Vector3(roomX - 0.3f, FloorY + 1.016f, 0.3f), new Vector3(0.45f, 0.03f, 0.32f), "SignWhite");
@@ -1187,11 +1206,15 @@ namespace Semblance.EditorTools
             }
             Inspect(keys, "Look at the key board", "Hooks for Rooms 2 to 6. Every key is hanging up except yours and Room 3's. Under Room 3's empty hook, a paper tag: DO NOT DISTURB. HE IS STILL LISTENING.", new Vector3(1f, 0.7f, 0.3f));
             Chair(root, new Vector3(roomX, 0, -0.6f), 0f);
-            Crate(root, new Vector3(roomX - 1.2f, 0, -inZ + 0.5f), 0f, 0.55f);
-            var mattress = Piece("Spare Mattresses", root, new Vector3(roomX + 0.9f, 0, -inZ + 1.2f), 90f, new Vector3(1.9f, 0.6f, 1.3f), FloorY);
-            for (int m = 0; m < 3; m++)
-                Part("Mattress", mattress, new Vector3(0, FloorY + 0.1f + m * 0.19f, 0), new Vector3(1.9f - m * 0.04f, 0.18f, 1.3f), "SignWhite");
-            CeilingFixture(root, new Vector3(roomX, ceiling - 0.6f, 0), ceiling, false, true);
+            Crate(root, new Vector3(-inX + 0.5f, 0, -inZ + 0.5f), 0f, 0.55f);
+            // A rack of brochures nobody takes, a calendar still on June, a coffee ring on the desk.
+            Part("Brochure Rack", root, new Vector3(inX - 0.2f, 1.2f, 0.4f), new Vector3(0.05f, 0.5f, 0.5f), "Wood");
+            for (int b = 0; b < 3; b++)
+                Part("Brochure", root, new Vector3(inX - 0.24f, 1.03f + b * 0.17f, 0.25f + (b % 2) * 0.25f), new Vector3(0.012f, 0.14f, 0.1f), b == 1 ? "PlainBlue" : "PlainMustard");
+            var calendar = Part("Calendar", root, new Vector3(1.4f, 1.75f, -inZ + 0.05f), new Vector3(0.3f, 0.42f, 0.01f), "Paper");
+            Inspect(calendar, "Look at the calendar", "A feed-store calendar, still on June. The 2nd is circled. Nothing's been written on it since.", new Vector3(0.4f, 0.5f, 0.3f));
+            Round("Coffee Ring", root, new Vector3(roomX + 0.6f, FloorY + 1.012f, 0.15f), 0.09f, 0.002f, "Coffee");
+            InteriorLight(root, new Vector3(roomX, ceiling - 0.6f, 0), 6f, 2.2f, flicker: true, ceiling: ceiling, pendant: true);
         }
 
         /// <summary>Wraps a decorative part so it can carry an EvidenceItem (which needs a trigger collider).</summary>
