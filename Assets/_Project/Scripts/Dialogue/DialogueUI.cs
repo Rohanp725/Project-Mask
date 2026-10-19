@@ -319,11 +319,39 @@ namespace Semblance.Dialogue
                 var g = notebook.Record(NoteKind.Gossip, subject, resident.DisplayName + " says", text, resident.DisplayName, $"gossip|{resident.DisplayName}|{subject}");
                 if (g.fact == null) g.fact = topic.fact;
                 if (g.explains == null) g.explains = topic.explains;
+                RecordFamilyCopies(notebook, resident, text, subject);
             }
             else
             {
                 var e = notebook.Record(NoteKind.Statement, resident.DisplayName, topic.title, text, resident.DisplayName, $"topic|{resident.DisplayName}|{topic.title}|{Core.StableHash.Of(text)}");
                 if (e.fact == null) e.fact = topic.fact;
+                RecordFamilyCopies(notebook, resident, text, resident.DisplayName);
+            }
+        }
+
+        /// <summary>
+        /// "Like all the Thornes", "the Marshes always have": a line about a whole family goes on every member's
+        /// page, each copy checked against that member's own details (so a Thorne with the ring on the wrong hand
+        /// contradicts what was said about the Thornes). "Not like the Thornes" is about the other person, not them.
+        /// </summary>
+        private void RecordFamilyCopies(Notebook notebook, Resident speaker, string text, string alreadyUnder)
+        {
+            string lower = text.ToLowerInvariant();
+            foreach (var family in Resident.All.Where(r => r != null).Select(r => r.LastName).Distinct().ToList())
+            {
+                string plural = family.ToLowerInvariant() + (family.EndsWith("s") || family.EndsWith("sh") || family.EndsWith("ch") ? "es" : "s");
+                int at = lower.IndexOf("the " + plural, System.StringComparison.Ordinal);
+                if (at < 0) at = lower.IndexOf(family.ToLowerInvariant() + " family", System.StringComparison.Ordinal);
+                if (at < 0) continue;
+                string before = lower.Substring(Mathf.Max(0, at - 12), at - Mathf.Max(0, at - 12));
+                if (before.Contains("not like") || before.Contains("unlike") || before.Contains("except")) continue;
+                foreach (var member in Resident.All)
+                {
+                    if (member == null || member.LastName != family || member == speaker || member.DisplayName == alreadyUnder) continue;
+                    string key = $"family|{speaker.DisplayName}|{family}|{member.DisplayName}|{Core.StableHash.Of(text)}";
+                    var copy = notebook.Record(NoteKind.Gossip, member.DisplayName, $"{speaker.DisplayName} says, of the {family}s", text, speaker.DisplayName, key);
+                    if (copy.fact == null) copy.fact = NoteFacts.Gossip(member, text);
+                }
             }
         }
 

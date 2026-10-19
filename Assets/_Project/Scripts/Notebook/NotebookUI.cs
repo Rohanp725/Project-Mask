@@ -40,6 +40,7 @@ namespace Semblance.Notes
         private GameObject chooser;
 
         public bool IsOpen => root.activeSelf;
+        private bool froze;
 
         private void Awake()
         {
@@ -69,6 +70,8 @@ namespace Semblance.Notes
             if (root.GetComponent<UI.SelectFirstOnEnable>() == null) root.AddComponent<UI.SelectFirstOnEnable>().enabled = true;
             else UI.SelectFirstOnEnable.Select(root);
             InputLock.Push(this, Close);
+            froze = Time.timeScale != 0f; // the town waits while you read (unless something else already stopped it)
+            Time.timeScale = 0f;
             Audio.GameAudio.Play("page_flip", 0.5f);
             Refresh();
         }
@@ -93,6 +96,7 @@ namespace Semblance.Notes
             GameInput.TextEntry = false;
             root.SetActive(false);
             InputLock.Pop(this);
+            if (froze) { froze = false; Time.timeScale = 1f; }
         }
 
         private void LateUpdate()
