@@ -441,27 +441,47 @@ namespace Semblance.EditorTools
             SetField(emitter, "maxDistance", maxDistance);
         }
 
+        /// <summary>
+        /// A wardrobe you can climb into: thin panels, so the inside is the back of the outside, and louvred doors
+        /// you look out through from within. The collider is the whole box.
+        /// </summary>
         private static void Wardrobe(Transform root, Vector3 localBase, float yaw)
         {
-            var w = Box("Wardrobe", root, localBase + new Vector3(0, 1.05f, 0), new Vector3(0.65f, 2.1f, 1.0f), "Wood");
-            w.transform.localRotation = Quaternion.Euler(0, yaw + 90f, 0);
-            // The inside of the box, faces pointing inward: seen only from within, so no looking out through the sides.
-            var lining = MeshPart("Wardrobe Lining", root, boxInsideMesh, localBase + new Vector3(0, 1.05f, 0), new Vector3(0.62f, 2.06f, 0.96f), "Wood");
-            lining.transform.localRotation = Quaternion.Euler(0, yaw + 90f, 0);
-            // Doors, handles and a cornice, parented to the wardrobe so they follow its rotation.
-            var face = Group("Wardrobe Face", root);
-            face.localPosition = localBase;
-            face.localRotation = Quaternion.Euler(0, yaw, 0);
+            var w = Piece("Wardrobe", root, localBase, yaw, new Vector3(1.0f, 2.1f, 0.65f));
+            Part("Back", w, new Vector3(0, 1.05f, -0.319f), new Vector3(1.0f, 2.1f, 0.012f), "Wood");
+            foreach (var x in new[] { -0.494f, 0.494f })
+                Part("Side", w, new Vector3(x, 1.05f, 0), new Vector3(0.012f, 2.1f, 0.65f), "Wood");
+            Part("Top", w, new Vector3(0, 2.094f, 0), new Vector3(1.0f, 0.012f, 0.65f), "Wood");
+            Part("Bottom", w, new Vector3(0, 0.08f, 0), new Vector3(1.0f, 0.012f, 0.65f), "Wood");
+            Part("Plinth", w, new Vector3(0, 0.04f, 0.3f), new Vector3(1.0f, 0.08f, 0.05f), "Wood");
+            Part("Rail", w, new Vector3(0, 1.85f, 0), new Vector3(0.9f, 0.02f, 0.02f), "Brass");
             foreach (var x in new[] { -0.245f, 0.245f })
             {
-                Part("Door", face, new Vector3(x, 1.05f, 0.33f), new Vector3(0.47f, 1.9f, 0.015f), "Door");
-                Part("Handle", face, new Vector3(x * 0.15f, 1.1f, 0.345f), new Vector3(0.025f, 0.14f, 0.025f), "Mustard");
+                LouvredDoor(w, new Vector3(x, 1.085f, 0.325f), 0.49f, 2.0f, "Door", 1.2f, 1.85f);
+                Part("Handle", w, new Vector3(x * 0.15f, 1.1f, 0.34f), new Vector3(0.025f, 0.14f, 0.025f), "Mustard");
             }
-            Part("Cornice", face, new Vector3(0, 2.13f, 0), new Vector3(1.06f, 0.06f, 0.7f), "Wood");
+            Part("Cornice", w, new Vector3(0, 2.13f, 0), new Vector3(1.06f, 0.06f, 0.7f), "Wood");
             var inside = Group("Inside", root);
             inside.localPosition = localBase + new Vector3(0, 0.1f, 0);
             inside.localRotation = Quaternion.Euler(0, yaw, 0);
-            w.AddComponent<Events.HidingSpot>().Configure(inside);
+            w.gameObject.AddComponent<Events.HidingSpot>().Configure(inside);
+        }
+
+        /// <summary>
+        /// A door panel with a louvre across the middle: solid below and above, and between them a run of angled
+        /// slats with the room showing through the gaps. Hiding in a wardrobe or a locker, this is what you look
+        /// out through, and what whatever's outside is seen through. Local +z is the outside.
+        /// </summary>
+        private static void LouvredDoor(Transform face, Vector3 centre, float width, float height, string material, float slatFrom, float slatTo)
+        {
+            float bottom = centre.y - height * 0.5f, top = centre.y + height * 0.5f;
+            Part("Door Lower", face, new Vector3(centre.x, (bottom + slatFrom) * 0.5f, centre.z), new Vector3(width, slatFrom - bottom, 0.015f), material);
+            Part("Door Upper", face, new Vector3(centre.x, (slatTo + top) * 0.5f, centre.z), new Vector3(width, top - slatTo, 0.015f), material);
+            foreach (var s in new[] { -1f, 1f })
+                Part("Stile", face, new Vector3(centre.x + s * (width * 0.5f - 0.03f), (slatFrom + slatTo) * 0.5f, centre.z), new Vector3(0.06f, slatTo - slatFrom, 0.015f), material);
+            for (float y = slatFrom + 0.03f; y < slatTo - 0.015f; y += 0.06f)
+                Part("Slat", face, new Vector3(centre.x, y, centre.z), new Vector3(width - 0.12f, 0.012f, 0.045f), material)
+                    .transform.localRotation = Quaternion.Euler(30f, 0, 0); // outer edge down: you look out between them
         }
 
         // ---------------------------------------------------------------- Walls

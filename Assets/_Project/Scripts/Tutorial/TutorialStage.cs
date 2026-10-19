@@ -31,6 +31,7 @@ namespace Semblance.Tutorial
         [SerializeField] private TutorialDog dog;
         [SerializeField] private TutorialBreaker breaker;
         [SerializeField] private World.Door closetDoor;
+        [SerializeField] private World.Door boilerDoor;
         [SerializeField] private Renderer furnaceGlow;
 
         private Transform player;
@@ -132,6 +133,9 @@ namespace Semblance.Tutorial
         private static bool Asked(string displayName, string key) => SaveSystem.Flags.Contains($"asked|{displayName}|{key}");
 
         private bool Near(string anchor, float radius) => Vector3.Distance(player.position, A(anchor).position) < radius;
+
+        /// <summary>In the long first aisle of the archive, along the north wall.</summary>
+        private bool InFirstAisle() => player.position.y < -2.6f && player.position.z > -3.7f;
 
         private bool LookingAt(Vector3 point, float minDot = 0.5f)
         {
@@ -255,7 +259,7 @@ namespace Semblance.Tutorial
         /// <summary>Pipes knocking, a carton shifting, claws two rows over: the basement talking to itself.</summary>
         private IEnumerator BasementNoises()
         {
-            var points = new[] { A("DogEast").position, A("DogWest").position, A("LockerFront").position + Vector3.forward * -3f, A("ChaseStart").position + Vector3.forward * 3f };
+            var points = new[] { A("DogEast").position, A("DogWest").position, A("Thud").position, A("ChaseFrom").position };
             while (lightsOut)
             {
                 yield return new WaitForSeconds(UnityEngine.Random.Range(7f, 14f));
@@ -372,32 +376,34 @@ namespace Semblance.Tutorial
             drone = GameAudio.Loop("drone_deep_loop", null, 0f, bus: AudioBus.Ambience);
             yield return new WaitUntil(() => player.position.y < -2.6f);
             StartCoroutine(FadeAudio(drone, 0.35f, 6f));
-            StartCoroutine(BasementNoises());
-            Hint("The archive. The boiler room is at the far end. Half the aisles are stacked shut with cartons: where you're blocked, go round.");
+            Hint("The archive. The boiler room is on the far side of the stacks; there's a plan of them pinned up by the door. Where an aisle's stacked shut with cartons, go round.");
 
-            // 7. The central aisle. Something falls, something walks, and you have a few seconds to read the room.
-            yield return new WaitUntil(() => Near("ArchiveEntry", 2.5f) || player.position.x > -6.5f);
-            yield return new WaitForSeconds(2.5f);
-            GameAudio.PlayAt("thud", A("DogEast").position + Vector3.up * 0.5f, 0.9f, 0.8f, 40f);
-            yield return new WaitForSeconds(0.8f);
+            // 7. The lobby. A carton falls in the dead end to the south: nothing there but the carton. Then claws,
+            //    from the long aisle to the north, which is the way you have to go. In that aisle the batteries
+            //    give out, the eyes show at the far end, and the locker's alcove is on your right under the red lamp.
+            yield return new WaitUntil(() => Near("ArchiveEntry", 2.2f));
+            yield return new WaitForSeconds(2.2f);
+            GameAudio.PlayAt("thud", A("Thud").position + Vector3.up * 0.5f, 0.9f, 0.8f, 40f);
+            Nerve.Instance?.Shock(3f);
+            StartCoroutine(BasementNoises());
+            yield return new WaitForSeconds(4f);
             GameAudio.PlayAt("claws_loop", A("DogEast").position + Vector3.up * 0.3f, 0.5f, 1f, 30f);
-            Nerve.Instance?.Shock(4f);
-            yield return new WaitUntil(() => player.position.x > -4.6f);
-            Hint("Something's down here with you. Keep your light moving, and keep moving. The red lamp ahead on the right is a locker.");
-            yield return new WaitForSeconds(2.5f);
-            yield return new WaitUntil(() => player.position.x > -2.6f);
+            Nerve.Instance?.Shock(3f);
+            yield return new WaitUntil(() => InFirstAisle() && player.position.x > -6.9f);
+            Hint("Something's down here with you. Keep your light moving, and keep moving. There's an alcove on the right under a red lamp: a locker.");
+            yield return new WaitUntil(() => InFirstAisle() && player.position.x > -5.9f);
             Flashlight.Instance?.Kill(0.5f);
             GameAudio.Play("flashlight_click", 0.6f, 0.8f);
             yield return new WaitForSeconds(0.9f);
             dog.Appear(A("DogEast").position, Vector3.left);
-            dog.WalkTo(A("LockerFront").position, 0.75f);
+            dog.WalkTo(A("LockerFront").position, 0.55f);
             GameAudio.Play("sting_soft", 0.7f);
             heart = GameAudio.Loop("heartbeat", null, 0.5f, bus: AudioBus.Ambience);
             Nerve.Instance?.Shock(9f);
             Flashlight.Instance?.Kill(12f);
-            Hint("<b>The batteries are going, and it's coming down the aisle.</b>\n<size=80%>Take the cross aisle on your right. The locker under the red lamp: press {interact} to get inside.</size>");
+            Hint("<b>The batteries are going, and it's coming down the aisle.</b>\n<size=80%>The alcove under the red lamp, on your right. Press {interact} on the locker to get inside.</size>");
             float wait = 0f;
-            while (!dog.Arrived && wait < 20f) { wait += Time.deltaTime; yield return null; }
+            while (!dog.Arrived && wait < 22f) { wait += Time.deltaTime; yield return null; }
             dog.Stay();
             bool hidden = HidingSpot.PlayerHidden;
             if (hidden)
@@ -423,28 +429,30 @@ namespace Semblance.Tutorial
             StartCoroutine(FadeAudio(heart, 0f, 3f));
             if (HidingSpot.PlayerHidden)
             {
-                Hint("It's gone. Press {interact} to climb out.");
+                Hint("It's gone, back the way you came. Press {interact} to climb out.");
                 yield return new WaitUntil(() => !HidingSpot.PlayerHidden);
             }
-            Hint("Keep going: along the next aisle to the far end, then north to the boiler room. The breaker's inside.");
+            Hint("Keep going: east to the end of this aisle, then right. The red lamps mark the turns, and the EXIT sign is over the boiler room door.");
 
-            // 8. It comes back, behind you, and you never get the light on it. It stops at the boiler room door.
-            yield return new WaitUntil(() => (player.position.x > A("ChaseStart").position.x && player.position.z < -6.5f) || breakerPulled);
+            // 8. It comes back, behind you, as you turn the top of the far block, and you never get the light on it.
+            //    The run: down the long corridor beside the cage, along the end wall, up to the EXIT sign. It stops
+            //    at the door, because it can't work a handle.
+            yield return new WaitUntil(() => (player.position.x > A("ChaseStart").position.x - 0.6f && player.position.z > A("ChaseStart").position.z - 0.6f) || breakerPulled);
             if (!breakerPulled)
             {
-                dog.Appear(A("ChaseFrom").position, Vector3.right);
+                dog.Appear(A("ChaseFrom").position, Vector3.forward);
                 dog.Follow(4.5f);
                 GameAudio.Play("sting_soft", 0.8f, 0.8f);
                 chase = GameAudio.Loop("chase_loop", null, 0.35f, bus: AudioBus.Ambience);
                 if (heart != null) StartCoroutine(FadeAudio(heart, 0.6f, 2f));
                 Nerve.ExtraDistress = 0.75f;
                 Nerve.Instance?.Shock(12f);
-                Hint("<b>It's behind you.</b> Don't turn around. {sprint} to run: end of the aisle, north, through the door. Reset the breaker.");
+                Hint("<b>It's behind you.</b> Don't turn around. {sprint} to run: down the long aisle past the cage, along the end wall, up to the EXIT sign. Reset the breaker.");
                 StartCoroutine(KeepItDark(() => breakerPulled));
                 while (!breakerPulled)
                 {
-                    // It won't cross the threshold. Whatever it is waits in the dark outside.
-                    if (dog.transform.position.x > A("BoilerDoor").position.x - 0.4f) dog.Stay();
+                    var d = dog.transform.position;
+                    if (d.x > A("BoilerDoor").position.x - 0.7f && d.z > A("BoilerDoor").position.z - 0.3f) dog.Stay();
                     yield return null;
                 }
             }
@@ -457,7 +465,15 @@ namespace Semblance.Tutorial
             Nerve.ExtraDistress = 0f;
             Hint(null);
             yield return Restore();
-            if (!dog.gameObject.activeSelf) dog.Appear(A("BoilerDoor").position, Vector3.right);
+            if (!dog.gameObject.activeSelf) dog.Appear(A("BoilerDoor").position, Vector3.forward);
+            // If the detective shut the door on her, she scratches at it and it opens from the other side: a nose first.
+            if (boilerDoor != null && !boilerDoor.IsOpen)
+            {
+                GameAudio.PlayAt("claws_loop", boilerDoor.transform.position + Vector3.up * 0.3f, 0.6f, 1f, 20f);
+                yield return new WaitForSeconds(1.3f);
+                boilerDoor.ForceOpen(true);
+                yield return new WaitForSeconds(0.7f);
+            }
             dog.WalkTo(A("DogSit").position);
             wait = 0f;
             while (!dog.Arrived && wait < 7f) { wait += Time.deltaTime; yield return null; }

@@ -154,6 +154,7 @@ namespace Semblance.EditorTools
 
             EnsureLayer("NoReflection");
             EnsureLayer("MirrorGhost");
+            EnsureLayer("PlayerBody");
             var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
 
             var environment = new GameObject("Environment").transform;
@@ -1618,7 +1619,7 @@ namespace Semblance.EditorTools
             return systems;
         }
 
-        private static Camera BuildPlayer(Vector3 position)
+        private static Camera BuildPlayer(Vector3 position, bool hat = true)
         {
             var player = new GameObject("Player");
             player.transform.position = position;
@@ -1642,6 +1643,8 @@ namespace Semblance.EditorTools
             camera.fieldOfView = 70f;
             int ghostLayer = LayerMask.NameToLayer("MirrorGhost");
             if (ghostLayer >= 0) camera.cullingMask = ~(1 << ghostLayer);
+            int bodyLayer = LayerMask.NameToLayer("PlayerBody");
+            if (bodyLayer >= 0) camera.cullingMask &= ~(1 << bodyLayer); // his own body is for mirrors, not for him
             camera.nearClipPlane = 0.05f;
             cameraGO.AddComponent<AudioListener>();
             var cameraData = cameraGO.AddComponent<UniversalAdditionalCameraData>();
@@ -1651,6 +1654,7 @@ namespace Semblance.EditorTools
 
             var fps = player.AddComponent<FirstPersonController>();
             SetField(fps, "cameraRoot", cameraRoot);
+            BuildBody(player.transform, hat);
 
             var hudGO = new GameObject("HUD");
             hudGO.transform.SetParent(player.transform, false);
@@ -1667,6 +1671,54 @@ namespace Semblance.EditorTools
             SetField(interactor, "hud", hud);
             SetField(interactor, "controller", fps);
             return camera;
+        }
+
+        /// <summary>
+        /// The detective, for mirrors and for the one shot of him from outside the window: a long coat, hands, a hat,
+        /// and a face with nothing on it you could pick out of a crowd, because he's whoever's playing. It lives on
+        /// the PlayerBody layer, which his own camera culls and the mirror cameras don't.
+        /// </summary>
+        private static void BuildBody(Transform player, bool hat)
+        {
+            int layer = LayerMask.NameToLayer("PlayerBody");
+            var body = Group("Body", player);
+            body.gameObject.AddComponent<PlayerBody>();
+            foreach (var x in new[] { -0.1f, 0.1f })
+            {
+                Part("Shoe", body, new Vector3(x, 0.05f, 0.04f), new Vector3(0.12f, 0.08f, 0.28f), "HideBlack");
+                Part("Leg", body, new Vector3(x, 0.5f, 0), new Vector3(0.14f, 0.85f, 0.16f), "Trouser");
+            }
+            // The coat: a torso, a skirt that flares below the belt, lapels, a collar turned up against the weather.
+            var coat = Group("Coat", body);
+            Part("Skirt", coat, new Vector3(0, 0.72f, 0), new Vector3(0.5f, 0.5f, 0.32f), "Coat");
+            Part("Torso", coat, new Vector3(0, 1.22f, 0), new Vector3(0.46f, 0.54f, 0.28f), "Coat");
+            Part("Belt", coat, new Vector3(0, 0.98f, 0), new Vector3(0.48f, 0.05f, 0.3f), "HideBlack");
+            Part("Buckle", coat, new Vector3(0, 0.98f, 0.155f), new Vector3(0.06f, 0.05f, 0.01f), "Brass");
+            foreach (var x in new[] { -0.09f, 0.09f })
+                Part("Lapel", coat, new Vector3(x, 1.32f, 0.145f), new Vector3(0.09f, 0.3f, 0.015f), "CoatDark").transform.localRotation = Quaternion.Euler(0, 0, x < 0 ? 18f : -18f);
+            Part("Collar", coat, new Vector3(0, 1.53f, -0.02f), new Vector3(0.3f, 0.1f, 0.26f), "CoatDark");
+            foreach (var x in new[] { -0.29f, 0.29f })
+            {
+                var arm = Group(x < 0 ? "Arm L" : "Arm R", coat);
+                arm.localPosition = new Vector3(x, 1.45f, 0);
+                Part("Sleeve", arm, new Vector3(0, -0.3f, 0), new Vector3(0.13f, 0.62f, 0.15f), "Coat");
+                Part("Cuff", arm, new Vector3(0, -0.6f, 0), new Vector3(0.135f, 0.04f, 0.155f), "CoatDark");
+                Part("Hand", arm, new Vector3(0, -0.7f, 0.01f), new Vector3(0.09f, 0.16f, 0.06f), "Smudge");
+            }
+            // The head sits where the camera is. Nothing on it: the shape of a face, out of focus for good.
+            var head = Group("Head", body);
+            head.localPosition = new Vector3(0, 1.6f, 0);
+            Part("Neck", head, new Vector3(0, -0.09f, 0), new Vector3(0.11f, 0.1f, 0.11f), "Smudge");
+            Part("Skull", head, new Vector3(0, 0.02f, 0), new Vector3(0.2f, 0.26f, 0.22f), "Smudge");
+            Part("Jaw", head, new Vector3(0, -0.08f, 0.02f), new Vector3(0.17f, 0.08f, 0.19f), "Smudge");
+            if (hat)
+            {
+                Part("Hat Crown", head, new Vector3(0, 0.21f, 0), new Vector3(0.22f, 0.13f, 0.25f), "Felt");
+                Part("Hat Band", head, new Vector3(0, 0.165f, 0), new Vector3(0.23f, 0.03f, 0.26f), "HideBlack");
+                Part("Hat Brim", head, new Vector3(0, 0.15f, 0.01f), new Vector3(0.4f, 0.015f, 0.44f), "Felt").transform.localRotation = Quaternion.Euler(4f, 0, 0);
+            }
+            foreach (var t in body.GetComponentsInChildren<Transform>(true)) t.gameObject.layer = layer;
+            foreach (var r in body.GetComponentsInChildren<Renderer>(true)) r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
         }
 
         private static void BuildSkyAndAtmosphere(Camera playerCamera)
@@ -1744,6 +1796,11 @@ namespace Semblance.EditorTools
             Mat("Photo", 0.42f, 0.36f, 0.27f);
             Mat("Leather", 0.3f, 0.19f, 0.11f);
             Mat("Suit", 0.27f, 0.2f, 0.15f);
+            // The detective, as mirrors see him: the coat, the hat, and the parts of him that are nobody in particular.
+            Mat("Coat", 0.3f, 0.26f, 0.2f);
+            Mat("CoatDark", 0.2f, 0.17f, 0.13f);
+            Mat("Trouser", 0.17f, 0.17f, 0.18f);
+            Mat("Smudge", 0.46f, 0.4f, 0.34f);
             // Plain (untextured) paints for small props: siding and plank textures belong on buildings, not tins and toys.
             Mat("PlainTeal", 0.33f, 0.5f, 0.48f);
             Mat("PlainWhite", 0.72f, 0.72f, 0.68f);
@@ -1786,7 +1843,7 @@ namespace Semblance.EditorTools
             { "Sage", ("siding", 0.28f) }, { "Blue", ("siding", 0.28f) }, { "Cream", ("siding", 0.28f) }, { "BarnRed", ("planks_vertical", 0.5f) },
             { "Roof", ("shingles", 0.4f) }, { "Door", ("planks_vertical", 0.9f) }, { "Wood", ("planks", 0.9f) }, { "Floor", ("planks", 0.7f) },
             { "Ceiling", ("planks", 0.5f) }, { "Bark", ("bark", 1.2f) }, { "Pine", ("needles", 0.8f) }, { "Corn", ("stalks", 1.5f) },
-            { "CornLeaf", ("stalks", 1.5f) }, { "Hay", ("hay", 1f) }, { "Fabric", ("fabric", 2f) }, { "Rug", ("fabric", 1.5f) }, { "Curtain", ("fabric", 3f) }, { "CurtainRose", ("fabric", 3f) }, { "CurtainMoss", ("fabric", 3f) }, { "CurtainBlue", ("fabric", 3f) },
+            { "CornLeaf", ("stalks", 1.5f) }, { "Hay", ("hay", 1f) }, { "Fabric", ("fabric", 2f) }, { "Coat", ("fabric", 2f) }, { "Smudge", ("fabric", 6f) }, { "Rug", ("fabric", 1.5f) }, { "Curtain", ("fabric", 3f) }, { "CurtainRose", ("fabric", 3f) }, { "CurtainMoss", ("fabric", 3f) }, { "CurtainBlue", ("fabric", 3f) },
         };
 
         private static void Mat(string name, float r, float g, float b, Color? emission = null, float fogPierce = 0f, float depthOffset = 0f)

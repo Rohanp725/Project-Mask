@@ -60,6 +60,9 @@ namespace Semblance.Rendering
 
         private void Update()
         {
+            // A camera that isn't rendering has nothing to show: hide its output rather than a stale frame
+            // (the tutorial hands the screen to a second camera for its way in).
+            if (outputImage != null && outputImage.enabled != sourceCamera.enabled) outputImage.enabled = sourceCamera.enabled;
             verticalResolution = Core.GameSettings.PixelHeight;
             if (Screen.width != lastScreenWidth || Screen.height != lastScreenHeight || renderTexture == null || renderTexture.height != Mathf.Max(64, verticalResolution))
                 RebuildTexture();
@@ -89,7 +92,7 @@ namespace Semblance.Rendering
             canvasGO.transform.SetParent(outputRoot.transform, false);
             var canvas = canvasGO.GetComponent<Canvas>();
             canvas.renderMode = RenderMode.ScreenSpaceOverlay;
-            canvas.sortingOrder = -100;
+            canvas.sortingOrder = -100 + Mathf.RoundToInt(sourceCamera.depth);
 
             outputImage = new GameObject("PS1 Image", typeof(RawImage)).GetComponent<RawImage>();
             outputImage.transform.SetParent(canvasGO.transform, false);
