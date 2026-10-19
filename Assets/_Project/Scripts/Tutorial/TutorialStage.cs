@@ -78,6 +78,16 @@ namespace Semblance.Tutorial
             }
             foreach (var l in emergencyLights) if (l != null) l.enabled = false;
             if (dog != null) dog.Vanish();
+            var alma = Resident.FindByName("Alma Reyes");
+            if (alma != null && alma.TryGetComponent<ResidentBehaviour>(out var ab)) ab.ForceSeated = true; // behind her desk, on the phones
+            // Teo waits in the closet with the door held shut until the lights are back: no agent to pull him out.
+            var teoStart = Resident.FindByName("Teodoro Baptiste");
+            if (teoStart != null)
+            {
+                var agent = teoStart.GetComponent<UnityEngine.AI.NavMeshAgent>();
+                if (agent != null) agent.enabled = false;
+                teoStart.transform.SetPositionAndRotation(A("TeoCloset").position, A("TeoCloset").rotation);
+            }
             StartCoroutine(Run());
         }
 
@@ -182,6 +192,23 @@ namespace Semblance.Tutorial
             foreach (var h in hums) if (h != null) h.gameObject.SetActive(true);
             if (furnaceGlow != null) SetBulbs(new[] { furnaceGlow }, true);
             lightsOut = false;
+        }
+
+        /// <summary>The lights are out: Reyes gets up, crosses to the dispatch set and sits down by the radio.</summary>
+        private IEnumerator ReyesToTheRadio()
+        {
+            var alma = Resident.FindByName("Alma Reyes");
+            if (alma == null) yield break;
+            alma.TryGetComponent<ResidentBehaviour>(out var behaviour);
+            if (behaviour != null) behaviour.ForceSeated = false;
+            yield return new WaitForSeconds(1.2f);
+            var mover = alma.GetComponent<ResidentMover>();
+            var target = A("Dispatch");
+            if (mover != null) mover.WalkTo(target.position);
+            float t = 0f;
+            while (t < 14f && Vector3.Distance(alma.transform.position, target.position) > 0.35f) { t += Time.deltaTime; yield return null; }
+            alma.transform.rotation = target.rotation;
+            if (behaviour != null) behaviour.ForceSeated = true;
         }
 
         private IEnumerator TypedLine(string line)
@@ -293,7 +320,7 @@ namespace Semblance.Tutorial
             yield return fader.Fade(0f, 2.2f);
 
             // 1. Walking.
-            Hint("11:40 PM. Everyone's gone home but you and the sergeant.\n<size=75%>{move} to walk, {look} to look around, {sprint} to hurry. Your desk is the one with the lamp still on, past the cubicles.</size>");
+            Hint("11:40 PM. Everyone's gone home but you and the sergeant, and the rain's coming in at the window.\n<size=75%>{move} to walk, {look} to look around, {sprint} to hurry. The letter's on your desk, under the lamp.</size>");
             yield return new WaitUntil(() => Near("Desk", 1.9f));
 
             // 2. Reading.
@@ -304,7 +331,7 @@ namespace Semblance.Tutorial
             // 3. The notebook. The next objective is already waiting when it closes: no dead air.
             Hint("Everything you read, hear or see is written down. Press {notebook} to open your notebook; the letter's in the Case File. {notebook} again closes it.");
             yield return new WaitUntil(() => NotebookUI.Instance != null && NotebookUI.Instance.IsOpen);
-            Hint("Sergeant Reyes is at the front desk by the lobby door. Press {interact} on her and ask about the letter, under <b>About what I've found...</b>");
+            Hint("Sergeant Reyes is at the front desk by the lobby door: out of your office, left along the corridor. Press {interact} on her and ask about the letter, under <b>About what I've found...</b>");
             yield return new WaitUntil(() => !NotebookUI.Instance.IsOpen);
 
             // 4. Questioning.
@@ -326,48 +353,52 @@ namespace Semblance.Tutorial
             Hint("<b>The lights are gone.</b> Press {flashlight} for your flashlight.");
             yield return new WaitForSeconds(1.4f);
             hud.ShowMessage("Reyes, from the dark: \"That's the breaker. Basement, boiler room, far end of the archive. I'm not leaving the phones, Klein.\"", 6f);
+            StartCoroutine(ReyesToTheRadio());
             yield return new WaitUntil(() => Flashlight.Instance != null && Flashlight.Instance.IsOn);
             yield return new WaitForSeconds(0.6f);
 
-            // 6. Down.
-            Hint("The stairwell door is on the far wall, under the red EXIT sign. Take the stairs down to the archive.\n<size=75%>Your nerve drains in the dark and steadies in light. Keep moving.</size>");
+            // 6. Down. Time to read before anything happens.
+            Hint("The stairwell door is on the far wall of the corridor, under the red EXIT sign. Take the stairs down to the archive.\n<size=75%>Your nerve drains in the dark and steadies in light. Keep moving.</size>");
             drone = GameAudio.Loop("drone_deep_loop", null, 0f, bus: AudioBus.Ambience);
             yield return new WaitUntil(() => player.position.y < -2.6f);
             StartCoroutine(FadeAudio(drone, 0.35f, 6f));
             StartCoroutine(BasementNoises());
-            Hint("Follow the central aisle to the boiler room at the far end. The breaker's in there.");
+            Hint("The archive. The boiler room is at the far end. Half the aisles are stacked shut with cartons: where you're blocked, go round.");
 
-            // 7. The aisle. Something falls. Then something walks, and the batteries start to go.
-            yield return new WaitUntil(() => Near("ArchiveEntry", 2.5f) || player.position.x > -6f);
-            yield return new WaitForSeconds(1.2f);
+            // 7. The central aisle. Something falls, something walks, and you have a few seconds to read the room.
+            yield return new WaitUntil(() => Near("ArchiveEntry", 2.5f) || player.position.x > -6.5f);
+            yield return new WaitForSeconds(2.5f);
             GameAudio.PlayAt("thud", A("DogEast").position + Vector3.up * 0.5f, 0.9f, 0.8f, 40f);
+            yield return new WaitForSeconds(0.8f);
             GameAudio.PlayAt("claws_loop", A("DogEast").position + Vector3.up * 0.3f, 0.5f, 1f, 30f);
             Nerve.Instance?.Shock(4f);
-            yield return new WaitUntil(() => player.position.x > -3.4f);
+            yield return new WaitUntil(() => player.position.x > -4.6f);
+            Hint("Something's down here with you. Keep your light moving, and keep moving. The red lamp ahead on the right is a locker.");
+            yield return new WaitForSeconds(2.5f);
+            yield return new WaitUntil(() => player.position.x > -2.6f);
             Flashlight.Instance?.Kill(0.5f);
             GameAudio.Play("flashlight_click", 0.6f, 0.8f);
             yield return new WaitForSeconds(0.9f);
             dog.Appear(A("DogEast").position, Vector3.left);
-            dog.WalkTo(A("LockerFront").position);
+            dog.WalkTo(A("LockerFront").position, 0.75f);
             GameAudio.Play("sting_soft", 0.7f);
             heart = GameAudio.Loop("heartbeat", null, 0.5f, bus: AudioBus.Ambience);
             Nerve.Instance?.Shock(9f);
-            Flashlight.Instance?.Kill(9f);
-            Hint("<b>The batteries are going. Something's coming down the aisle.</b>\n<size=80%>The locker on your right, under the red lamp: press {interact} to get inside.</size>");
+            Flashlight.Instance?.Kill(12f);
+            Hint("<b>The batteries are going, and it's coming down the aisle.</b>\n<size=80%>Take the cross aisle on your right. The locker under the red lamp: press {interact} to get inside.</size>");
             float wait = 0f;
-            while (!dog.Arrived && wait < 16f) { wait += Time.deltaTime; yield return null; }
+            while (!dog.Arrived && wait < 20f) { wait += Time.deltaTime; yield return null; }
             dog.Stay();
             bool hidden = HidingSpot.PlayerHidden;
             if (hidden)
             {
                 hud.SetHint("Hold still.", 0f);
-                yield return new WaitForSeconds(1.2f);
-                // It finds the locker. It doesn't find the catch.
+                yield return new WaitForSeconds(1.4f);
                 GameAudio.PlayAt("locker_rattle", A("LockerFront").position + Vector3.up, 0.8f, 1f, 20f);
                 Nerve.Instance?.Shock(10f);
-                yield return new WaitForSeconds(1.3f);
+                yield return new WaitForSeconds(1.5f);
                 GameAudio.PlayAt("growl", A("LockerFront").position + Vector3.up * 0.4f, 0.7f, 0.9f, 20f);
-                yield return new WaitForSeconds(2.2f);
+                yield return new WaitForSeconds(2.4f);
             }
             else
             {
@@ -375,9 +406,9 @@ namespace Semblance.Tutorial
                 Nerve.Instance?.Shock(16f);
                 yield return new WaitForSeconds(2f);
             }
-            dog.WalkTo(A("DogWest").position);
+            dog.WalkTo(A("DogWest").position, 1.6f);
             wait = 0f;
-            while (!dog.Arrived && wait < 12f) { wait += Time.deltaTime; yield return null; }
+            while (!dog.Arrived && wait < 14f) { wait += Time.deltaTime; yield return null; }
             dog.Vanish();
             StartCoroutine(FadeAudio(heart, 0f, 3f));
             if (HidingSpot.PlayerHidden)
@@ -385,22 +416,27 @@ namespace Semblance.Tutorial
                 Hint("It's gone. Press {interact} to climb out.");
                 yield return new WaitUntil(() => !HidingSpot.PlayerHidden);
             }
-            Hint("Keep going. The boiler room is at the end of the aisle; the breaker's inside.");
+            Hint("Keep going: along the next aisle to the far end, then north to the boiler room. The breaker's inside.");
 
-            // 8. It comes back, behind you, and you never get the light on it.
-            yield return new WaitUntil(() => player.position.x > A("ChaseStart").position.x || breakerPulled);
+            // 8. It comes back, behind you, and you never get the light on it. It stops at the boiler room door.
+            yield return new WaitUntil(() => (player.position.x > A("ChaseStart").position.x && player.position.z < -6.5f) || breakerPulled);
             if (!breakerPulled)
             {
-                dog.Appear(A("DogWest").position, Vector3.right);
-                dog.Follow(4.2f);
+                dog.Appear(A("ChaseFrom").position, Vector3.right);
+                dog.Follow(4.5f);
                 GameAudio.Play("sting_soft", 0.8f, 0.8f);
                 chase = GameAudio.Loop("chase_loop", null, 0.35f, bus: AudioBus.Ambience);
                 if (heart != null) StartCoroutine(FadeAudio(heart, 0.6f, 2f));
                 Rendering.PS1ScreenEffect.Distress = 0.4f;
                 Nerve.Instance?.Shock(12f);
-                Hint("<b>It's behind you.</b> Don't turn around. {sprint} to run. Reset the breaker in the boiler room.");
+                Hint("<b>It's behind you.</b> Don't turn around. {sprint} to run: end of the aisle, north, through the door. Reset the breaker.");
                 StartCoroutine(KeepItDark(() => breakerPulled));
-                yield return new WaitUntil(() => breakerPulled);
+                while (!breakerPulled)
+                {
+                    // It won't cross the threshold. Whatever it is waits in the dark outside.
+                    if (dog.transform.position.x > A("BoilerDoor").position.x - 0.4f) dog.Stay();
+                    yield return null;
+                }
             }
 
             // 9. Lights. It's a dog.
@@ -420,9 +456,11 @@ namespace Semblance.Tutorial
             hud.ShowMessage("It's a dog. An old, half-blind dog with grey on her muzzle, and she is very pleased to see you.", 5f);
             yield return new WaitForSeconds(2.2f);
             var teo = Resident.FindByName("Teodoro Baptiste");
-            if (closetDoor != null) closetDoor.ForceOpen(true);
+            if (closetDoor != null) { closetDoor.SetLocked(false); closetDoor.ForceOpen(true); }
             if (teo != null)
             {
+                var teoAgent = teo.GetComponent<UnityEngine.AI.NavMeshAgent>();
+                if (teoAgent != null) { teoAgent.enabled = true; if (teoAgent.isOnNavMesh) teoAgent.Warp(teo.transform.position); }
                 teo.DoorstepGreeting = "There she is. Biscuit, you old fool, come here. ...Detective. Sorry about the lights. Furnace trips the breaker when it turns cold, and I was up a ladder with a mop in my hand.";
                 var mover = teo.GetComponent<ResidentMover>();
                 if (mover != null) mover.WalkTo(A("TeoOut").position);

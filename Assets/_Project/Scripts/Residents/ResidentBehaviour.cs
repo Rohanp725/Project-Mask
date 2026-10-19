@@ -171,14 +171,17 @@ namespace Semblance.Residents
         private Vector3 hipsRestPos;
         private bool hipsPosStored;
 
+        /// <summary>Sat down by a scene (a chair behind them), whatever their schedule says.</summary>
+        public bool ForceSeated { get; set; }
+
         /// <summary>In a church pew the resident sits: hips drop back onto the seat behind them, legs forward.</summary>
         private void UpdateSeated()
         {
             if (hips == null || legL == null || legR == null) return;
             if (!hipsPosStored) { hipsRestPos = hips.localPosition; hipsPosStored = true; }
             var spot = mover != null ? mover.CurrentSpot : null;
-            bool seated = spot != null && !mover.IsWalking && spot.Id != null && spot.Id.StartsWith("Church:Seat", System.StringComparison.Ordinal)
-                          && Vector3.Distance(transform.position, spot.transform.position) < 0.4f;
+            bool seated = ForceSeated || (spot != null && !mover.IsWalking && spot.Id != null && spot.Id.StartsWith("Church:Seat", System.StringComparison.Ordinal)
+                          && Vector3.Distance(transform.position, spot.transform.position) < 0.4f);
             seatBlend = Mathf.MoveTowards(seatBlend, seated ? 1f : 0f, Time.deltaTime * 2f);
             if (seatBlend <= 0f && !seated)
             {

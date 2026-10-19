@@ -68,12 +68,12 @@ namespace Semblance.Tutorial
 
         public void Vanish() => gameObject.SetActive(false);
 
-        public void WalkTo(Vector3 target, bool fast = false)
+        public void WalkTo(Vector3 target, float speed = -1f)
         {
             mode = Mode.Walk;
             agent.isStopped = false;
             agent.stoppingDistance = 0.2f;
-            agent.speed = fast ? chaseSpeed : walkSpeed;
+            agent.speed = speed > 0f ? speed : walkSpeed;
             if (NavMesh.SamplePosition(target, out var hit, 2f, NavMesh.AllAreas)) target = hit.position;
             agent.SetDestination(target);
         }

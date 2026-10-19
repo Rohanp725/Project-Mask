@@ -90,6 +90,13 @@ namespace Semblance.World
             if (isOpen && knock != null) knock.OnOpened(interactor);
         }
 
+        /// <summary>A scene turns the key (the closet in the tutorial opens once the lights are back).</summary>
+        public void SetLocked(bool value, string message = null)
+        {
+            locked = value;
+            if (message != null) lockedMessage = message;
+        }
+
         /// <summary>Opened or shut by someone inside (a resident answering a knock).</summary>
         public void ForceOpen(bool open)
         {
