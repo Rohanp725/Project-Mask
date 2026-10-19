@@ -173,10 +173,8 @@ namespace Semblance.Notes
             else
                 BuildSubjectPage(notebook, currentSubject);
 
-            int left = notebook.LinksLeftToday;
-            linkButton.interactable = selected.Count == 2 && left > 0;
-            linkLabel.text = left <= 0 ? "No more links today. Sleep on it."
-                : selected.Count == 2 ? $"Link contradiction ({left} left today)" : $"Tick two entries to link ({selected.Count}/2)";
+            linkButton.interactable = selected.Count == 2;
+            linkLabel.text = selected.Count == 2 ? "Link contradiction" : $"Tick two entries to link ({selected.Count}/2)";
             // What's ticked so far, wherever it was ticked, so a second note can be found on another page.
             if (selected.Count == 1)
             {
@@ -623,11 +621,6 @@ namespace Semblance.Notes
             if (selected.Count != 2) return;
             var ids = selected.ToArray();
             var nb = Notebook.Instance;
-            if (nb.LinksLeftToday <= 0)
-            {
-                linkLabel.text = "Your eyes are swimming. Sleep on it.";
-                return;
-            }
             var link = nb.AddContradiction(ids[0], ids[1]);
             var a = nb.Get(ids[0]);
             var b = nb.Get(ids[1]);

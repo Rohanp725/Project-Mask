@@ -131,8 +131,6 @@ namespace Semblance.Notes
             var existing = contradictions.Find(c => (c.a == a && c.b == b) || (c.a == b && c.b == a));
             if (existing != null)
                 return existing;
-            if (LinksLeftToday <= 0)
-                return null;
             var link = new ContradictionLink { a = a, b = b, day = GameClock.Instance != null ? GameClock.Instance.Day : 1, against = against ?? "" };
             contradictions.Add(link);
             Changed?.Invoke();
@@ -168,28 +166,9 @@ namespace Semblance.Notes
             if (b.subject != a.subject) yield return b.subject;
         }
 
-        /// <summary>
-        /// Building a case takes thought: only a few new links a day. (Stops ticking every record against every look
-        /// to make the game do the deduction.) Removing a link gives none back.
-        /// </summary>
-        public int LinksPerDay => GameSettings.Difficulty == Difficulty.Easy ? 6 : GameSettings.Difficulty == Difficulty.Normal ? 4 : 3;
-        public int LinksLeftToday
-        {
-            get
-            {
-                int day = GameClock.Instance != null ? GameClock.Instance.Day : 1;
-                return LinksPerDay - contradictions.Count(c => c.day == day) - (removedDay == day ? removedToday : 0);
-            }
-        }
-        private int removedToday, removedDay = -1;
-
-        public void RemoveContradiction(ContradictionLink link)
-        {
-            int day = GameClock.Instance != null ? GameClock.Instance.Day : 1;
-            if (removedDay != day) { removedDay = day; removedToday = 0; }
-            if (link.day == day) removedToday++;
-            RemoveContradictionInternal(link);
-        }
+        // Links used to be rationed by the day; now that every link is checked (a pair that doesn't conflict is a
+        // hunch and counts for nothing), a careful detective can link as many real contradictions as they find.
+        public void RemoveContradiction(ContradictionLink link) => RemoveContradictionInternal(link);
 
         private void RemoveContradictionInternal(ContradictionLink link)
         {
