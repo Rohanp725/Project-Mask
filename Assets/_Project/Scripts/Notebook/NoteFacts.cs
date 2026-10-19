@@ -328,7 +328,13 @@ namespace Semblance.Notes
                 bool bSaid = b.kind == NoteKind.Statement || b.kind == NoteKind.Gossip;
                 if (aSaid && !bSaid) yield return (a.source ?? a.subject, "claim|" + pa[1]);
                 else if (bSaid && !aSaid) yield return (b.source ?? b.subject, "claim|" + pb[1]);
-                else { yield return (a.subject, "claim|" + pa[1]); yield return (b.subject, "claim|" + pb[1]); }
+                else
+                {
+                    // Two people's words against each other: it's the speakers who disagree, not whoever the notes were filed under.
+                    string sa = a.source ?? a.subject, sb = b.source ?? b.subject;
+                    yield return (sa, "claim|" + pa[1]);
+                    if (sb != sa) yield return (sb, "claim|" + pb[1]);
+                }
                 yield break;
             }
             // Feature conflicts: one proof per feature, however many ways it's linked.

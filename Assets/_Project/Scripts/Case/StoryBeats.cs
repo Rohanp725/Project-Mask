@@ -45,6 +45,7 @@ namespace Semblance.Case
             var clock = GameClock.Instance;
             if (clock != null)
                 clock.DayStarted += OnDayStarted;
+                GameFlow.Woke += OnWoke;
             var director = CaseDirector.Instance;
             if (director != null)
             {
@@ -120,13 +121,93 @@ namespace Semblance.Case
                 yield return new WaitForSeconds(2.2f);
             }
             PlayerHUD.Instance?.ShowMessage("The church bell. Three in the morning. Up and down the road, doors open, and lanterns come out of the dark one at a time, all walking toward the church.", 7f);
+            StartCoroutine(LanternWalk());
             yield return new WaitForSeconds(8f);
             PlayerHUD.Instance?.ShowMessage("From the treeline by the church, a man's voice, counting under his breath. <i>\"...two hundred and ten. Two hundred and eleven. Two hundred and twelve.\"</i> A long pause. <i>\"Then who painted the sign?\"</i>", 8f);
             Notebook.Instance?.Record(NoteKind.Event, Notebook.CaseSubject, "The bell at three",
                 "At three in the morning someone rang the church bell and the whole town came out with lanterns. Somebody in the treeline counted them. Two hundred and twelve. All of them came.", null, "event|threeam");
         }
 
+        /// <summary>
+        /// The town answering the bell: shapes with lanterns coming up both sides of the highway toward the church,
+        /// for as long as the beat lasts. They walk; they don't arrive. Nobody should get close enough to count them.
+        /// </summary>
+        private System.Collections.IEnumerator LanternWalk()
+        {
+            var director = CaseDirector.Instance;
+            var cam = Camera.main;
+            if (director == null || cam == null) yield break;
+            var churchZ = 28f;
+            var walkers = new List<(Transform t, Light l)>();
+            var faces = director.Residents.Where(r => r != null).OrderBy(_ => Random.value).Take(7).ToList();
+            float baseZ = Mathf.Clamp(cam.transform.position.z, -200f, 0f);
+            for (int i = 0; i < faces.Count; i++)
+            {
+                float x = (i % 2 == 0 ? -1f : 1f) * (RoadSide + Random.Range(0f, 1.5f));
+                float z = baseZ - 70f + i * 18f + Random.Range(-6f, 6f);
+                if (z > churchZ - 20f) z = churchZ - 20f - i * 4f;
+                var shade = Events.Apparition.Create(faces[i], Events.ApparitionLook.Shade, new Vector3(x, 0.05f, z), Quaternion.LookRotation(Vector3.forward));
+                var light = new GameObject("Lantern").AddComponent<Light>();
+                light.transform.SetParent(shade.transform, false);
+                light.transform.localPosition = new Vector3(0.35f, 1.0f, 0.2f);
+                light.type = LightType.Point;
+                light.color = new Color(1f, 0.72f, 0.4f);
+                light.range = 7f;
+                light.intensity = 1.6f;
+                light.shadows = LightShadows.None;
+                walkers.Add((shade.transform, light));
+                Audio.GameAudio.PlayAt("door_close", new Vector3(x * 3f, 1f, z), 0.4f, Random.Range(0.8f, 1f), 60f);
+                yield return new WaitForSeconds(Random.Range(0.4f, 1.1f));
+            }
+            float until = Time.time + 42f;
+            while (Time.time < until)
+            {
+                foreach (var (t, l) in walkers)
+                {
+                    if (t == null) continue;
+                    t.position += Vector3.forward * 1.3f * Time.deltaTime;
+                    l.intensity = 1.6f + Mathf.Sin(Time.time * 7f + t.position.x) * 0.25f;
+                    if (t.position.z > churchZ - 8f) t.gameObject.SetActive(false);
+                }
+                yield return null;
+            }
+            foreach (var (t, l) in walkers) if (t != null) Destroy(t.gameObject);
+        }
+
+        private const float RoadSide = 4.6f;
+
         private System.Random Rng(int salt) => new System.Random((CaseDirector.Instance != null ? CaseDirector.Instance.Seed : 1) * 13 + salt);
+
+        /// <summary>The morning after: what the day asks of you, on screen, not only in the notebook.</summary>
+        private void OnWoke(int day)
+        {
+            if (Missing == null) return;
+            string where = Missing.Profile != null && !string.IsNullOrEmpty(Missing.Profile.home) ? Missing.Profile.home : "the farm";
+            if (day == MissingDay)
+            {
+                PlayerHUD.Instance?.SetHint($"<b>{Missing.DisplayName} didn't come home last night.</b>\n<size=75%>The family will be at {where}. Somebody on the road may have seen something. Ask around.</size>", 0f);
+                HoldTheDoorOpen();
+            }
+            else if (day == BodyDay)
+            {
+                string field = body != null ? World.LocationMarker.Describe(body.transform.position) : "in a field";
+                PlayerHUD.Instance?.SetHint($"<b>They found {Missing.FirstName} this morning {field}.</b>\n<size=75%>The padlocks on the cellar hatches are lying open. Bring a flashlight.</size>", 0f);
+            }
+        }
+
+        /// <summary>"The door was found standing open, the porch light still on." So it is.</summary>
+        private void HoldTheDoorOpen()
+        {
+            foreach (var k in FindObjectsByType<World.KnockableDoor>(FindObjectsInactive.Exclude))
+            {
+                if (k.Family != Missing.LastName) continue;
+                k.GetComponent<World.Door>()?.ForceOpen(true);
+                var house = k.transform.parent != null ? k.transform.parent.parent : null;
+                if (house == null) continue;
+                foreach (var lamp in house.GetComponentsInChildren<Rendering.LampSwitch>(true))
+                    if (lamp.name == "Porch Light") lamp.Hold = true;
+            }
+        }
 
         private void OnDayStarted(int day)
         {
@@ -206,10 +287,33 @@ namespace Semblance.Case
             var fields = ScheduleSpot.All.Where(s => s.Id.StartsWith("Field:")).OrderBy(s => s.Id).ToList();
             if (fields.Count == 0) return;
             var spot = fields[rng.Next(fields.Count)];
-            Vector3 pos = spot.transform.position + spot.transform.right * 2.5f;
-            var apparition = Events.Apparition.Create(Missing, Events.ApparitionLook.Double, pos, Quaternion.Euler(0, rng.Next(360), 90f));
+            // On the clear ground at the field's edge, not in the stalks: the body is the image of the day.
+            Vector3 pos = spot.transform.position;
+            if (UnityEngine.AI.NavMesh.SamplePosition(pos, out var onGround, 3f, UnityEngine.AI.NavMesh.AllAreas)) pos = onGround.position;
+            // Laid on its side the rig's pivot is at the hips: lift it so it lies on the ground, not in it.
+            var apparition = Events.Apparition.Create(Missing, Events.ApparitionLook.Double, pos + Vector3.up * 0.3f, Quaternion.Euler(0, rng.Next(360), 90f));
             apparition.Avatar.Rig?.Tint("HeadShape", new Color(0.75f, 0.76f, 0.74f));
             body = apparition.gameObject;
+            // A lantern somebody left beside it, and crows: you find it by the light and the noise, not by the prompt.
+            var lantern = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            lantern.name = "Left Lantern";
+            Object.Destroy(lantern.GetComponent<Collider>());
+            lantern.transform.SetParent(body.transform.parent, true);
+            lantern.transform.position = pos + Vector3.right * 1.1f + Vector3.up * 0.18f;
+            lantern.transform.localScale = new Vector3(0.18f, 0.36f, 0.18f);
+            var brass = Resources.FindObjectsOfTypeAll<Material>().FirstOrDefault(m => m.name == "Brass");
+            if (brass != null) lantern.GetComponent<Renderer>().sharedMaterial = brass;
+            var glow = new GameObject("Lantern Light").AddComponent<Light>();
+            glow.transform.SetParent(lantern.transform, false);
+            glow.transform.localPosition = Vector3.up * 0.3f;
+            glow.type = LightType.Point;
+            glow.color = new Color(1f, 0.75f, 0.4f);
+            glow.range = 9f;
+            glow.intensity = 2.2f;
+            glow.shadows = LightShadows.None;
+            var crows = new GameObject("Crows");
+            crows.transform.position = pos + Vector3.up * 2f;
+            crows.AddComponent<Events.CrowCalls>();
             var trigger = new GameObject("Body Trigger");
             trigger.transform.position = pos + Vector3.up * 0.5f;
             var box = trigger.AddComponent<BoxCollider>();
@@ -243,7 +347,7 @@ namespace Semblance.Case
                 PlayerHUD.Instance?.SetHint("The town is going home for the night. Mae's closing up.\n<size=75%>Father Crane keeps the church open late. Everyone else is out at their farms. Sleep in Room 6 when you're done.</size>", 12f);
             }
 
-            bool service = clock.Day == 2 && clock.Hour >= 9f && clock.Hour < 12f;
+            bool service = clock.Day == 2 && clock.Hour >= 8.5f && clock.Hour < 12f;
             // The town meeting is the last morning: name them by tonight.
             bool meeting = clock.Day == LastDay && clock.Hour >= 9f && clock.Hour < 12f;
             bool gathering = service || meeting;
@@ -267,7 +371,7 @@ namespace Semblance.Case
             }
 
             // 3 AM on the night after the disappearance: Wendell rings the bell and counts who comes.
-            if (clock.Day == MissingDay && clock.Hour >= 26.75f && !threeAm && !Events.Stalker.IsHunting && !InputLock.IsLocked)
+            if (clock.Day == MissingDay && clock.Hour >= 26.5f && !threeAm && !Events.Stalker.IsHunting && !InputLock.IsLocked)
             {
                 threeAm = true;
                 StartCoroutine(ThreeInTheMorning());

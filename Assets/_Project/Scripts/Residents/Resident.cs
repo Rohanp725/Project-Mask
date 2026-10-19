@@ -50,8 +50,13 @@ namespace Semblance.Residents
             text = text.Replace(" their ", $" {possessive} ").Replace(" them.", $" {objective}.").Replace(" them ", $" {objective} ")
                 .Replace(" them,", $" {objective},").Replace("themselves", reflexive);
             if (subject != "they")
+            {
                 text = text.Replace(" they're ", $" {subject}'s ").Replace(" they are ", $" {subject} is ").Replace(" they were ", $" {subject} was ")
-                    .Replace(" they have ", $" {subject} has ").Replace(" they ", $" {subject} ").Replace(". They ", $". {char.ToUpper(subject[0])}{subject.Substring(1)} ");
+                    .Replace(" they have ", $" {subject} has ");
+                // "like they haven't slept", "when they talk": the verb after a mid-sentence "they" changes with it.
+                text = System.Text.RegularExpressions.Regex.Replace(text, @" they ([\w']+)", m => " " + subject + " " + Conjugate(m.Groups[1].Value));
+                text = System.Text.RegularExpressions.Regex.Replace(text, @"\. They ([\w']+)", m => ". " + char.ToUpper(subject[0]) + subject.Substring(1) + " " + Conjugate(m.Groups[1].Value));
+            }
             return text;
         }
 
@@ -67,7 +72,8 @@ namespace Semblance.Residents
             string full = words[i];
             string w = full.TrimEnd('.', ',', ';', '!', '?');
             string tail = full.Substring(w.Length);
-            if (w == "won't" || w == "can't" || w == "will" || w == "must" || w.EndsWith("ed")) return rest;
+            if (w == "won't" || w == "can't" || w == "will" || w == "must" || w == "haven't" || w == "don't" || w.EndsWith("ed")
+                || w == "could" || w == "would" || w == "should" || w == "might" || w == "may") return w == "haven't" ? "hasn't" + tail + Tail(words, i) : w == "don't" ? "doesn't" + tail + Tail(words, i) : rest;
             words[i] = w;
             if (w == "don't") words[i] = "doesn't";
             else if (w == "have") words[i] = "has";
@@ -77,6 +83,8 @@ namespace Semblance.Residents
             words[i] += tail;
             return string.Join(" ", words);
         }
+
+        private static string Tail(string[] words, int i) => words.Length > i + 1 ? " " + string.Join(" ", words, i + 1, words.Length - i - 1) : "";
 
         public string FirstName => DisplayName.StartsWith("Father ") ? "Father " + LastName : DisplayName.Split(' ')[0];
         public string LastName => DisplayName.Substring(DisplayName.LastIndexOf(' ') + 1);
@@ -160,7 +168,6 @@ namespace Semblance.Residents
                 string[] intruded =
                 {
                     $"What are you doing in my house? It's {Core.GameClock.FormatHour(clock.Hour)}.",
-                    "You don't knock in the city, Detective? Out here people get shot for less.",
                     "Lord. You gave me a fright. Shut the door behind you; something might follow you in.",
                 };
                 return Format(intruded[Random.Range(0, intruded.Length)], "intruded");
@@ -322,7 +329,7 @@ namespace Semblance.Residents
             return new DialogueTopic(title, Core.StableHash.Pick(lines, DisplayName));
         }
 
-        private int handshakeDay = -1;
+        private int handshakeDay = int.MinValue;
 
         /// <summary>A few innocents in every case have cold hands for ordinary reasons, so a cold handshake isn't a verdict.</summary>
         private bool ChillyHands
@@ -341,6 +348,7 @@ namespace Semblance.Residents
             bool cold = Avatar.ActiveFeatures.Any(f => f.id == "cold_hands");
             bool hook = Avatar.ActiveFeatures.Any(f => f.id == "hook_hand" && f.side == FeatureSide.Right);
             string text;
+            string fact = null;
             if (handshakeDay == day || (Notes.Notebook.Instance != null && Notes.Notebook.Instance.Has($"hands|{DisplayName}|{day}")))
                 text = $"{FirstName} looks at your hand, then at you. \"We already did that, Detective.\"";
             else if (hook)
@@ -366,7 +374,17 @@ namespace Semblance.Residents
                     "\"Cellar work. Don't mind me.\"",
                 };
                 bool excuse = cold ? director != null && director.Noise != null && director.Noise.MimicExcusesColdHands : Core.StableHash.Of(DisplayName, seed) % 10 < 7;
-                text = $"{FirstName}'s hand is {Core.StableHash.Pick(feel, DisplayName, seed)}." + (excuse ? " " + Core.StableHash.Pick(excuses, DisplayName, seed + 1) : "");
+                // Excuses are dealt round the cold-handed, not drawn by name: no two of them say the same thing.
+                int deal = 0;
+                if (director != null && director.Noise != null)
+                {
+                    var dealt = director.Noise.ColdHands.OrderBy(r => r.DisplayName).ToList();
+                    deal = dealt.IndexOf(this);
+                    if (deal < 0) deal = dealt.Count;
+                }
+                string why = excuses[(deal + seed) % excuses.Length];
+                text = $"{FirstName}'s hand is {Core.StableHash.Pick(feel, DisplayName, seed)}." + (excuse ? " " + why : "");
+                fact = excuse ? "cold-excused" : "cold"; // tagged from the branch, whatever words it came out in
             }
             else
             {
@@ -376,8 +394,7 @@ namespace Semblance.Residents
             if (handshakeDay != day)
             {
                 var e = Notes.Notebook.Instance?.Record(Notes.NoteKind.Observation, DisplayName, "Shook hands", text, null, $"hands|{DisplayName}|{day}");
-                if (e != null && e.fact == null && text.Contains("cold"))
-                    e.fact = text.Contains("\"") ? "cold-excused" : "cold";
+                if (e != null && e.fact == null && fact != null) e.fact = fact;
             }
             handshakeDay = day;
             return text;

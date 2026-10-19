@@ -103,8 +103,44 @@ namespace Semblance.Core
             return date.ToString("dddd, MMMM d, yyyy");
         }
 
+        private Vector3 lastSafe;
+        private float nextSafeCheck;
+        private bool recovering;
+
+        /// <summary>Under the world (a fall off the map edge): fade, and put the detective back on the last ground they stood on.</summary>
+        private void WatchTheEdge()
+        {
+            if (player == null || recovering) return;
+            var cc = player.GetComponent<CharacterController>();
+            if (Time.time > nextSafeCheck && cc != null && cc.enabled && cc.isGrounded)
+            {
+                nextSafeCheck = Time.time + 1f;
+                lastSafe = player.position;
+            }
+            // Cellars sit at -40; nothing the player can stand on is below -60.
+            if (player.position.y < -60f) StartCoroutine(Recover());
+        }
+
+        private IEnumerator Recover()
+        {
+            recovering = true;
+            var fader = ScreenFader.Instance;
+            InputLock.Push(this, null);
+            if (fader != null) yield return fader.Fade(1f, 0.6f);
+            var cc = player.GetComponent<CharacterController>();
+            if (cc) cc.enabled = false;
+            player.position = lastSafe.y > -60f ? lastSafe : (wakeSpot != null ? wakeSpot.position : Vector3.zero);
+            if (cc) cc.enabled = true;
+            Physics.SyncTransforms();
+            UI.PlayerHUD.Instance?.ShowMessage("You lose your footing in the dark and catch yourself, heart going, back on the road.", 4f);
+            InputLock.Pop(this);
+            if (fader != null) yield return fader.Fade(0f, 0.8f);
+            recovering = false;
+        }
+
         private void Update()
         {
+            WatchTheEdge();
             // Two hours and one hour before you drop, your body says so.
             var clock = GameClock.Instance;
             if (clock == null || IsSleeping || InputLock.IsLocked) return;

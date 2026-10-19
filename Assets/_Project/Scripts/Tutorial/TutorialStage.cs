@@ -112,7 +112,7 @@ namespace Semblance.Tutorial
             finished = true;
             StopAllCoroutines();
             GameSettings.TutorialSeen = true;
-            Rendering.PS1ScreenEffect.Distress = 0f;
+            Nerve.ExtraDistress = 0f;
             SceneLoader.MainMenu();
         }
 
@@ -349,7 +349,7 @@ namespace Semblance.Tutorial
             Hint("Now ask about Teodoro (<b>About people...</b>), then choose <b>Look them over</b>: what you see goes in the notebook next to what she said.");
             yield return new WaitUntil(() => Asked("Alma Reyes", "About Teodoro Baptiste") && Asked("Alma Reyes", "observe"));
             Hint("Leave the conversation when you're done with her.");
-            yield return Card("What people tell you is testimony. What you see for yourself is observation. In the world, hold {focus} on someone to look closer.\n\nFaces are where the lies are. In Semblance, the parish records show how everyone used to look.");
+            yield return Card("What people tell you is testimony. What you see for yourself is observation. In the world, hold {focus} on someone to look closer.\n\nFaces are where the lies are. In Semblance, the parish records show how everyone used to look. And a shaken hand tells you something too: cold hands with a reason are a Tuesday. Cold hands with no reason are a note.");
 
             // 5. The camera. The flash goes off; so do the lights.
             Hint("Reyes wants the evidence board on film: it's on the back wall, right of the clock. Press {camera} to raise the camera, {shoot} to take the photo.");
@@ -437,7 +437,7 @@ namespace Semblance.Tutorial
                 GameAudio.Play("sting_soft", 0.8f, 0.8f);
                 chase = GameAudio.Loop("chase_loop", null, 0.35f, bus: AudioBus.Ambience);
                 if (heart != null) StartCoroutine(FadeAudio(heart, 0.6f, 2f));
-                Rendering.PS1ScreenEffect.Distress = 0.4f;
+                Nerve.ExtraDistress = 0.75f;
                 Nerve.Instance?.Shock(12f);
                 Hint("<b>It's behind you.</b> Don't turn around. {sprint} to run: end of the aisle, north, through the door. Reset the breaker.");
                 StartCoroutine(KeepItDark(() => breakerPulled));
@@ -454,7 +454,7 @@ namespace Semblance.Tutorial
             if (chase != null) Destroy(chase.gameObject);
             if (heart != null) StartCoroutine(FadeAudio(heart, 0f, 1.5f));
             StartCoroutine(FadeAudio(drone, 0f, 4f));
-            Rendering.PS1ScreenEffect.Distress = 0f;
+            Nerve.ExtraDistress = 0f;
             Hint(null);
             yield return Restore();
             if (!dog.gameObject.activeSelf) dog.Appear(A("BoilerDoor").position, Vector3.right);

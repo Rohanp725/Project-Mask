@@ -115,6 +115,8 @@ namespace Semblance.Rendering
 
         public void Apply(float hour)
         {
+            // Under the ground there is no sky: a cellar at noon is lit by its bulb or by nothing.
+            if (targetCamera != null && targetCamera.transform.position.y < -10f) hour = 23f;
             hour = Mathf.Clamp(hour, Keys[0].hour, Keys[Keys.Length - 1].hour);
             int i = 0;
             while (i < Keys.Length - 2 && hour > Keys[i + 1].hour) i++;

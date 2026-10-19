@@ -66,7 +66,8 @@ namespace Semblance.Player
             if (GameInput.Pressed(GameInput.Flashlight) && (!InputLock.IsLocked || InputLock.Top is Events.HidingSpot))
             {
                 IsOn = !IsOn && battery > 0f;
-                Audio.GameAudio.Play("flashlight_click", 0.6f);
+                Audio.GameAudio.Play("flashlight_click", 0.6f, battery > 0f ? 1f : 0.7f);
+                if (battery <= 0f) PlayerHUD.Instance?.Toast("The flashlight's dead. Otis sells batteries at the general store.");
             }
 
             if (IsOn)
@@ -93,7 +94,7 @@ namespace Semblance.Player
             if (shown != shownPercent)
             {
                 shownPercent = shown;
-                label.text = shown >= 0 ? $"FLASHLIGHT {shown}%" : "";
+                label.text = shown < 0 ? "" : shown == 0 ? "FLASHLIGHT DEAD" : $"FLASHLIGHT {shown}%";
             }
         }
     }

@@ -20,6 +20,7 @@ namespace Semblance.Save
         public int plotDay = -1;
         public int huntDay = -1;
         public bool victimKnown;
+        public string hint;
         public float nerve;
         public int film;
         public float battery;

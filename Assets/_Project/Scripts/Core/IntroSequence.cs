@@ -21,6 +21,7 @@ namespace Semblance.Core
         private Canvas canvas;
         private TextMeshProUGUI text;
         private bool skipAll;
+        private TMPro.TextMeshProUGUI skipHint;
 
         public void Configure(Transform playerTransform) => player = playerTransform;
 
@@ -126,6 +127,7 @@ namespace Semblance.Core
             var cc = player.GetComponent<CharacterController>();
             if (cc) cc.enabled = false;
             var car = BuildCar();
+            if (skipHint != null) skipHint.gameObject.SetActive(false); // nothing to advance on the road
             Vector3 from = new Vector3(1.8f, 0.05f, -278f), to = new Vector3(1.8f, 0.05f, -214f);
             player.SetPositionAndRotation(from, Quaternion.identity);
             car.SetParent(player, false);
@@ -175,6 +177,15 @@ namespace Semblance.Core
             Part("Hood", new Vector3(0.2f, 0.95f, 2.0f), new Vector3(1.8f, 0.12f, 2f), body, new Vector3(4f, 0, 0));
             Part("Pillar L", new Vector3(-0.85f, 1.55f, 1.1f), new Vector3(0.05f, 0.9f, 0.05f), body, new Vector3(-28f, 0, 0));
             Part("Pillar R", new Vector3(1.25f, 1.55f, 1.1f), new Vector3(0.05f, 0.9f, 0.05f), body, new Vector3(-28f, 0, 0));
+            // The rest of a car: the roof over your head, the top of the windscreen, wipers, a bonnet ridge, mirrors.
+            Part("Roof", new Vector3(0.2f, 2.02f, -0.1f), new Vector3(2.2f, 0.06f, 2.4f), body);
+            Part("Windscreen Top", new Vector3(0.2f, 1.96f, 1.0f), new Vector3(2.15f, 0.07f, 0.06f), body, new Vector3(-28f, 0, 0));
+            Part("Wiper L", new Vector3(-0.3f, 1.08f, 1.08f), new Vector3(0.6f, 0.012f, 0.012f), dash, new Vector3(0, 0, 12f));
+            Part("Wiper R", new Vector3(0.65f, 1.08f, 1.08f), new Vector3(0.6f, 0.012f, 0.012f), dash, new Vector3(0, 0, 12f));
+            Part("Bonnet Ridge", new Vector3(0.2f, 1.02f, 2.0f), new Vector3(0.08f, 0.03f, 1.9f), body, new Vector3(4f, 0, 0));
+            Part("Mirror L", new Vector3(-1.0f, 1.3f, 1.05f), new Vector3(0.14f, 0.1f, 0.06f), dash);
+            Part("Mirror R", new Vector3(1.4f, 1.3f, 1.05f), new Vector3(0.14f, 0.1f, 0.06f), dash);
+            Part("Rear-view", new Vector3(0.2f, 1.75f, 0.95f), new Vector3(0.3f, 0.08f, 0.03f), dash);
             var lightGO = new GameObject("Headlights");
             lightGO.transform.SetParent(root, false);
             lightGO.transform.localPosition = new Vector3(0.2f, 0.9f, 3f);
@@ -204,8 +215,8 @@ namespace Semblance.Core
             canvas = UIFactory.Canvas("Intro Canvas", transform, 160);
             text = UIFactory.Text("Line", canvas.transform, "", 28, UIFactory.Light, TextAlignmentOptions.Center);
             UIFactory.Place(text.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(1000, 300));
-            var hint = UIFactory.Text("Skip", canvas.transform, GameInput.Format("{advance} or {interact}: next line     hold {cancel}: skip intro"), 17, new Color(1, 1, 1, 0.55f), TextAlignmentOptions.BottomRight);
-            UIFactory.Place(hint.rectTransform, new Vector2(1, 0), new Vector2(1, 0), new Vector2(-24, 20), new Vector2(400, 24));
+            skipHint = UIFactory.Text("Skip", canvas.transform, GameInput.Format("{advance} or {interact}: next line     hold {cancel}: skip intro"), 17, new Color(1, 1, 1, 0.55f), TextAlignmentOptions.BottomRight);
+            UIFactory.Place(skipHint.rectTransform, new Vector2(1, 0), new Vector2(1, 0), new Vector2(-24, 20), new Vector2(400, 24));
         }
     }
 }

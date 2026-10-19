@@ -35,6 +35,7 @@ namespace Semblance.World
             {
                 float d = Vector3.Distance(new Vector3(position.x, 0, position.z), new Vector3(m.transform.position.x, 0, m.transform.position.z));
                 if (d > m.radius) continue;
+                if (Mathf.Abs(position.y - m.transform.position.y) > 2.5f) continue; // another floor
                 if (best == null || m.priority > best.priority) best = m;
             }
             return best;
@@ -44,9 +45,16 @@ namespace Semblance.World
         {
             var m = At(position);
             if (m != null) return "at " + m.displayName;
+            if (position.y < -10f)
+            {
+                // Underground: name what's over your head.
+                var above = At(new Vector3(position.x, 0.1f, position.z));
+                return above != null ? "under " + above.displayName : "underground";
+            }
             if (Mathf.Abs(position.x) < 6f) return "on the highway";
             if (Mathf.Abs(position.z) < 6f) return "on the county road";
-            return "out in the dark fields";
+            bool dark = Core.GameClock.Instance == null || Core.GameClock.Instance.IsDark;
+            return dark ? "out in the dark fields" : "out in the fields";
         }
 
         public static LocationMarker Find(string name) => Markers.Find(m => m.displayName == name);

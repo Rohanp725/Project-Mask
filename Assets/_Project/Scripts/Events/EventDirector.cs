@@ -37,6 +37,7 @@ namespace Semblance.Events
         private string lastEvent;
         private int huntDay = -1;
         private float huntAt = -1f;
+        private bool huntCued;
         private float nextLampDeath;
         private int afterHoursDay = -1;
         private float afterHoursAt = -1f;
@@ -154,7 +155,7 @@ namespace Semblance.Events
             }
             var clock = GameClock.Instance;
             if (clock == null || EndingDirector.Instance != null && EndingDirector.Instance.IsPlaying) return;
-            if (busy || Stalker.IsHunting || (InputLock.IsLocked && !(InputLock.Top is Dialogue.DialogueUI))) return;
+            if (busy || Stalker.IsHunting || InputLock.IsLocked) return; // nothing fires over a conversation or a menu
             if (GameFlow.Instance != null && GameFlow.Instance.IsSleeping) return;
 
             bool night = clock.IsDark;
@@ -167,7 +168,17 @@ namespace Semblance.Events
             bool huntWorthy = MimicAwareness.Instance != null && MimicAwareness.Instance.WantsHunt(clock, out stalk);
             if (night && huntWorthy && clock.Hour >= 21.5f && huntDay != clock.Day)
             {
-                if (huntAt < 0) huntAt = Time.time + Random.Range(25f, 80f);
+                if (huntAt < 0) { huntAt = Time.time + Random.Range(40f, 90f); huntCued = false; }
+                // Twenty-five seconds out: the crickets stop and something answers the quiet. Never unannounced.
+                else if (!huntCued && !stalk && Time.time > huntAt - 25f)
+                {
+                    huntCued = true;
+                    AmbientAudio.Hush = 1f;
+                    Vector3 far = player.position + Quaternion.Euler(0, Random.Range(0f, 360f), 0) * Vector3.forward * 60f;
+                    GameAudio.PlayAt("creature_shriek", far, 0.5f, 0.8f, 120f);
+                    PlayerHUD.Instance?.Toast("<i>The crickets have stopped. Something out there answered the quiet.</i>");
+                    Nerve.Instance?.Shock(4f);
+                }
                 else if (Time.time > huntAt && !InputLock.IsLocked)
                 {
                     huntAt = -1f;
@@ -497,6 +508,7 @@ namespace Semblance.Events
         /// </summary>
         private IEnumerator AfterHours()
         {
+            string when = GameClock.Instance != null ? GameClock.Instance.Label : "";
             var hours = diner.GetComponentInChildren<World.BusinessHours>();
             var windows = diner.GetComponentsInChildren<MeshRenderer>().Where(m => m.name == "Window").ToList();
             var stools = diner.GetComponentsInChildren<Transform>().Where(t => t.name == "Stool").ToList();
@@ -519,7 +531,7 @@ namespace Semblance.Events
             {
                 if (hours != null) hours.Override = false;
                 Nerve.Instance?.Shock(4f);
-                LogEvent("Lights at Mae's", $"Mae's was lit up at {GameClock.Instance.Label}, hours after close, and the jukebox was going. By the time I got across the road it was dark and the door was locked.");
+                LogEvent("Lights at Mae's", $"Mae's was lit up at {when}, hours after close, and the jukebox was going. By the time I got across the road it was dark and the door was locked.");
                 yield break;
             }
             // Inside: dark, silent, and the stools have been arranged.
@@ -536,7 +548,7 @@ namespace Semblance.Events
                 stools[i].position = new Vector3(p.x, stools[i].position.y, p.z);
             }
             PlayerHUD.Instance?.ShowMessage("The jukebox stops the moment the door opens. The lights are off. Every stool from the counter is standing in a ring in the middle of the floor.", 6.5f);
-            LogEvent("Mae's, after hours", $"Mae's was lit at {GameClock.Instance.Label}, long after close, the jukebox going and the door open. When I went in the music stopped and the lights were out. Every stool from the counter had been set in a ring in the middle of the floor. Nobody was there. I didn't stay to count them.");
+            LogEvent("Mae's, after hours", $"Mae's was lit at {when}, long after close, the jukebox going and the door open. When I went in the music stopped and the lights were out. Every stool from the counter had been set in a ring in the middle of the floor. Nobody was there. I didn't stay to count them.");
             float t = 0f;
             while (t < 30f && Vector3.Distance(player.position, diner.position) < 9f) { t += Time.deltaTime; yield return null; }
             for (int i = 0; i < stools.Count; i++) stools[i].SetPositionAndRotation(homes[i].position, homes[i].rotation);

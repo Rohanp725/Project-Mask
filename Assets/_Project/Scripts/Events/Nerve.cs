@@ -126,9 +126,12 @@ namespace Semblance.Events
             UpdateEffects();
         }
 
+        /// <summary>Scripted fear on top of the meter (the tutorial's chase).</summary>
+        public static float ExtraDistress { get; set; }
+
         private void UpdateEffects()
         {
-            float distress = Stalker.IsHunting ? Mathf.Lerp(0.35f, 1f, Stalker.Closeness) : Distress;
+            float distress = Mathf.Max(Stalker.IsHunting ? Mathf.Lerp(0.35f, 1f, Stalker.Closeness) : Distress, ExtraDistress);
             // Fear shows at the edges and in the colour, but the road always stays readable.
             PS1ScreenEffect.Distress = Mathf.Clamp01((distress - 0.35f) / 0.65f) * 0.6f;
             DayNightCycle.DarknessBoost = Mathf.Clamp01((distress - 0.6f) / 0.4f) * 0.25f;

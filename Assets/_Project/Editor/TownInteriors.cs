@@ -846,11 +846,56 @@ namespace Semblance.EditorTools
             Shelving("Bookshelf", root, new Vector3(-inX + 0.22f, 0, 1.9f), 90f, 1.2f, 1.6f, 4, rng);
 
             FamilyDetails(root, family, inX, inZ, rng);
+            HouseClutter(root, inX, inZ, rng);
 
             if (anyLit)
                 InteriorLight(root, new Vector3(0, ceiling - 0.5f, -0.5f), 7f, 3f, flicker: rng.NextDouble() < 0.3, ceiling: ceiling, pendant: true);
             else
                 CeilingFixture(root, new Vector3(0, ceiling - 0.5f, -0.5f), ceiling, false, true);
+        }
+
+        /// <summary>What every farmhouse has and the builder used to leave out: the stuff of living in a place.</summary>
+        private static void HouseClutter(Transform root, float inX, float inZ, Random rng)
+        {
+            string[] tins = { "Mustard", "BarnRed", "Blue", "Sage", "Cream", "SignWhite" };
+            // A shelf over the stove with tins and a jar; a towel on a nail.
+            Part("Stove Shelf", root, new Vector3(-inX + 0.5f, 1.85f, -inZ + 0.07f), new Vector3(1.0f, 0.03f, 0.16f), "Wood");
+            foreach (var (x, h) in new[] { (-0.35f, 0.14f), (-0.15f, 0.11f), (0.05f, 0.16f), (0.3f, 0.12f) })
+                Round("Tin", root, new Vector3(-inX + 0.5f + x, 1.865f + h * 0.5f, -inZ + 0.07f), 0.09f, h, tins[rng.Next(tins.Length)]);
+            Round("Jar", root, new Vector3(-inX + 0.92f, 1.93f, -inZ + 0.07f), 0.1f, 0.13f, "Glass");
+            Part("Towel", root, new Vector3(-inX + 0.05f, 1.2f, -inZ + 1.1f), new Vector3(0.012f, 0.4f, 0.22f), "PlainCream");
+            // Firewood stacked along the kitchen wall, an axe leaning on it.
+            for (int i = 0; i < 6; i++)
+                Round("Log", root, new Vector3(-inX + 0.3f, 0.21f + (i / 3) * 0.16f, -inZ + 1.6f + (i % 3) * 0.17f), 0.15f, 0.5f, "Bark").transform.localRotation = Quaternion.Euler(0, 0, 90f);
+            Part("Axe Handle", root, new Vector3(-inX + 0.22f, 0.5f, -inZ + 2.2f), new Vector3(0.03f, 0.8f, 0.03f), "Wood").transform.localRotation = Quaternion.Euler(0, 0, -14f);
+            Part("Axe Head", root, new Vector3(-inX + 0.14f, 0.88f, -inZ + 2.2f), new Vector3(0.12f, 0.1f, 0.03f), "Metal");
+            // The clock on the back wall, and a calendar by the door.
+            var clock = Group("Wall Clock", root);
+            clock.localPosition = new Vector3(0.6f, 2.35f, -inZ + 0.05f);
+            Round("Clock Face", clock, Vector3.zero, 0.36f, 0.04f, "SignWhite").transform.localRotation = Quaternion.Euler(90f, 0, 0);
+            Round("Clock Rim", clock, new Vector3(0, 0, -0.005f), 0.4f, 0.03f, "Wood").transform.localRotation = Quaternion.Euler(90f, 0, 0);
+            Part("Hour Hand", clock, new Vector3(0.03f, 0.05f, 0.03f), new Vector3(0.02f, 0.12f, 0.005f), "HideBlack").transform.localRotation = Quaternion.Euler(0, 0, Lerp(rng, -60f, 60f));
+            Part("Minute Hand", clock, new Vector3(-0.04f, 0.06f, 0.035f), new Vector3(0.012f, 0.16f, 0.005f), "HideBlack").transform.localRotation = Quaternion.Euler(0, 0, Lerp(rng, 0f, 180f));
+            Part("Calendar", root, new Vector3(-2.4f, 1.75f, inZ - 0.05f), new Vector3(0.28f, 0.4f, 0.01f), "Writing");
+            Part("Calendar Picture", root, new Vector3(-2.4f, 1.9f, inZ - 0.056f), new Vector3(0.24f, 0.14f, 0.004f), "Photo");
+            // Boots by the door, hooks with a hat and a scarf, a basket of mending by the couch.
+            foreach (var x in new[] { 0.72f, 0.9f })
+                Part("Boot", root, new Vector3(x, FloorY + 0.13f, inZ - 0.45f), new Vector3(0.12f, 0.26f, 0.3f), "HideBlack").transform.localRotation = Quaternion.Euler(0, Lerp(rng, -15f, 15f), 0);
+            Part("Hook Rail", root, new Vector3(-0.5f, 1.9f, inZ - 0.05f), new Vector3(0.6f, 0.05f, 0.03f), "Wood");
+            foreach (var x in new[] { -0.7f, -0.5f, -0.3f })
+                Part("Hook", root, new Vector3(x, 1.88f, inZ - 0.08f), new Vector3(0.02f, 0.05f, 0.05f), "Brass");
+            Part("Hat", root, new Vector3(-0.7f, 1.8f, inZ - 0.12f), new Vector3(0.26f, 0.08f, 0.26f), "Suit");
+            Part("Hat Crown", root, new Vector3(-0.7f, 1.88f, inZ - 0.12f), new Vector3(0.15f, 0.1f, 0.15f), "Suit");
+            Part("Scarf", root, new Vector3(-0.3f, 1.55f, inZ - 0.1f), new Vector3(0.1f, 0.7f, 0.04f), rng.NextDouble() < 0.5 ? "PlainBarnRed" : "PlainBlue");
+            Round("Mending Basket", root, new Vector3(1.0f, FloorY + 0.12f, -inZ + 1.0f), 0.36f, 0.24f, "Hay");
+            Part("Mending", root, new Vector3(1.0f, FloorY + 0.26f, -inZ + 1.0f), new Vector3(0.22f, 0.06f, 0.18f), rng.NextDouble() < 0.5 ? "Fabric" : "PlainCream");
+            // An oil lamp on the kitchen table, and a rag rug beside the bed.
+            var lampAt = new Vector3(-2.2f, FloorY + 0.78f, -1.55f);
+            Round("Lamp Base", root, lampAt, 0.14f, 0.03f, "Brass");
+            Round("Lamp Font", root, lampAt + Vector3.up * 0.08f, 0.1f, 0.1f, "Glass");
+            Round("Lamp Chimney", root, lampAt + Vector3.up * 0.25f, 0.06f, 0.24f, "Glass");
+            Part("Bedside Rug", root, new Vector3(2.9f, FloorY + 0.022f, 2.3f), new Vector3(0.9f, 0.014f, 0.6f), "Rug");
+            Part("Bedside Rug Border", root, new Vector3(2.9f, FloorY + 0.012f, 2.3f), new Vector3(1.0f, 0.01f, 0.7f), "PlainCream");
         }
 
         /// <summary>The small things that make each house somebody's: red herrings, real threads, and a little dread.</summary>
@@ -1256,6 +1301,32 @@ namespace Semblance.EditorTools
             var calendar = Part("Calendar", root, new Vector3(1.4f, 1.75f, -inZ + 0.05f), new Vector3(0.3f, 0.42f, 0.01f), "Writing");
             Inspect(calendar, "Look at the calendar", "A feed-store calendar, still on June. The 2nd is circled. Nothing's been written on it since.", new Vector3(0.4f, 0.5f, 0.3f), clue: "calendar");
             Round("Coffee Ring", root, new Vector3(roomX + 0.6f, FloorY + 1.012f, 0.15f), 0.09f, 0.002f, "Coffee");
+            // The rest of an office nobody works: a clock, a notice board, a cabinet, a fan, towels, a bin, the vacancy switch.
+            var clock = Group("Wall Clock", root);
+            clock.localPosition = new Vector3(-2.0f, 2.2f, -inZ + 0.05f);
+            Round("Clock Face", clock, Vector3.zero, 0.34f, 0.04f, "SignWhite").transform.localRotation = Quaternion.Euler(90f, 0, 0);
+            Round("Clock Rim", clock, new Vector3(0, 0, -0.005f), 0.38f, 0.03f, "HideBlack").transform.localRotation = Quaternion.Euler(90f, 0, 0);
+            Part("Hour Hand", clock, new Vector3(0.03f, 0.05f, 0.03f), new Vector3(0.02f, 0.11f, 0.005f), "HideBlack").transform.localRotation = Quaternion.Euler(0, 0, -30f);
+            Part("Minute Hand", clock, new Vector3(-0.04f, 0.06f, 0.035f), new Vector3(0.012f, 0.15f, 0.005f), "HideBlack").transform.localRotation = Quaternion.Euler(0, 0, 120f);
+            var board = Group("Notice Board", root);
+            board.localPosition = new Vector3(-1.1f, 1.65f, -inZ + 0.05f);
+            Part("Cork", board, Vector3.zero, new Vector3(0.7f, 0.5f, 0.03f), "Hay");
+            foreach (var (x, y, mat) in new[] { (-0.2f, 0.1f, "Paper"), (0.12f, 0.14f, "Writing"), (0.2f, -0.12f, "Paper"), (-0.12f, -0.14f, "Writing") })
+                Part("Notice", board, new Vector3(x, y, -0.02f), new Vector3(0.16f, 0.2f, 0.004f), mat).transform.localRotation = Quaternion.Euler(0, 0, (x + y) * 30f);
+            var cab = Piece("Filing Cabinet", root, new Vector3(inX - 0.45f, 0, -1.3f), 0f, new Vector3(0.5f, 1.32f, 0.62f), FloorY);
+            Part("Body", cab, new Vector3(0, FloorY + 0.66f, 0), new Vector3(0.5f, 1.32f, 0.62f), "Galvanized");
+            for (int d = 0; d < 3; d++)
+                Part("Drawer Pull", cab, new Vector3(-0.325f, FloorY + 0.4f + d * 0.42f, 0), new Vector3(0.02f, 0.025f, 0.1f), "Metal");
+            Part("Towels", cab, new Vector3(0, FloorY + 1.4f, 0), new Vector3(0.36f, 0.16f, 0.42f), "SignWhite");
+            var fan = Group("Desk Fan", root);
+            fan.localPosition = new Vector3(roomX - 0.78f, FloorY + 1.0f, 0.1f);
+            Round("Fan Base", fan, Vector3.zero, 0.16f, 0.03f, "Metal");
+            Part("Fan Neck", fan, new Vector3(0, 0.1f, 0), new Vector3(0.025f, 0.16f, 0.025f), "Metal");
+            Round("Fan Cage", fan, new Vector3(0, 0.26f, 0.02f), 0.28f, 0.06f, "Galvanized").transform.localRotation = Quaternion.Euler(90f, 20f, 0);
+            Part("Wastebasket", root, new Vector3(roomX + 0.7f, FloorY + 0.15f, -0.7f), new Vector3(0.26f, 0.3f, 0.26f), "Galvanized");
+            Part("Vacancy Switch", root, new Vector3(winX + 1.05f, 1.3f, inZ - 0.12f), new Vector3(0.1f, 0.16f, 0.05f), "Metal");
+            Part("Switch Toggle", root, new Vector3(winX + 1.05f, 1.32f, inZ - 0.15f), new Vector3(0.02f, 0.05f, 0.03f), "Brass");
+            Part("Mat", root, new Vector3(roomX, FloorY + 0.012f, inZ - 0.7f), new Vector3(1.0f, 0.012f, 0.55f), "Hay");
             InteriorLight(root, new Vector3(roomX, ceiling - 0.6f, 0), 6f, 2.2f, flicker: true, ceiling: ceiling, pendant: true);
         }
 

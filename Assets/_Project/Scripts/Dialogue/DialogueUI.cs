@@ -187,17 +187,23 @@ namespace Semblance.Dialogue
 
                 default:
                 {
+                    // In a pew during the service nobody's taking questions: it's a place to watch faces, not to interview.
+                    var beats = Case.StoryBeats.Instance;
+                    bool inPew = beats != null && beats.Gathering && beats.OverrideSpot(resident) != null && resident.DisplayName != Case.CastNames.Crane
+                        && Core.GameClock.Instance != null && Core.GameClock.Instance.Hour < 12f && Core.GameClock.Instance.Day == 2;
                     var topics = resident.GetTopics();
+                    if (inPew)
+                        choices.Add(new Choice { Label = $"<color=#{accent}><i>Not now: the service. Watch, or come back after noon.</i></color>", Asked = true, Action = () => { } });
                     foreach (var topic in topics)
                     {
-                        if (IsPersonTopic(topic)) continue;
+                        if (inPew || IsPersonTopic(topic)) continue;
                         var t = topic;
                         choices.Add(new Choice { Label = t.title, Asked = WasAsked(t.title), Current = t.title == currentTopic, Action = () => AskTopic(t) });
                     }
-                    int people = topics.Count(IsPersonTopic);
+                    int people = inPew ? 0 : topics.Count(IsPersonTopic);
                     if (people > 0)
                         choices.Add(new Choice { Label = $"About people... <size=75%><color=#{accent}>({people})</color></size>", Action = () => { menu = Menu.People; RefreshChoices(); } });
-                    var clues = ClueTopics.For(resident);
+                    var clues = inPew ? new List<ClueQuestion>() : ClueTopics.For(resident);
                     if (clues.Count > 0)
                     {
                         int fresh = clues.Count(q => !WasAsked(q.Key));
@@ -296,7 +302,7 @@ namespace Semblance.Dialogue
             foreach (var e in notebook.EntriesFor(resident.DisplayName))
             {
                 if (e.kind != NoteKind.Evidence) continue;
-                options.Add(("The " + e.title.ToLowerInvariant(), "evidence|" + (e.key != null && e.key.StartsWith("evidence|") ? e.key.Substring(9) : e.title)));
+                options.Add((e.title, "evidence|" + (e.key != null && e.key.StartsWith("evidence|") ? e.key.Substring(9) : e.title)));
                 if (options.Count >= 6) break;
             }
             return options;

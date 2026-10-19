@@ -54,6 +54,9 @@ namespace Semblance.Case
         private bool warnedOfHunt, plotToastPending;
         private int notebookWatchedDay = -1;
         private int observedCount, photographedCount;
+        private float proximityTonight;
+        private int proximityDay = -1;
+        private const float ProximityCapPerNight = 15f;
 
         public Stage Current =>
             Events.Stalker.IsHunting ? Stage.Hunting : IsPlotting ? Stage.Plotting : AwarenessTier >= 2 ? Stage.Wary : AwarenessTier >= 1 ? Stage.Curious : Stage.Unaware;
@@ -261,8 +264,16 @@ namespace Semblance.Case
 
             if (!mimic.isActiveAndEnabled) return;
             float distance = Vector3.Distance(cam.transform.position, mimic.transform.position);
-            if (clock.IsDark && distance < 6f)
-                Raise(nightProximityRate * Time.deltaTime, null);
+            // Standing near it in the dark: capped per night, and nothing while you're actually talking to someone
+            // (the game sends you into the diner on night one; that mustn't cost you).
+            if (proximityDay != clock.Day) { proximityDay = clock.Day; proximityTonight = 0f; }
+            bool talking = DialogueUI.Instance != null && DialogueUI.Instance.Current != null;
+            if (clock.IsDark && distance < 6f && !talking && proximityTonight < ProximityCapPerNight)
+            {
+                float step = nightProximityRate * Time.deltaTime;
+                proximityTonight += step;
+                Raise(step, null);
+            }
             // It watched you write. Once a day, standing close to it with the notebook open tells it something.
             if (distance < 4f && notebookWatchedDay != clock.Day && Notes.NotebookUI.Instance != null && Notes.NotebookUI.Instance.IsOpen)
             {

@@ -131,11 +131,15 @@ namespace Semblance.Case
             string household = CaseDirector.Household(r);
             // Evidence filed under a person is a side story (a dead wife's shoes, a drowned boy's crayons); only what the
             // creature itself leaves in a house counts, and that's filed under the household.
-            int physical = notebook.EntriesFor(household).Count(e => e.kind == NoteKind.Evidence)
-                + (entries.Any(e => e.title == "Shook hands" && e.fact == "cold") ? 1 : 0)
-                + (entries.Any(e => e.kind == NoteKind.Photo && e.text.Contains("flared white")) && !entries.Any(e => e.explains == "flare")
-                   && PhotographedSomeoneElse(notebook, r) ? 1 : 0);
+            int coldHand = entries.Any(e => e.title == "Shook hands" && e.fact == "cold") ? 1 : 0;
+            int flare = entries.Any(e => e.kind == NoteKind.Photo && e.text.Contains("flared white")) && !entries.Any(e => e.explains == "flare")
+                   && PhotographedSomeoneElse(notebook, r) ? 1 : 0;
             int witnessed = entries.Count(e => e.title == "Something I noticed");
+            // What was found in the house says which family, not which person: it counts once, unless something
+            // about this person in particular (a link, a cold hand, a flare, a thing you saw) says it's them.
+            int householdFinds = notebook.EntriesFor(household).Count(e => e.kind == NoteKind.Evidence);
+            bool personal = contradictions > 0 || coldHand > 0 || flare > 0 || witnessed > 0;
+            int physical = Mathf.Min(householdFinds, personal ? 2 : 1) + coldHand + flare;
             int victim = EndingDirector.MissingPersonFound && CaseDirector.Instance != null && CaseDirector.Instance.Mimic == r ? 2 : 0;
             int proof = contradictions + physical + witnessed + victim;
             // The captive is overwhelming but it's one kind of proof: the town still wants something else.

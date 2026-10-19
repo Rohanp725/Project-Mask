@@ -19,6 +19,8 @@ namespace Semblance.Rendering
 
         /// <summary>Every lamp in town lit regardless of the hour (the daylight hunt: porches snap on as the sky goes).</summary>
         public static bool ForceOn { get; set; }
+        /// <summary>This one lamp stays lit whatever the hour (a porch light nobody came home to switch off).</summary>
+        public bool Hold { get; set; }
         public Light Lamp => lamp;
         public bool IsOn { get; private set; } = true;
 
@@ -54,7 +56,7 @@ namespace Semblance.Rendering
             Init();
             var clock = GameClock.Instance;
             float h = clock != null ? clock.Hour : 22f;
-            bool scheduled = ForceOn || h >= onHour || h < offHour || h >= 24f;
+            bool scheduled = ForceOn || Hold || h >= onHour || h < offHour || h >= 24f;
             bool on = scheduled && Time.time >= killedUntil;
             if (on == IsOn) return;
             IsOn = on;

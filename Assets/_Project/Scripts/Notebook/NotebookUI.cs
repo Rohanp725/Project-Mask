@@ -308,7 +308,7 @@ namespace Semblance.Notes
             UIFactory.Place(text.rectTransform, new Vector2(0, 1), new Vector2(0, 1), new Vector2(128, -2), new Vector2(560, 148));
 
             AddParagraph(CaseIntroOverride ?? ("<size=110%><b>Assignment</b></size>\nAn anonymous letter, postmarked Semblance: <i>\"One of us is not one of us.\"</i> Find out which of the sixteen inside the sound of the bell isn't who they seem, and name them before the town stops listening."
-                + (clock != null && GameClock.ShowDay ? $" <b>{Mathf.Max(0, clock.LastDay - clock.Day)} day(s) left.</b>" : "")), 8);
+                + (clock != null && GameClock.ShowDay ? $" <b>{DaysLeft(clock)}.</b>" : "")), 8);
 
             // Everything that has happened to you that shouldn't have.
             var odd = notebook.EntriesFor(Notebook.CaseSubject).Where(e => e.kind == NoteKind.Event).ToList();
@@ -426,8 +426,18 @@ namespace Semblance.Notes
                     var list = entries.Where(e => e.kind == kind && !(kind == NoteKind.Archive && e.title.StartsWith("Parish record"))).ToList();
                     if (list.Count == 0)
                         UIFactory.Text("Empty", col, "<i><color=#00000066>nothing yet</color></i>", 13, UIFactory.Ink);
-                    foreach (var entry in list)
-                        AddEntryRow(entry, col, 13, compact: true);
+                    if (kind == NoteKind.Observation)
+                    {
+                        // A look-over is a dozen small notes: they sit under one dated heading instead of flooding the page.
+                        foreach (var day in list.GroupBy(e => e.day).OrderBy(g => g.Key))
+                        {
+                            UIFactory.Text("Day", col, $"<size=80%><color=#00000088>{GameClock.Stamp(day.Key, day.First().hour).Split(',')[0]}</color></size>", 12, UIFactory.Ink);
+                            foreach (var entry in day) AddEntryRow(entry, col, 12, compact: true);
+                        }
+                    }
+                    else
+                        foreach (var entry in list)
+                            AddEntryRow(entry, col, 13, compact: true);
                 }
             }
 
@@ -439,10 +449,16 @@ namespace Semblance.Notes
             }
         }
 
+        private static string DaysLeft(GameClock clock)
+        {
+            int left = Mathf.Max(0, clock.LastDay - clock.Day);
+            return left == 0 ? "This is the last day" : left == 1 ? "1 day left" : $"{left} days left";
+        }
+
         private void BuildCaseFile(Notebook notebook)
         {
             var clock = GameClock.Instance;
-            header.text = "<b>CASE FILE</b>  <size=70%>" + (clock != null ? clock.Label + (GameClock.ShowDay ? $". {Mathf.Max(0, clock.LastDay - clock.Day)} day(s) left." : "") : "") + "</size>";
+            header.text = "<b>CASE FILE</b>  <size=70%>" + (clock != null ? clock.Label + (GameClock.ShowDay ? $". {DaysLeft(clock)}." : "") : "") + "</size>";
 
             var sb = new StringBuilder();
             if (CaseIntroOverride != null)

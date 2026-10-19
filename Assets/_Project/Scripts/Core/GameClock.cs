@@ -119,6 +119,6 @@ namespace Semblance.Core
         /// <summary>Off in the tutorial: there's no case yet, so no day count.</summary>
         public static bool ShowDay = true;
         public string Label => ShowDay ? $"Day {Day}, {FormatHour(Hour)}" : FormatHour(Hour);
-        public static string Stamp(int day, float hour) => $"Day {day}, {FormatHour(hour)}";
+        public static string Stamp(int day, float hour) => ShowDay ? $"Day {day}, {FormatHour(hour)}" : $"Night shift, {FormatHour(hour)}";
     }
 }

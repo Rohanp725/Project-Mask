@@ -140,6 +140,8 @@ namespace Semblance.Case
             string kitchen = place.StartsWith("Cellar:") ? $"House:{place.Substring(7)}:Kitchen" : "Church:Altar";
             if (Residents.ScheduleSpot.Find(inside) == null) return "unreachable: no spot " + inside;
             if (Residents.ScheduleSpot.Find(kitchen) == null) return "unreachable: no spot " + kitchen;
+            // Every tell has to be observable on the mimic's own schedule, not only heard about.
+            if (d.MimicHasNoReflection && !CaseDirector.ReflectionCatchable(d.Mimic)) return "unreachable: no-reflection tell on someone who never stands at Mae's mirror";
             return null;
         }
 

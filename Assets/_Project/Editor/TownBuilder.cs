@@ -1324,6 +1324,25 @@ namespace Semblance.EditorTools
             Collider(root, "North", new Vector3(0, 5, edge), Quaternion.identity, new Vector3(edge * 2, 10, 1));
             Collider(root, "South", new Vector3(0, 5, -edge), Quaternion.identity, new Vector3(edge * 2, 10, 1));
             Collider(root, "West", new Vector3(-edge, 5, 0), Quaternion.identity, new Vector3(1, 10, edge * 2));
+            // The highway doesn't go on forever: a wall across both ends of the road, and a sign that says so.
+            foreach (var sign in new[] { 1f, -1f })
+            {
+                float z = sign * (MainRoadHalfLength + 6f);
+                Collider(root, sign > 0 ? "Road End North" : "Road End South", new Vector3(0, 3, z), Quaternion.identity, new Vector3(60f, 6f, 1f));
+                var edgeTrigger = new GameObject(sign > 0 ? "Edge North" : "Edge South");
+                edgeTrigger.transform.SetParent(root, false);
+                edgeTrigger.transform.localPosition = new Vector3(0, 1.5f, z - sign * 3f);
+                var box = edgeTrigger.AddComponent<BoxCollider>();
+                box.isTrigger = true;
+                box.size = new Vector3(40f, 3f, 5f);
+                edgeTrigger.AddComponent<World.EdgeOfTown>();
+                var post = Group(sign > 0 ? "Road Sign North" : "Road Sign South", parent);
+                post.position = new Vector3(RoadHalfWidth + 1.2f, 0, z - sign * 6f);
+                post.rotation = Quaternion.Euler(0, sign > 0 ? 180f : 0f, 0);
+                Box("Post", post, new Vector3(0, 1.1f, 0), new Vector3(0.12f, 2.2f, 0.12f), "Wood");
+                Box("Board", post, new Vector3(0, 2.0f, 0), new Vector3(1.6f, 0.5f, 0.06f), "SignWhite");
+                AddText(post, sign > 0 ? "BARLOW 94\nNO SERVICES" : "COUNTY LINE 31\nNO SERVICES", new Vector3(0, 2.0f, 0.04f), new Vector2(1.5f, 0.42f), new Color(0.15f, 0.15f, 0.15f));
+            }
             Collider(root, "East", new Vector3(edge, 5, 0), Quaternion.identity, new Vector3(1, 10, edge * 2));
         }
 

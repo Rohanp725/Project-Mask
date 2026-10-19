@@ -93,6 +93,33 @@ namespace Semblance.Case
                 ("Been digging fence posts all week.", "{first}'s been putting new fence posts in along the road all week. I've watched every hole go in."),
                 ("Pulling the last of the potatoes.", "{first} brought me a sack of potatoes. Still dirty. Good potatoes."),
             } },
+            { "black_eye", new[]
+            {
+                ("Walked into the barn door in the dark. The door won.", "{first} walked into the barn door Tuesday night. I heard the door from the road."),
+                ("Hank and I had words. Hank's got the other one.", "{first} and Hank Marsh had a set-to outside the store. Both of them wearing it."),
+            } },
+            { "split_lip", new[]
+            {
+                ("Cold sore. Every October.", "{first} gets a cold sore on {his} lip every October, regular as the frost."),
+                ("Bit it. Chewing and talking at the same time, like my mother told me not to.", null),
+            } },
+            { "sunburn", new[]
+            {
+                ("Last of the sun, topping the beet. Forgot my hat.", "{first} was out topping beet all Saturday without a hat. Red as a stop sign."),
+            } },
+            { "chewed_nails", new[]
+            {
+                ("I bite them. Always have. Mother used to paint them with mustard.", "{first} has bitten {his} nails to the quick since school."),
+            } },
+            { "red_eyes", new[]
+            {
+                ("Hay fever. The corn dust gets me every year about now.", "{first}'s eyes stream every harvest. Hay fever. Can't go near the corn."),
+                ("I've been crying, Detective. Is that allowed?", null),
+            } },
+            { "muddy_boots", new[]
+            {
+                ("The low field's a bog since the rain. I've been in it to the ankle.", "{first}'s been out in the low field; it's a bog since the rain."),
+            } },
             { "gloves", new[]
             {
                 ("Burned my hands on the stove Tuesday.", "{first} burned both hands on that old stove. I wrapped them myself. Blisters like quarters."),
@@ -345,8 +372,9 @@ namespace Semblance.Case
         }
 
         /// <summary>The diner mirror is the only one residents pass. Mae stands in front of it all day, so for her it's a giveaway, not a clue.</summary>
-        private static bool ReflectionCatchable(Resident r)
-            => r.DisplayName != CastNames.Mae && r.Profile.schedule != null && r.Profile.schedule.Any(s => s != null && s.StartsWith("Diner:"));
+        /// <summary>The mirror check needs them within six metres of Mae's mirror: only the counter and the stools are.</summary>
+        public static bool ReflectionCatchable(Resident r)
+            => r.DisplayName != CastNames.Mae && r.Profile.schedule != null && r.Profile.schedule.Any(s => s == "Diner:Counter" || s == "Diner:Stool");
 
         private void ApplySpeechTell(Resident mimic, RunModifications m, System.Random rng)
         {
@@ -486,9 +514,14 @@ namespace Semblance.Case
                 }
             }
 
-            // Innocent people change too, for ordinary reasons (noise).
-            var innocent = residents.Where(r => r != Mimic).OrderBy(_ => rng.Next()).First();
-            ApplyRedHerring(innocent, mods[innocent], rng);
+            // Innocent people change too, for ordinary reasons (noise): one a day until day 3, and preferably somebody
+            // who doesn't have a fresh bandage already.
+            if (day <= 3)
+            {
+                var pool = residents.Where(r => r != Mimic).OrderBy(_ => rng.Next()).ToList();
+                var innocent = pool.FirstOrDefault(r => !mods[r].AddedFeatures.Any(f => FeatureCatalog.Get(f.id)?.Kind == FeatureKind.RedHerring)) ?? pool[0];
+                ApplyRedHerring(innocent, mods[innocent], rng);
+            }
         }
 
         private void LogSolution()

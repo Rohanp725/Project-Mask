@@ -178,7 +178,7 @@ namespace Semblance.Notes
             get
             {
                 int day = GameClock.Instance != null ? GameClock.Instance.Day : 1;
-                return LinksPerDay - contradictions.Count(c => c.day == day) - removedToday;
+                return LinksPerDay - contradictions.Count(c => c.day == day) - (removedDay == day ? removedToday : 0);
             }
         }
         private int removedToday, removedDay = -1;
@@ -196,6 +196,10 @@ namespace Semblance.Notes
             if (contradictions.Remove(link))
                 Changed?.Invoke();
         }
+
+        private void OnEnable() => GameFlow.NewGameStarted += ClearPhotos;
+        private void OnDisable() => GameFlow.NewGameStarted -= ClearPhotos;
+        private void ClearPhotos() => photos.Clear();
 
         public int AddPhoto(Texture2D photo)
         {

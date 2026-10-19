@@ -108,6 +108,10 @@ namespace Semblance.Investigation
                 var papersBox = papers.GetComponent<BoxCollider>();
                 papersBox.size = new Vector3(3f, 30f, 3f); // a small corner, so the trigger stays generous
                 // The drawings never say whose face it is: they describe it, and the detective has to match it to the records.
+                // The drawings aren't there to be found on the first weekend: it keeps them on it until it's sure of the face.
+                var clock = Core.GameClock.Instance;
+                papers.SetActive(clock == null || clock.Day >= 3);
+                if (clock != null) clock.DayStarted += d => { if (papers != null && d >= 3) papers.SetActive(true); };
                 papers.AddComponent<EvidenceItem>().Configure("practice_sketches", "Pencil sketches",
                     $"Dozens of pencil drawings of the same face, over and over, more accurate each time. {FaceDescription(mimic)} {DrawingDetail(mimic)}",
                     CaseDirector.Household(mimic), "Pull the papers out", 10f, 10f);

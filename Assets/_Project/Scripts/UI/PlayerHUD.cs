@@ -40,6 +40,7 @@ namespace Semblance.UI
 
         private void Start()
         {
+            Save.SaveSystem.Register(d => d.hint = StandingHint, d => { if (!string.IsNullOrEmpty(d.hint)) SetHint(d.hint, 0f); });
             if (Notebook.Instance != null)
                 Notebook.Instance.EntryAdded += e =>
                 {
@@ -66,6 +67,11 @@ namespace Semblance.UI
         {
             if (messagePanel.activeSelf && Time.time >= messageHideTime)
                 messagePanel.SetActive(false);
+            if (!messagePanel.activeSelf && messageQueue.Count > 0 && !InputLock.IsLocked)
+            {
+                var next = messageQueue.Dequeue();
+                ShowMessage(next.text, next.duration);
+            }
             if (IsReading && (GameInput.Pressed(GameInput.Advance) || InputLock.IsLocked))
                 DismissReading(); // (a menu or conversation opening over it closes it too)
 
@@ -137,8 +143,12 @@ namespace Semblance.UI
         }
 
         /// <summary>Persistent hint line at the top-center (tutorial and objectives). Duration 0 = until replaced.</summary>
+        /// <summary>The standing hint (no duration), so it can be put back after a load.</summary>
+        public string StandingHint { get; private set; }
+
         public void SetHint(string text, float duration = 0f)
         {
+            if (duration <= 0f) StandingHint = text;
             text = GameInput.Format(text);
             hintText.gameObject.SetActive(!string.IsNullOrEmpty(text));
             hintText.text = text;
@@ -157,8 +167,16 @@ namespace Semblance.UI
             crosshair.rectTransform.sizeDelta = Vector2.one * (show ? 7f : 4f);
         }
 
+        private readonly Queue<(string text, float duration)> messageQueue = new Queue<(string, float)>();
+
+        /// <summary>A timed line. If one is already up (or you're reading), it waits its turn rather than stamping on it.</summary>
         public void ShowMessage(string message, float duration)
         {
+            if (messagePanel.activeSelf && (IsReading || Time.time < messageHideTime - 0.4f))
+            {
+                if (messageQueue.Count < 4) messageQueue.Enqueue((message, duration));
+                return;
+            }
             IsReading = false;
             messageText.text = message;
             messagePanel.SetActive(true);

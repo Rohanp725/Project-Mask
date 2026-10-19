@@ -30,6 +30,8 @@ namespace Semblance.Core
             {
                 if (NotebookUI.Instance.IsOpen)
                     NotebookUI.Instance.Close();
+                else if (Events.Stalker.IsHunting)
+                    UI.PlayerHUD.Instance?.Toast("<i>No time.</i>");
                 else if (!InputLock.IsLocked || InputLock.Top is Dialogue.DialogueUI)
                     NotebookUI.Instance.Open(); // the notebook comes out mid-conversation too
             }

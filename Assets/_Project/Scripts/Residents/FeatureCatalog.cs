@@ -368,6 +368,21 @@ namespace Semblance.Residents
                         for (int i = 0; i < 4; i++)
                             r.Box("Nail" + side + i, "Hand" + side, new Vector3(0, -0.148f, 0.03f - i * 0.02f), new Vector3(0.023f, 0.008f, 0.017f), dirt);
                 });
+            Add("black_eye", R, FeatureCategory.Eyes, true, true, "Their {side} eye is ringed purple and yellow, a week-old bruise.",
+                (r, f) => r.Box(S("Bruise", f), "Head", new Vector3(Sign(f) * 0.05f, 0.145f, 0.1262f), new Vector3(0.06f, 0.045f, 0.002f), new Color(0.3f, 0.2f, 0.32f)));
+            Add("split_lip", R, FeatureCategory.Mouth, false, true, "Their lower lip is split and scabbed.",
+                (r, f) => r.Box("LipScab", "Head", new Vector3(0.012f, 0.062f, 0.1265f), new Vector3(0.016f, 0.01f, 0.002f), Blood));
+            Add("sunburn", R, FeatureCategory.Skin, false, true, "Their face and neck are burnt red and peeling.",
+                (r, f) => { r.Tint("HeadShape", new Color(0.78f, 0.42f, 0.34f)); r.Tint("Jaw", new Color(0.78f, 0.42f, 0.34f)); r.Tint("Neck", new Color(0.78f, 0.42f, 0.34f)); });
+            Add("chewed_nails", R, FeatureCategory.Hands, false, true, "Their fingernails are bitten down to the quick.");
+            Add("red_eyes", R, FeatureCategory.Eyes, false, true, "Their eyes are red-rimmed and watering.",
+                (r, f) =>
+                {
+                    r.Box("RedRimL", "Head", new Vector3(-0.05f, 0.155f, 0.1262f), new Vector3(0.05f, 0.03f, 0.002f), new Color(0.6f, 0.22f, 0.2f));
+                    r.Box("RedRimR", "Head", new Vector3(0.05f, 0.155f, 0.1262f), new Vector3(0.05f, 0.03f, 0.002f), new Color(0.6f, 0.22f, 0.2f));
+                });
+            Add("muddy_boots", R, FeatureCategory.Body, false, true, "Their boots and trouser legs are caked in grey mud to the shin.",
+                (r, f) => { r.Tint("FootL", new Color(0.36f, 0.33f, 0.28f)); r.Tint("FootR", new Color(0.36f, 0.33f, 0.28f)); });
             Add("avoids_gaze", R, FeatureCategory.Behaviour, false, false, "They won't meet your eyes.", behaviour: BehaviourFlags.AvoidGaze);
             Add("nervous_laugh", R, FeatureCategory.Speech, false, false, "They laugh at the wrong moments.", speech: SpeechFlags.NervousLaugh);
             Add("talks_to_self", R, FeatureCategory.Speech, false, false, "They mutter to themselves between sentences.", speech: SpeechFlags.TalksToSelf);

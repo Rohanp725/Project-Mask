@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using Semblance.Case;
+using Semblance.Audio;
 using Semblance.Core;
 using Semblance.Interaction;
 using Semblance.Notes;
@@ -36,6 +37,7 @@ namespace Semblance.World
         private const float HalfWidth = 4.8f, HalfDepth = 3.8f; // a farmhouse's inside, in its own frame
 
         public bool Busy => routine != null;
+        public string Family => family;
 
         /// <summary>You were let in (somebody answered); walking about inside isn't trespass for a while.</summary>
         public bool Invited => Time.time < invitedUntil;
@@ -280,25 +282,44 @@ namespace Semblance.World
                 foreach (var r in Resident.All)
                     if (r != null && r.isActiveAndEnabled && IsInside(r.transform.position)) insideAtEntry.Add(r);
             }
+            if (inside && !playerWasInside) { insideSince = Time.time; noiseInside = 0f; }
             playerWasInside = inside;
             if (!inside || Invited || InputLock.IsLocked) return;
             var clock = GameClock.Instance;
             float hour = clock != null ? clock.Hour : 12f;
+            // Running about in somebody's house wakes it.
+            var fpc = FindFirstObjectByType<Player.FirstPersonController>();
+            if (fpc != null && fpc.IsSprinting) noiseInside += 0.5f;
             foreach (var r in Resident.All)
             {
                 if (r == null || !r.isActiveAndEnabled || r.Profile == null || r.Profile.home != family + " Farm") continue;
-                if (insideAtEntry.Contains(r) || !IsInside(r.transform.position)) continue;
-                if (SleepingHours(hour) && !AwakeAtNight(r)) continue;
+                if (!IsInside(r.transform.position)) continue;
+                bool asleep = SleepingHours(hour) && !AwakeAtNight(r);
+                bool wasHere = insideAtEntry.Contains(r);
+                // Somebody who came home after you catches you at once; somebody who was already up gives you eight
+                // seconds to state your business; a sleeper only if you make a racket.
+                bool catches = !wasHere ? !asleep : asleep ? noiseInside >= 2.5f : Time.time - insideSince > 8f;
+                if (!catches) continue;
                 var pi = FindFirstObjectByType<PlayerInteractor>();
-                if (pi != null) routine = StartCoroutine(CaughtRoutine(r, pi));
+                if (pi != null) routine = StartCoroutine(CaughtRoutine(r, pi, asleep));
                 return;
             }
         }
 
         /// <summary>They came home and you were in their house. They walk you to the door, and the door stays shut after.</summary>
-        private IEnumerator CaughtRoutine(Resident who, PlayerInteractor interactor)
+        private float insideSince, noiseInside;
+        private bool boltedToday;
+
+        private void Start()
+        {
+            // A bolted door opens again in the morning.
+            if (GameClock.Instance != null) GameClock.Instance.DayStarted += _ => { if (boltedToday && door != null) { door.SetLocked(false); boltedToday = false; } };
+        }
+
+        private IEnumerator CaughtRoutine(Resident who, PlayerInteractor interactor, bool woken = false)
         {
             var mover = who.GetComponent<ResidentMover>();
+            if (woken) GameAudio.PlayAt("thud", who.transform.position + Vector3.up, 0.7f, 0.7f, 20f);
             Events.Nerve.Instance?.Shock(8f);
             if (CaseDirector.Instance != null && CaseDirector.Instance.Mimic == who) { MimicAwareness.Instance?.Raise(8f, "caught in its house"); MimicAwareness.Instance?.Expose(15f, "caught in its house"); }
             if (mover != null) mover.WalkTo(interactor.transform.position);
@@ -307,6 +328,7 @@ namespace Semblance.World
             who.transform.rotation = Quaternion.LookRotation(Vector3.ProjectOnPlane(interactor.transform.position - who.transform.position, Vector3.up));
             string[] caught =
             {
+                "You don't knock in the city, Detective? Out here people get shot for less. Out.",
                 "What the hell are you doing in my house? ...No. Don't answer. Out. Now.",
                 "You walked in. Nobody answered, so you walked in. Is that how they do it in the city? Get out.",
                 "I ought to fetch the gun. I'm not going to, because you're leaving. Say your piece on the porch.",
@@ -324,6 +346,8 @@ namespace Semblance.World
             if (outsidePoint != null) interactor.transform.position = outsidePoint.position + (outsidePoint.position - door.transform.position).normalized * 0.8f;
             if (cc != null) cc.enabled = true;
             door.ForceOpen(false);
+            door.SetLocked(true, "Bolted from inside. You were put out of this house; nobody's letting you back in today.");
+            boltedToday = true;
             int day = GameClock.Instance != null ? GameClock.Instance.Day : 1;
             Save.SaveSystem.Flags.Add($"thrown|{family}|{day}");
             interactor.Hud.ShowMessage($"{who.FirstName} walks you to the door and shuts it behind you. The bolt goes across.", 5f);

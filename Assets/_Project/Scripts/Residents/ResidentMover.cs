@@ -185,13 +185,23 @@ namespace Semblance.Residents
                 bool farTrip = spot != null && Vector3.Distance(spot.transform.position, transform.position) > 70f;
                 bool unseen = !VisibleToPlayer() && DistanceToPlayer > 35f;
                 bool destinationUnseen = spot != null && player != null && Vector3.Distance(player.position, spot.transform.position) > 35f;
-                GoTo(pendingSpot, instant: unseen && (farTrip || destinationUnseen));
+                bool churchBound = pendingSpot.StartsWith("Church:");
+                GoTo(pendingSpot, instant: unseen && (farTrip || destinationUnseen) && !churchBound);
             }
 
-            // Mid-walk, skip the rest of a long journey once nobody's watching.
+            // Mid-walk, skip the rest of a long journey once nobody's watching. Church-bound, they skip to the road
+            // outside and walk in through the door like people do.
             if (target != null && agent.hasPath && agent.remainingDistance > 40f && !VisibleToPlayer() && DistanceToPlayer > 40f
                 && Vector3.Distance(player != null ? player.position : Vector3.zero, target.transform.position) > 40f)
-                Teleport(target.transform.position, target.transform.rotation);
+            {
+                if (target.Id != null && target.Id.StartsWith("Church:") && Vector3.Distance(transform.position, target.transform.position) > 45f)
+                {
+                    Vector3 approach = target.transform.position + Vector3.right * 30f;
+                    if (NavMesh.SamplePosition(approach, out var hit, 6f, NavMesh.AllAreas)) { agent.Warp(hit.position); agent.SetDestination(target.transform.position); }
+                }
+                else
+                    Teleport(target.transform.position, target.transform.rotation);
+            }
 
             // Settle into the spot's facing once arrived.
             if (target != null && !agent.pathPending && agent.isOnNavMesh && agent.remainingDistance <= agent.stoppingDistance + 0.05f)

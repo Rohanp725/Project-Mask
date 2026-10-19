@@ -217,7 +217,8 @@ namespace Semblance.Events
             }
 
             // It creeps while you watch it and runs when you don't. Backing away while staring is slower than it creeps.
-            agent.speed = Time.time < flinchUntil ? 0f : seen ? 1.6f : distance > 20f ? 7f : 4.6f;
+            // Never faster than a sprinting detective by much: the run is winnable if you don't stop.
+            agent.speed = Time.time < flinchUntil ? 0f : seen ? 1.6f : distance > 20f ? 5.5f : 4.6f;
             if (stalkOnly)
             {
                 // Following, not hunting: it keeps its distance and leaves once it's been seen, or after a minute.

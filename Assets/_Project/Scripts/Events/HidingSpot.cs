@@ -88,19 +88,29 @@ namespace Semblance.Events
         {
             if (slats == null)
             {
+                // Louvred doors: dark slats with the room showing in the gaps between them, so what walks past can be seen.
                 var canvas = UIFactory.Canvas("Hiding Canvas", null, 4);
                 slats = canvas.gameObject;
-                var dark = UIFactory.Panel("Dark", canvas.transform, new Color(0, 0, 0, 0.92f), false);
-                UIFactory.Stretch(dark.rectTransform);
                 var layout = UIFactory.Rect("Slats", canvas.transform);
                 UIFactory.Stretch(layout);
-                for (int i = 0; i < 7; i++)
+                var slat = new Color(0.02f, 0.015f, 0.01f, 0.97f);
+                // Solid above and below the louvres, and down both sides.
+                UIFactory.Place(UIFactory.Panel("Top", layout, slat, false).rectTransform, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), Vector2.zero, new Vector2(2000, 150));
+                UIFactory.Place(UIFactory.Panel("Bottom", layout, slat, false).rectTransform, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), Vector2.zero, new Vector2(2000, 150));
+                UIFactory.Place(UIFactory.Panel("Left", layout, slat, false).rectTransform, new Vector2(0f, 0.5f), new Vector2(0f, 0.5f), Vector2.zero, new Vector2(300, 2000));
+                UIFactory.Place(UIFactory.Panel("Right", layout, slat, false).rectTransform, new Vector2(1f, 0.5f), new Vector2(1f, 0.5f), Vector2.zero, new Vector2(300, 2000));
+                for (int i = 0; i < 9; i++)
                 {
-                    var gap = UIFactory.Panel("Gap", layout, new Color(0, 0, 0, 0f), false);
-                    UIFactory.Place(gap.rectTransform, new Vector2(0.5f, 0.3f + i * 0.06f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(700, 6));
+                    float y = 150f + i * 46f;
+                    var bar = UIFactory.Panel("Slat", layout, slat, false);
+                    UIFactory.Place(bar.rectTransform, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0, y), new Vector2(700, 34));
+                    // The lit edge of each slat where the room's light catches it.
+                    var lip = UIFactory.Panel("Slat Edge", layout, new Color(0.25f, 0.2f, 0.14f, 0.9f), false);
+                    UIFactory.Place(lip.rectTransform, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0, y + 34f), new Vector2(700, 3));
                 }
-                // The gaps are just less-dark strips; a real cut-out isn't needed at PS1 resolution.
-                dark.color = new Color(0, 0, 0, 0.82f);
+                var dim = UIFactory.Panel("Dim", layout, new Color(0, 0, 0, 0.35f), false);
+                UIFactory.Stretch(dim.rectTransform);
+                dim.transform.SetAsFirstSibling();
             }
             slats.SetActive(show);
         }

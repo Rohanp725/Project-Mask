@@ -223,7 +223,15 @@ namespace Semblance.Case
                        ?? Pick(innocents.Where(r => !IsPastorOrRecluse(r) && r.DisplayName != CastNames.Greta));
             if (liar == null) return;
             FoundersLiar = liar;
-            mods[liar].TopicOverrides[ResidentProfile.TopicFoundersDay] = CaseDirector.FirstPerson(CaseDirector.WrongFoundersDay[rng.Next(CaseDirector.WrongFoundersDay.Length)], liar);
+            // A person who wasn't there gets it wrong the way people do: hedging, correcting themselves, one fact off.
+            // The mimic's wrong version is the confident one.
+            string[] human =
+            {
+                "Clear as a bell that day, I remember that much. Mae took it with her cherry pie, and Father Crane gave us the wheat and the tares. I'll be honest, I'd had a few by the afternoon.",
+                "It rained, didn't it. Mae won, apple pie I think... no. Cherry. No, apple, I'm nearly sure. And Crane did the one about the tares. Don't quote me.",
+                "Rained all day. Mae's cherry, same as ever. The sermon... the prodigal son, was it? Something with a son in it. I was outside most of it, to be honest.",
+            };
+            mods[liar].TopicOverrides[ResidentProfile.TopicFoundersDay] = CaseDirector.FirstPerson(human[rng.Next(human.Length)], liar);
             mods[liar].Notes.Add("lies about Founders' Day (wasn't there)");
             string[] why =
             {
