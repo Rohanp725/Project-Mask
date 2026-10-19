@@ -31,6 +31,8 @@ namespace Semblance.Core
             Rendering.DayNightCycle.HuntDarkness = 0f;
             Rendering.LampSwitch.ForceOn = false;
             GameClock.RateScale = 1f;
+            GameClock.ShowDay = true;
+            Notes.NotebookUI.CaseIntroOverride = null;
             Rendering.PS1ScreenEffect.Distress = 0f;
             Cursor.lockState = CursorLockMode.Locked;
             Cursor.visible = false;

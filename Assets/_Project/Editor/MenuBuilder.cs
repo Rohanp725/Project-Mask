@@ -155,6 +155,8 @@ namespace Semblance.EditorTools
                 new EditorBuildSettingsScene(ScenePath, true),
                 new EditorBuildSettingsScene(TownBuilder.ScenePath, true),
             };
+            if (AssetDatabase.LoadAssetAtPath<SceneAsset>(TownBuilder.TutorialScenePath) != null)
+                scenes.Add(new EditorBuildSettingsScene(TownBuilder.TutorialScenePath, true));
             EditorBuildSettings.scenes = scenes.ToArray();
         }
 

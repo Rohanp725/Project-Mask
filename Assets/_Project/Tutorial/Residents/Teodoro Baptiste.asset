@@ -1,0 +1,63 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c298614ef4a634a45a76f297906bffae, type: 3}
+  m_Name: Teodoro Baptiste
+  m_EditorClassIdentifier: Assembly-CSharp::Semblance.Residents.ResidentProfile
+  displayName: Teodoro Baptiste
+  occupation: Custodian
+  age: 63
+  possessive: his
+  home: Barlow
+  bio: Has kept the county building clean, warm and lit since 1958. Lives with an old dog called Biscuit.
+  appearance:
+    height: 0.98
+    build: 1.1
+    headSize: 1
+    skin: {r: 0.55, g: 0.4, b: 0.3, a: 1}
+    hairColor: {r: 0.7, g: 0.7, b: 0.68, a: 1}
+    eyeColor: {r: 0.2, g: 0.14, b: 0.1, a: 1}
+    shirt: {r: 0.42, g: 0.44, b: 0.47, a: 1}
+    pants: {r: 0.36, g: 0.38, b: 0.42, a: 1}
+    shoes: {r: 0.1, g: 0.09, b: 0.08, a: 1}
+    hair: 4
+    hat: 0
+    hatColor: {r: 0.3, g: 0.25, b: 0.2, a: 1}
+    glasses: 0
+    beard: 0
+    mustache: 1
+    apron: 0
+    overalls: 1
+    clericalCollar: 0
+  features:
+  - id: limp
+    side: 1
+    explanation: Fell off that same ladder in '79. The ladder's fine.
+    inArchive: 1
+  - id: gold_tooth
+    side: 0
+    explanation: A bet, a long time ago. I won, and this is what I bought with it.
+    inArchive: 1
+  schedule:
+  - 
+  - 
+  - 
+  - 
+  greetings:
+  - Evening, Detective. Mind the floor, it's wet.
+  - Still here? Me too.
+  aboutSelf: Been down here all night with the furnace. She's older than me and twice as mean. Don't tell Alma I'm in; she'll have me fixing the lobby door again.
+  aboutTown: Semblance. Never been. My cousin delivers feed up that way. Says the dogs there don't bark at strangers, and he doesn't like it.
+  seenAnythingStrange: Biscuit won't go past the third row of shelves. Sits and stares at the wall. Dogs know things. Then again, she's half blind.
+  foundersDay: 
+  gossip:
+  - title: About Alma Reyes
+    response: Alma feeds my dog when she thinks I'm not looking. Thirty years and she thinks I don't know. She's a good one.

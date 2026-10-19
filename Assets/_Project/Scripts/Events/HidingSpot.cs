@@ -27,9 +27,14 @@ namespace Semblance.Events
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         internal static void ResetStatics() { Occupied = null; slats = null; }
 
-        public override string Prompt => "Hide in the wardrobe";
+        [SerializeField] private string hidePrompt = "Hide in the wardrobe";
+        public override string Prompt => hidePrompt;
 
-        public void Configure(Transform insidePoint) => inside = insidePoint;
+        public void Configure(Transform insidePoint, string promptText = null)
+        {
+            inside = insidePoint;
+            if (promptText != null) hidePrompt = promptText;
+        }
 
         public override void Interact(PlayerInteractor interactor)
         {

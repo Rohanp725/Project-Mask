@@ -1,0 +1,63 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c298614ef4a634a45a76f297906bffae, type: 3}
+  m_Name: Alma Reyes
+  m_EditorClassIdentifier: Assembly-CSharp::Semblance.Residents.ResidentProfile
+  displayName: Alma Reyes
+  occupation: Desk sergeant
+  age: 54
+  possessive: her
+  home: Barlow
+  bio: Thirty-one years on the front desk of the county sheriff's office. Knows every voice in the county by its second word.
+  appearance:
+    height: 0.97
+    build: 1.05
+    headSize: 1
+    skin: {r: 0.72, g: 0.56, b: 0.46, a: 1}
+    hairColor: {r: 0.62, g: 0.6, b: 0.6, a: 1}
+    eyeColor: {r: 0.3, g: 0.22, b: 0.14, a: 1}
+    shirt: {r: 0.56, g: 0.5, b: 0.36, a: 1}
+    pants: {r: 0.28, g: 0.29, b: 0.3, a: 1}
+    shoes: {r: 0.1, g: 0.08, b: 0.07, a: 1}
+    hair: 3
+    hat: 0
+    hatColor: {r: 0.3, g: 0.25, b: 0.2, a: 1}
+    glasses: 1
+    beard: 0
+    mustache: 0
+    apron: 0
+    overalls: 0
+    clericalCollar: 0
+  features:
+  - id: ring
+    side: 1
+    explanation: Thirty years in May. He's asleep in front of the television right now, I'd put money on it.
+    inArchive: 1
+  - id: cheek_scar
+    side: 2
+    explanation: A drunk with a bottle, 1961. He's dead and I'm not.
+    inArchive: 1
+  schedule:
+  - 
+  - 
+  - 
+  - 
+  greetings:
+  - Klein. You're still here.
+  - Go home, Klein. ...Oh. Right. The letter.
+  aboutSelf: Thirty-one years on this desk. I know every voice in the county by its second word. The sheriff's, the drunks', and the ones that call and don't say anything.
+  aboutTown: 'Semblance? Two hours north, past Barlow. Farm town: one church, one diner, one road through it. In thirty-one years this office has never had a call from there. Not a stolen truck. Not a drunk. Nothing at all.'
+  seenAnythingStrange: Teo's dog got out again. Half blind, that animal, and she goes and sits in the archive facing the wall, like she's waiting for somebody to come through it.
+  foundersDay: 
+  gossip:
+  - title: About Teodoro Baptiste
+    response: Teo? Clocked out at ten, same as always. Thursdays he's off anyway, so I don't know why he was in at all.

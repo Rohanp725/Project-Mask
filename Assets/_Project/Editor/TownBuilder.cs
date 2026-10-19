@@ -1178,7 +1178,7 @@ namespace Semblance.EditorTools
             }
         }
 
-        private static void BakeNavMesh(Transform environment)
+        private static void BakeNavMesh(Transform environment, string assetPath = null)
         {
             // Agents slimmer than Unity's default so they fit through 1.2 m doorways.
             var navSettings = AssetDatabase.LoadAllAssetsAtPath("ProjectSettings/NavMeshAreas.asset");
@@ -1212,7 +1212,7 @@ namespace Semblance.EditorTools
             surface.tileSize = 128;
             surface.BuildNavMesh();
 
-            string path = SceneDir + "/Semblance_Town_NavMesh.asset";
+            string path = assetPath ?? SceneDir + "/Semblance_Town_NavMesh.asset";
             AssetDatabase.DeleteAsset(path);
             AssetDatabase.CreateAsset(surface.navMeshData, path);
         }
@@ -2026,6 +2026,10 @@ namespace Semblance.EditorTools
                 case float f: property.floatValue = f; break;
                 case int i: property.intValue = i; break;
                 case bool b: property.boolValue = b; break;
+                case Object[] objects:
+                    property.arraySize = objects.Length;
+                    for (int k = 0; k < objects.Length; k++) property.GetArrayElementAtIndex(k).objectReferenceValue = objects[k];
+                    break;
                 default: throw new ArgumentException("Unsupported value type " + value?.GetType());
             }
             so.ApplyModifiedPropertiesWithoutUndo();

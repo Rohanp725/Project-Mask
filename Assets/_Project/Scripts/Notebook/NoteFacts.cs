@@ -41,6 +41,8 @@ namespace Semblance.Notes
             if (t.Contains("slice of yesterday's cherry")) return "claim|mae_eats|yes";
             if (t.Contains("out of my album") || t.Contains("somebody put that in the box")) return "claim|thorne_photo|stolen";
             if (t.Contains("sleeps beside me") || t.Contains("comes to bed")) return "claim|harlan_sleeps|home";
+            if (t.Contains("clocked out at ten") || t.Contains("went home at ten")) return "claim|teo_left|ten";
+            if (t.Contains("been down here all night") || t.Contains("been here all night")) return "claim|teo_left|never";
             return null;
         }
 
@@ -66,6 +68,7 @@ namespace Semblance.Notes
             if (topic == "mae_eats") return value == "no" ? "Mae doesn't eat" : "Mae eats pie for breakfast every morning";
             if (topic == "thorne_photo") return value == "stolen" ? "somebody else took the photograph from Bev's album" : "Bev put the photograph in the mailbox herself";
             if (topic == "harlan_sleeps") return value == "home" ? "Harlan sleeps in his own bed" : "Harlan has been sleeping in the barn";
+            if (topic == "teo_left") return value == "ten" ? "Teo clocked out at ten" : "Teo never left the building";
             return $"{topic} is {value}";
         }
 

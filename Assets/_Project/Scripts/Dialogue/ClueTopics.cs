@@ -106,6 +106,15 @@ namespace Semblance.Dialogue
             built = true;
 
             // ---------------------------------------------------------------- Town centre
+            // ---- The tutorial (the office, two nights before Semblance). Nobody in town has answers to these.
+            Add("tut_letter", Seen("tut_letter"), "A letter on my desk, postmarked Semblance: 'One of us is not one of us.'", null, null,
+                ("Alma", "Came in the afternoon post. No return address, no name. Semblance is two hours north, farm country, and in thirty years this office has never had a call from there. Not one. The sheriff read it twice and put it on your desk."),
+                ("Teodoro", "I don't read the post, Detective. I empty the bins it ends up in."));
+            Add("tut_letter_who", Seen("tut_letter"), "Who else has seen it?", null, "tut_letter",
+                ("Alma", "The sheriff, me, and now you. And Teo, if he reads other people's desks, which I wouldn't put past him."));
+            Cross("tut_swap", Seen("tut_letter"), After("Teodoro Baptiste", Residents.ResidentProfile.TopicSelf), "Teo says he's been down there all night.",
+                ("Alma", "Has he. Then he swapped with Luis again and didn't put it on the board. He does that. So I told you he'd gone home, and I was wrong. Write that down too, Klein: being wrong for an ordinary reason is still being wrong."));
+
             Add("breakfast", Seen("breakfast"), "Somebody wrote 'ask Mae what she had for breakfast' on the diner menu.",
                 null, null,
                 ("Mae", "Coffee. And a slice of yesterday's cherry. Since Earl, that's breakfast. ...Ada wrote that, didn't she. She thinks I'm wasting away. Maybe I am. I'm still me."),

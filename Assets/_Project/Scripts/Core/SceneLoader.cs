@@ -8,6 +8,7 @@ namespace Semblance.Core
     {
         public const string MenuScene = "MainMenu";
         public const string TownScene = "Semblance_Town";
+        public const string TutorialScene = "Semblance_Tutorial";
 
         /// <summary>True when the town should load from the save file instead of starting fresh.</summary>
         public static bool ContinueRequested { get; private set; }
@@ -30,6 +31,13 @@ namespace Semblance.Core
             ContinueRequested = false;
             ReplaySeed = seed;
             Load(TownScene);
+        }
+
+        /// <summary>The office, two nights before the case: the tutorial.</summary>
+        public static void Tutorial()
+        {
+            ContinueRequested = false;
+            Load(TutorialScene);
         }
 
         public static void Continue()

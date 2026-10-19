@@ -80,6 +80,13 @@ namespace Semblance.EditorTools
             Write("engine_loop", Loop(Engine(6f), 0.3f));
             Write("car_door", Concat(Click(0.05f, 900f), Thud(0.35f, 85f, 0.8f)));
             Write("flashlight_click", Click(0.035f, 2200f));
+            // The office and the basement (the tutorial).
+            Write("rain_loop", Loop(Rain(6f), 1.5f));
+            Write("claws_loop", Loop(Claws(2.4f), 0.05f));
+            Write("dog_pant_loop", Loop(Panting(2.3f), 0.1f));
+            Write("dog_bark", Bark());
+            Write("power_down", PowerDown());
+            Write("breaker_reset", BreakerReset());
 
             AssetDatabase.Refresh();
             Debug.Log("[Semblance] Generated audio into " + OutDir);
@@ -496,6 +503,112 @@ namespace Semblance.EditorTools
                 }
             }
             LowPass(b, 300f);
+            Normalize(b, 0.9f);
+            return b;
+        }
+
+        private static float[] Rain(float seconds)
+        {
+            var b = Noise(seconds, 1f);
+            HighPass(b, 700f);
+            LowPass(b, 3200f);
+            for (int i = 0; i < b.Length; i++)
+            {
+                float t = i / (float)Rate;
+                b[i] *= 0.75f + 0.25f * Mathf.Sin(t * 0.9f) * Mathf.Sin(t * 2.3f + 1f);
+            }
+            // The odd fat drop on the sill.
+            for (int k = 0; k < seconds * 3; k++)
+            {
+                int at = rng.Next(b.Length - 400);
+                for (int i = 0; i < 300; i++) b[at + i] += Rand() * Mathf.Exp(-i / 60f) * 0.35f;
+            }
+            Normalize(b, 0.45f);
+            return b;
+        }
+
+        /// <summary>Claws on concrete: a loose trot, four ticks a stride, not quite even.</summary>
+        private static float[] Claws(float seconds)
+        {
+            var b = Buffer(seconds);
+            float t = 0.05f;
+            while (t < seconds - 0.1f)
+            {
+                var tick = Click(0.02f, 2600f + (float)rng.NextDouble() * 900f);
+                b = Mix(b, tick, 0.5f + (float)rng.NextDouble() * 0.5f, (int)(t * Rate));
+                t += 0.11f + (float)rng.NextDouble() * 0.07f + (rng.NextDouble() < 0.25 ? 0.12f : 0f);
+            }
+            Normalize(b, 0.55f);
+            return b;
+        }
+
+        /// <summary>A dog panting: quick breaths, in weaker than out, a little rasp on each.</summary>
+        private static float[] Panting(float seconds)
+        {
+            var b = Noise(seconds, 1f);
+            HighPass(b, 350f);
+            LowPass(b, 1900f);
+            const float rate = 2.7f;
+            for (int i = 0; i < b.Length; i++)
+            {
+                float t = i / (float)Rate;
+                float phase = (t * rate) % 1f;
+                float env = phase < 0.45f ? Mathf.Sin(phase / 0.45f * Mathf.PI) * 0.55f : Mathf.Sin((phase - 0.45f) / 0.55f * Mathf.PI);
+                b[i] *= env * env;
+            }
+            Normalize(b, 0.5f);
+            return b;
+        }
+
+        private static float[] Bark()
+        {
+            var b = Buffer(0.5f);
+            foreach (var (at, len) in new[] { (0f, 0.16f), (0.24f, 0.14f) })
+            {
+                int s = (int)(at * Rate);
+                for (int i = 0; i < len * Rate && s + i < b.Length; i++)
+                {
+                    float t = i / (float)Rate;
+                    float env = Mathf.Sin(Mathf.Min(1f, t / len) * Mathf.PI);
+                    float f = 240f - t * 300f;
+                    b[s + i] += (Mathf.Sin(2 * Mathf.PI * f * t) * 0.6f + Mathf.Sign(Mathf.Sin(2 * Mathf.PI * f * 2.01f * t)) * 0.2f + Rand() * 0.35f) * env;
+                }
+            }
+            LowPass(b, 2400f);
+            HighPass(b, 160f);
+            Normalize(b, 0.9f);
+            return b;
+        }
+
+        /// <summary>The building's hum winding down to nothing, with the thump of the breaker letting go.</summary>
+        private static float[] PowerDown()
+        {
+            var b = Buffer(2.2f);
+            for (int i = 0; i < b.Length; i++)
+            {
+                float t = i / (float)Rate;
+                float f = Mathf.Lerp(120f, 28f, Mathf.Clamp01(t / 1.6f));
+                float env = Mathf.Clamp01(1f - t / 2f);
+                b[i] = (Mathf.Sign(Mathf.Sin(2 * Mathf.PI * f * t)) * 0.25f + Mathf.Sin(2 * Mathf.PI * f * 2f * t) * 0.3f) * env * env;
+            }
+            LowPass(b, 900f);
+            b = Mix(b, Thud(0.5f, 60f, 1f), 0.9f, (int)(0.05f * Rate));
+            Normalize(b, 0.9f);
+            return b;
+        }
+
+        private static float[] BreakerReset()
+        {
+            var b = Mix(Thud(0.4f, 75f, 1f), Click(0.06f, 1400f), 0.8f, (int)(0.02f * Rate));
+            var rise = Buffer(1.4f);
+            for (int i = 0; i < rise.Length; i++)
+            {
+                float t = i / (float)Rate;
+                float f = Mathf.Lerp(30f, 120f, Mathf.Clamp01(t / 1.1f));
+                rise[i] = (Mathf.Sign(Mathf.Sin(2 * Mathf.PI * f * t)) * 0.25f + Mathf.Sin(2 * Mathf.PI * f * 2f * t) * 0.3f) * Mathf.Clamp01(t / 0.3f) * 0.5f;
+            }
+            LowPass(rise, 900f);
+            b = Mix(b, rise, 0.8f, (int)(0.25f * Rate));
             Normalize(b, 0.9f);
             return b;
         }

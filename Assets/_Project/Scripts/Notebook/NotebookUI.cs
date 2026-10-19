@@ -19,6 +19,8 @@ namespace Semblance.Notes
 
         /// <summary>Extra sections other systems can add to the Case File page (evidence, mysteries...).</summary>
         public static readonly List<System.Func<string>> CaseFileSections = new List<System.Func<string>>();
+        /// <summary>The Case File's opening paragraph, when it isn't the Semblance case (the tutorial).</summary>
+        public static string CaseIntroOverride;
 
         private GameObject root;
         private RectTransform subjectList;
@@ -305,8 +307,8 @@ namespace Semblance.Notes
             var text = UIFactory.Text("Particulars", row, particulars, 15, UIFactory.Ink, TextAlignmentOptions.TopLeft);
             UIFactory.Place(text.rectTransform, new Vector2(0, 1), new Vector2(0, 1), new Vector2(128, -2), new Vector2(560, 148));
 
-            AddParagraph("<size=110%><b>Assignment</b></size>\nAn anonymous letter, postmarked Semblance: <i>\"One of us is not one of us.\"</i> Find out which of the sixteen inside the sound of the bell isn't who they seem, and name them before the town stops listening."
-                + (clock != null ? $" <b>{Mathf.Max(0, clock.LastDay - clock.Day)} day(s) left.</b>" : ""), 8);
+            AddParagraph(CaseIntroOverride ?? ("<size=110%><b>Assignment</b></size>\nAn anonymous letter, postmarked Semblance: <i>\"One of us is not one of us.\"</i> Find out which of the sixteen inside the sound of the bell isn't who they seem, and name them before the town stops listening."
+                + (clock != null && GameClock.ShowDay ? $" <b>{Mathf.Max(0, clock.LastDay - clock.Day)} day(s) left.</b>" : "")), 8);
 
             // Everything that has happened to you that shouldn't have.
             var odd = notebook.EntriesFor(Notebook.CaseSubject).Where(e => e.kind == NoteKind.Event).ToList();
@@ -440,12 +442,17 @@ namespace Semblance.Notes
         private void BuildCaseFile(Notebook notebook)
         {
             var clock = GameClock.Instance;
-            header.text = "<b>CASE FILE</b>  <size=70%>" + (clock != null ? $"{clock.Label}. {Mathf.Max(0, clock.LastDay - clock.Day)} day(s) left." : "") + "</size>";
+            header.text = "<b>CASE FILE</b>  <size=70%>" + (clock != null ? clock.Label + (GameClock.ShowDay ? $". {Mathf.Max(0, clock.LastDay - clock.Day)} day(s) left." : "") : "") + "</size>";
 
             var sb = new StringBuilder();
-            sb.AppendLine("<i>\"One of us is not one of us.\"</i>  An anonymous letter, postmarked Semblance.");
-            sb.AppendLine("Find which resident isn't who they seem, then ring the church bell to accuse them.");
-            sb.AppendLine("Weird is normal here. <b>Wrong</b> is not: look for details that don't match the records, the gossip, or yesterday.");
+            if (CaseIntroOverride != null)
+                sb.AppendLine(CaseIntroOverride);
+            else
+            {
+                sb.AppendLine("<i>\"One of us is not one of us.\"</i>  An anonymous letter, postmarked Semblance.");
+                sb.AppendLine("Find which resident isn't who they seem, then ring the church bell to accuse them.");
+                sb.AppendLine("Weird is normal here. <b>Wrong</b> is not: look for details that don't match the records, the gossip, or yesterday.");
+            }
             AddParagraph(sb.ToString());
 
             AddParagraph("<size=110%><b>Suspicion</b></size>", 8);

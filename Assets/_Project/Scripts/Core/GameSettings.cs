@@ -28,6 +28,8 @@ namespace Semblance.Core
         public static bool Dither { get => Get("dither", 1) == 1; set => Set("dither", value ? 1 : 0); }
         public static bool InvertY { get => Get("invertY", 0) == 1; set => Set("invertY", value ? 1 : 0); }
         public static bool ShowHints { get => Get("hints", 1) == 1; set => Set("hints", value ? 1 : 0); }
+        /// <summary>The tutorial has been started at least once: the game no longer opens straight into it.</summary>
+        public static bool TutorialSeen { get => Get("tutorialSeen", 0) == 1; set => Set("tutorialSeen", value ? 1 : 0); }
         /// <summary>Scales all interface text and panels (0.85 - 1.5).</summary>
         public static float TextScale { get => GetF("textScale", 1f); set => SetF("textScale", value); }
         /// <summary>Head bob and fear camera shake. Off for players who get motion sick.</summary>
@@ -38,7 +40,8 @@ namespace Semblance.Core
         public static bool ReduceScares { get => Get("reduceScares", 0) == 1; set => Set("reduceScares", value ? 1 : 0); }
 
         public static bool ListObservedDetails => Difficulty != Difficulty.Hard;
-        public static int TellCount => Difficulty == Difficulty.Easy ? 4 : Difficulty == Difficulty.Normal ? 3 : 2;
+        public static int TellCount => TellCountFor(Difficulty);
+        public static int TellCountFor(Difficulty d) => d == Difficulty.Easy ? 4 : d == Difficulty.Normal ? 3 : 2;
         public static int RedHerringCount => Difficulty == Difficulty.Easy ? 2 : Difficulty == Difficulty.Normal ? 5 : 6;
         public static int DayCount => Difficulty == Difficulty.Easy ? 6 : Difficulty == Difficulty.Normal ? 5 : 4;
         /// <summary>How fast the mimic's awareness of you grows.</summary>

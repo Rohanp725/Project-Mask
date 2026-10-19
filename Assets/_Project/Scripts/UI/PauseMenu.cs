@@ -70,7 +70,9 @@ namespace Semblance.UI
             var title = UIFactory.Text("Title", main.transform, "PAUSED", 40, UIFactory.Light, TextAlignmentOptions.Center);
             UIFactory.Place(title.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0, 170), new Vector2(500, 60));
             var save = Save.SaveSystem.Peek();
-            var note = UIFactory.Text("Note", main.transform, save != null ? $"<size=80%>The game saves each night when you sleep in Room 6. Last save: Day {save.day}.</size>" : "<size=80%>The game saves each night when you sleep in Room 6.</size>", 16, new Color(1, 1, 1, 0.5f), TextAlignmentOptions.Center);
+            bool tutorial = Tutorial.TutorialStage.Instance != null;
+            var note = UIFactory.Text("Note", main.transform, tutorial ? "<size=80%>Night Shift: the tutorial. Nothing here is saved; skip it whenever you like.</size>"
+                : save != null ? $"<size=80%>The game saves each night when you sleep in Room 6. Last save: Day {save.day}.</size>" : "<size=80%>The game saves each night when you sleep in Room 6.</size>", 16, new Color(1, 1, 1, 0.5f), TextAlignmentOptions.Center);
             UIFactory.Place(note.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0, 120), new Vector2(700, 30));
 
             float y = 60;
@@ -85,6 +87,7 @@ namespace Semblance.UI
             y = 40;
             Item("Resume", Close);
             Item("Notebook", () => { Close(); NotebookUI.Instance?.Open(); });
+            if (tutorial) Item("Skip tutorial", () => { Close(); Tutorial.TutorialStage.Instance?.Skip(); });
             Item("Settings", () => { main.SetActive(false); settings.SetActive(true); });
             Item("Quit to main menu", () => { Close(); SceneLoader.MainMenu(); });
             Item("Quit game", () => { Application.Quit(); });

@@ -21,6 +21,12 @@ namespace Semblance.UI
 
         private void Start()
         {
+            // The first time, there's no title screen: the game opens on the office, two nights before the case.
+            if (!GameSettings.TutorialSeen && !SaveSystem.HasSave)
+            {
+                SceneLoader.Tutorial();
+                return;
+            }
             InputLock.Push(this, () => { if (settings.activeSelf || difficulty.activeSelf) ShowMain(); });
             Cursor.lockState = CursorLockMode.None;
             Cursor.visible = true;
@@ -55,6 +61,27 @@ namespace Semblance.UI
             }
         }
 
+        private static string DifficultyName(Difficulty d) => d == Difficulty.Easy ? "Careless" : d == Difficulty.Hard ? "Patient" : "Careful";
+        private static int LastDay(Difficulty d) => d == Difficulty.Easy ? 6 : d == Difficulty.Hard ? 4 : 5;
+
+        /// <summary>What's waiting in the save: the case as a folder beside the menu.</summary>
+        private static void CaseCard(Transform parent, SaveData save)
+        {
+            var d = (Difficulty)save.difficulty;
+            var card = UIFactory.Panel("Case Card", parent, new Color(0.9f, 0.86f, 0.74f, 0.9f), false);
+            UIFactory.Place(card.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0f, 0.5f), new Vector2(230, -20), new Vector2(300, 168));
+            card.transform.localRotation = Quaternion.Euler(0, 0, 2.5f);
+            var tab = UIFactory.Panel("Tab", card.transform, new Color(0.75f, 0.68f, 0.5f, 1f), false);
+            UIFactory.Place(tab.rectTransform, new Vector2(0, 1), new Vector2(0, 1), new Vector2(14, 10), new Vector2(110, 22));
+            var tabText = UIFactory.Text("Tab Text", tab.transform, "<size=12><b>OPEN CASE</b></size>", 12, new Color(0.2f, 0.16f, 0.1f), TextAlignmentOptions.Center);
+            UIFactory.Stretch(tabText.rectTransform);
+            int left = Mathf.Max(0, LastDay(d) - save.day);
+            string leftText = left == 0 ? "the last day" : left + " left";
+            string body = $"<b>Semblance</b>\nDay {save.day} of {LastDay(d)}  <size=80%>({leftText})</size>\n{GameFlow.DateLine(save.day)}\n{DifficultyName(d)}: it makes {GameSettings.TellCountFor(d)} mistakes\n<size=75%><color=#00000088>Saved {save.savedAt}</color></size>";
+            var text = UIFactory.Text("Body", card.transform, body, 16, new Color(0.18f, 0.14f, 0.1f), TextAlignmentOptions.TopLeft);
+            UIFactory.Place(text.rectTransform, new Vector2(0, 1), new Vector2(0, 1), new Vector2(18, -18), new Vector2(270, 140));
+        }
+
         private void ShowMain()
         {
             main.SetActive(true);
@@ -82,8 +109,13 @@ namespace Semblance.UI
 
             var save = SaveSystem.Peek();
             if (save != null)
-                Item(main.transform, $"Continue  <size=70%>(Day {save.day}, {(Difficulty)save.difficulty})</size>", () => { GameSettings.Difficulty = (Difficulty)save.difficulty; SceneLoader.Continue(); }, ref y);
+            {
+                y = 40;
+                Item(main.transform, $"Continue  <size=70%>(Day {save.day}, {DifficultyName((Difficulty)save.difficulty)})</size>", () => { GameSettings.Difficulty = (Difficulty)save.difficulty; SceneLoader.Continue(); }, ref y);
+                CaseCard(main.transform, save);
+            }
             Item(main.transform, "New case", () => { main.SetActive(false); difficulty.SetActive(true); }, ref y);
+            Item(main.transform, "Tutorial  <size=70%>(Night Shift)</size>", SceneLoader.Tutorial, ref y);
             Item(main.transform, "Settings", () => { main.SetActive(false); settings.SetActive(true); }, ref y);
             Item(main.transform, "Quit", Application.Quit, ref y);
 
