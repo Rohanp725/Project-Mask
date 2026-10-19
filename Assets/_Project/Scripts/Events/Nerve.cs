@@ -111,7 +111,7 @@ namespace Semblance.Events
             if (value > 20f) fainting = false;
 
             // The first time the heartbeat starts, say what it is.
-            if (value < 60f && !Save.SaveSystem.Flags.Contains("hint:nerve"))
+            if (value < 60f && !Save.SaveSystem.Flags.Contains("hint:nerve") && Tutorial.TutorialStage.Instance == null) // the tutorial explains it itself
             {
                 Save.SaveSystem.Flags.Add("hint:nerve");
                 PlayerHUD.Instance?.SetHint("That's your heartbeat. The dark gets to you out here.\n<size=75%>Light calms you: lamps, lit rooms, Mae's coffee. Your flashlight ({flashlight}) helps a little.</size>", 9f);

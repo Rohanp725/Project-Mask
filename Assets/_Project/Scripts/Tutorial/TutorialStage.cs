@@ -41,8 +41,8 @@ namespace Semblance.Tutorial
         private readonly List<Light> lights = new List<Light>();
         private readonly List<Renderer> bulbs = new List<Renderer>();
         private readonly List<AmbientEmitter> hums = new List<AmbientEmitter>();
-        private bool photoTaken, breakerPulled, notebookWasOpen, finished;
-        private AudioSource chase, rain;
+        private bool photoTaken, breakerPulled, finished, lightsOut;
+        private AudioSource chase, rain, drone, heart;
         private static readonly int EmissionId = Shader.PropertyToID("_EmissionColor");
 
         private Transform A(string name) => anchors.First(t => t != null && t.name == "A:" + name);
@@ -96,6 +96,7 @@ namespace Semblance.Tutorial
             finished = true;
             StopAllCoroutines();
             GameSettings.TutorialSeen = true;
+            Rendering.PS1ScreenEffect.Distress = 0f;
             SceneLoader.MainMenu();
         }
 
@@ -103,9 +104,11 @@ namespace Semblance.Tutorial
 
         private void Hint(string text) => hud.SetHint(text, 0f);
 
+        /// <summary>A card you read at your own pace. Waits for any open conversation first, so it never lands under one.</summary>
         private IEnumerator Card(string text)
         {
-            yield return new WaitForSeconds(0.2f);
+            yield return new WaitUntil(() => Dialogue.DialogueUI.Instance == null || Dialogue.DialogueUI.Instance.Current == null);
+            yield return new WaitUntil(() => NotebookUI.Instance == null || !NotebookUI.Instance.IsOpen);
             hud.ShowReading(GameInput.Format(text));
             yield return new WaitUntil(() => !hud.IsReading);
         }
@@ -113,6 +116,12 @@ namespace Semblance.Tutorial
         private static bool Asked(string displayName, string key) => SaveSystem.Flags.Contains($"asked|{displayName}|{key}");
 
         private bool Near(string anchor, float radius) => Vector3.Distance(player.position, A(anchor).position) < radius;
+
+        private bool LookingAt(Vector3 point, float minDot = 0.5f)
+        {
+            var to = point - playerCam.transform.position;
+            return Vector3.Dot(playerCam.transform.forward, to.normalized) > minDot;
+        }
 
         private void Place(Vector3 position, Vector3 facing)
         {
@@ -127,6 +136,7 @@ namespace Semblance.Tutorial
 
         private void SetPower(bool on)
         {
+            lightsOut = !on;
             foreach (var l in lights) if (l != null) l.enabled = on;
             SetBulbs(bulbs, on);
             foreach (var l in emergencyLights) if (l != null) l.enabled = !on;
@@ -155,7 +165,6 @@ namespace Semblance.Tutorial
                 if (root == null) continue;
                 var roomLights = root.GetComponentsInChildren<Light>(true).Where(l => lights.Contains(l)).ToList();
                 var roomBulbs = root.GetComponentsInChildren<Renderer>(true).Where(r => bulbs.Contains(r)).ToList();
-                // A flicker before they hold.
                 for (int k = 0; k < 2; k++)
                 {
                     foreach (var l in roomLights) l.enabled = true;
@@ -172,6 +181,7 @@ namespace Semblance.Tutorial
             }
             foreach (var h in hums) if (h != null) h.gameObject.SetActive(true);
             if (furnaceGlow != null) SetBulbs(new[] { furnaceGlow }, true);
+            lightsOut = false;
         }
 
         private IEnumerator TypedLine(string line)
@@ -205,6 +215,43 @@ namespace Semblance.Tutorial
             }
         }
 
+        /// <summary>Pipes knocking, a carton shifting, claws two rows over: the basement talking to itself.</summary>
+        private IEnumerator BasementNoises()
+        {
+            var points = new[] { A("DogEast").position, A("DogWest").position, A("LockerFront").position + Vector3.forward * -3f, A("ChaseStart").position + Vector3.forward * 3f };
+            while (lightsOut)
+            {
+                yield return new WaitForSeconds(UnityEngine.Random.Range(7f, 14f));
+                if (!lightsOut) break;
+                var at = points[UnityEngine.Random.Range(0, points.Length)] + Vector3.up * UnityEngine.Random.Range(0.3f, 1.8f);
+                switch (UnityEngine.Random.Range(0, 3))
+                {
+                    case 0: GameAudio.PlayAt("knock_slow", at, 0.45f, UnityEngine.Random.Range(0.6f, 0.8f), 30f); break; // a pipe
+                    case 1: GameAudio.PlayAt("thud", at, 0.5f, UnityEngine.Random.Range(0.7f, 1f), 30f); break;          // a carton
+                    default: GameAudio.PlayAt("claws_loop", at, 0.35f, 1f, 24f); break;                                  // something, two rows over
+                }
+                Nerve.Instance?.Shock(1.5f);
+            }
+        }
+
+        /// <summary>Whenever the thing would be in the beam, the batteries give out. You never get a clean look.</summary>
+        private IEnumerator KeepItDark(Func<bool> until)
+        {
+            float nextFlicker = 0f;
+            while (!until())
+            {
+                var torch = Flashlight.Instance;
+                if (torch != null && dog != null && dog.gameObject.activeSelf && Time.time > nextFlicker && LookingAt(dog.transform.position, 0.45f)
+                    && Vector3.Distance(player.position, dog.transform.position) < 14f)
+                {
+                    torch.Kill(UnityEngine.Random.Range(1.8f, 3.2f));
+                    GameAudio.Play("flashlight_click", 0.5f, 0.8f);
+                    nextFlicker = Time.time + 0.6f;
+                }
+                yield return null;
+            }
+        }
+
         // ------------------------------------------------------------ the night
 
         private IEnumerator Run()
@@ -229,7 +276,7 @@ namespace Semblance.Tutorial
 
             // Outside, in the rain, closing on the one lit window.
             StartCoroutine(Dolly(9.5f));
-            StartCoroutine(FadeAudio(rain, 0.55f, 2.5f));
+            StartCoroutine(FadeAudio(rain, 0.6f, 2.5f));
             yield return fader.Fade(0f, 2.4f);
             yield return new WaitForSeconds(5.9f);
             yield return fader.Fade(1f, 1.2f);
@@ -239,102 +286,128 @@ namespace Semblance.Tutorial
             cinematic.gameObject.SetActive(false);
             playerCam.enabled = true;
             Place(A("Window").position, A("Window").forward);
-            StartCoroutine(FadeAudio(rain, 0.16f, 1.5f));
+            StartCoroutine(FadeAudio(rain, 0.22f, 1.5f));
             yield return new WaitForSeconds(0.4f);
             InputLock.Pop(this);
             controller.InputLocked = false;
             yield return fader.Fade(0f, 2.2f);
 
             // 1. Walking.
-            Hint("11:40 PM. Everyone's gone home but you and the sergeant.\n<size=75%>{move} to walk, {look} to look around, {sprint} to hurry. Your desk is the one with the lamp still on.</size>");
-            yield return new WaitUntil(() => Near("Desk", 1.7f));
+            Hint("11:40 PM. Everyone's gone home but you and the sergeant.\n<size=75%>{move} to walk, {look} to look around, {sprint} to hurry. Your desk is the one with the lamp still on, past the cubicles.</size>");
+            yield return new WaitUntil(() => Near("Desk", 1.9f));
 
             // 2. Reading.
             Hint("There's a letter on the blotter. Look at it and press {interact} to read it.");
             yield return new WaitUntil(() => SaveSystem.Flags.Contains("seen:tut_letter"));
             yield return new WaitUntil(() => !hud.IsReading);
-            yield return new WaitForSeconds(0.6f);
 
-            // 3. The notebook.
-            Hint("Press {notebook} to open your notebook. The letter's already in the Case File. Close it when you've had a look.");
+            // 3. The notebook. The next objective is already waiting when it closes: no dead air.
+            Hint("Everything you read, hear or see is written down. Press {notebook} to open your notebook; the letter's in the Case File. {notebook} again closes it.");
             yield return new WaitUntil(() => NotebookUI.Instance != null && NotebookUI.Instance.IsOpen);
-            notebookWasOpen = true;
+            Hint("Sergeant Reyes is at the front desk by the lobby door. Press {interact} on her and ask about the letter, under <b>About what I've found...</b>");
             yield return new WaitUntil(() => !NotebookUI.Instance.IsOpen);
-            yield return Card("Everything you read, hear or see goes in the notebook, filed by the person it concerns. Time stops while it's open. There's a page for your own notes, too.");
 
             // 4. Questioning.
-            Hint("Sergeant Reyes is at the front desk. Press {interact} on her and ask about the letter (About what I've found...).");
             yield return new WaitUntil(() => Asked("Alma Reyes", "tut_letter"));
-            Hint("Ask her about Teodoro (About people...). Then choose <b>Look them over</b>.");
+            Hint("Now ask about Teodoro (<b>About people...</b>), then choose <b>Look them over</b>: what you see goes in the notebook next to what she said.");
             yield return new WaitUntil(() => Asked("Alma Reyes", "About Teodoro Baptiste") && Asked("Alma Reyes", "observe"));
-            yield return new WaitUntil(() => Dialogue.DialogueUI.Instance == null || Dialogue.DialogueUI.Instance.Current == null);
-            yield return Card("What people tell you is testimony. What you see for yourself is observation. In the world, hold {focus} on someone to look closer. Faces are where the lies are: the records in Semblance will show you how everyone used to look.");
+            Hint("Leave the conversation when you're done with her.");
+            yield return Card("What people tell you is testimony. What you see for yourself is observation. In the world, hold {focus} on someone to look closer.\n\nFaces are where the lies are. In Semblance, the parish records show how everyone used to look.");
 
             // 5. The camera. The flash goes off; so do the lights.
-            Hint("Reyes wants the evidence board on film. Stand in front of it, press {camera} to raise the camera, {shoot} to take the photo.");
+            Hint("Reyes wants the evidence board on film: it's on the back wall, right of the clock. Press {camera} to raise the camera, {shoot} to take the photo.");
             yield return new WaitUntil(() => photoTaken);
-            yield return new WaitForSeconds(1.1f);
-            GameAudio.Play("power_down", 0.9f);
+            yield return new WaitForSeconds(0.35f);
+            GameAudio.Play("power_down", 1f);
+            GameAudio.Play("stinger_3", 0.5f, 0.7f);
             SetPower(false);
             if (breaker != null) breaker.Armed = true;
-            Nerve.Instance?.Shock(6f);
-            yield return new WaitForSeconds(1.6f);
+            Nerve.Instance?.Shock(8f);
+            Hint("<b>The lights are gone.</b> Press {flashlight} for your flashlight.");
+            yield return new WaitForSeconds(1.4f);
             hud.ShowMessage("Reyes, from the dark: \"That's the breaker. Basement, boiler room, far end of the archive. I'm not leaving the phones, Klein.\"", 6f);
-            Hint("Press {flashlight} for your flashlight.");
             yield return new WaitUntil(() => Flashlight.Instance != null && Flashlight.Instance.IsOn);
-            yield return new WaitForSeconds(0.8f);
+            yield return new WaitForSeconds(0.6f);
 
             // 6. Down.
-            Hint("The stairwell door is on the far wall, under the exit sign. Take the stairs down to the archive.");
+            Hint("The stairwell door is on the far wall, under the red EXIT sign. Take the stairs down to the archive.\n<size=75%>Your nerve drains in the dark and steadies in light. Keep moving.</size>");
+            drone = GameAudio.Loop("drone_deep_loop", null, 0f, bus: AudioBus.Ambience);
             yield return new WaitUntil(() => player.position.y < -2.6f);
-            yield return new WaitForSeconds(0.5f);
-            yield return Card("Your nerve drains in the dark and steadies in the light. Keep the beam on what's in front of you. Lose all of it and you black out, and the night goes on without you.\n\nThe breaker is at the far end of the central aisle.");
-            Hint("Follow the central aisle to the boiler room.");
+            StartCoroutine(FadeAudio(drone, 0.35f, 6f));
+            StartCoroutine(BasementNoises());
+            Hint("Follow the central aisle to the boiler room at the far end. The breaker's in there.");
 
-            // 7. The aisle. Something falls, something walks.
+            // 7. The aisle. Something falls. Then something walks, and the batteries start to go.
             yield return new WaitUntil(() => Near("ArchiveEntry", 2.5f) || player.position.x > -6f);
-            GameAudio.PlayAt("thud", A("DogEast").position + Vector3.up * 0.5f, 0.8f, 0.8f, 40f);
-            yield return new WaitForSeconds(2f);
-            yield return new WaitUntil(() => player.position.x > -3.2f);
+            yield return new WaitForSeconds(1.2f);
+            GameAudio.PlayAt("thud", A("DogEast").position + Vector3.up * 0.5f, 0.9f, 0.8f, 40f);
+            GameAudio.PlayAt("claws_loop", A("DogEast").position + Vector3.up * 0.3f, 0.5f, 1f, 30f);
+            Nerve.Instance?.Shock(4f);
+            yield return new WaitUntil(() => player.position.x > -3.4f);
+            Flashlight.Instance?.Kill(0.5f);
+            GameAudio.Play("flashlight_click", 0.6f, 0.8f);
+            yield return new WaitForSeconds(0.9f);
             dog.Appear(A("DogEast").position, Vector3.left);
             dog.WalkTo(A("LockerFront").position);
-            Nerve.Instance?.Shock(5f);
-            Hint("<b>Something's coming down the aisle.</b> The locker on your right: press {interact} to hide.");
+            GameAudio.Play("sting_soft", 0.7f);
+            heart = GameAudio.Loop("heartbeat", null, 0.5f, bus: AudioBus.Ambience);
+            Nerve.Instance?.Shock(9f);
+            Flashlight.Instance?.Kill(9f);
+            Hint("<b>The batteries are going. Something's coming down the aisle.</b>\n<size=80%>The locker on your right, under the red lamp: press {interact} to get inside.</size>");
             float wait = 0f;
-            while (!dog.Arrived && wait < 14f) { wait += Time.deltaTime; yield return null; }
+            while (!dog.Arrived && wait < 16f) { wait += Time.deltaTime; yield return null; }
             dog.Stay();
             bool hidden = HidingSpot.PlayerHidden;
-            if (hidden) hud.SetHint("Hold still.", 0f);
-            Nerve.Instance?.Shock(hidden ? 8f : 14f);
-            yield return new WaitForSeconds(hidden ? 3.2f : 1.6f);
+            if (hidden)
+            {
+                hud.SetHint("Hold still.", 0f);
+                yield return new WaitForSeconds(1.2f);
+                // It finds the locker. It doesn't find the catch.
+                GameAudio.PlayAt("locker_rattle", A("LockerFront").position + Vector3.up, 0.8f, 1f, 20f);
+                Nerve.Instance?.Shock(10f);
+                yield return new WaitForSeconds(1.3f);
+                GameAudio.PlayAt("growl", A("LockerFront").position + Vector3.up * 0.4f, 0.7f, 0.9f, 20f);
+                yield return new WaitForSeconds(2.2f);
+            }
+            else
+            {
+                GameAudio.PlayAt("growl", dog.transform.position + Vector3.up * 0.4f, 0.8f, 0.85f, 20f);
+                Nerve.Instance?.Shock(16f);
+                yield return new WaitForSeconds(2f);
+            }
             dog.WalkTo(A("DogWest").position);
             wait = 0f;
             while (!dog.Arrived && wait < 12f) { wait += Time.deltaTime; yield return null; }
             dog.Vanish();
+            StartCoroutine(FadeAudio(heart, 0f, 3f));
             if (HidingSpot.PlayerHidden)
             {
                 Hint("It's gone. Press {interact} to climb out.");
                 yield return new WaitUntil(() => !HidingSpot.PlayerHidden);
             }
-            yield return new WaitForSeconds(0.5f);
-            Hint("Keep going. The boiler room is at the end of the aisle.");
+            Hint("Keep going. The boiler room is at the end of the aisle; the breaker's inside.");
 
-            // 8. It comes back, behind you.
+            // 8. It comes back, behind you, and you never get the light on it.
             yield return new WaitUntil(() => player.position.x > A("ChaseStart").position.x || breakerPulled);
             if (!breakerPulled)
             {
                 dog.Appear(A("DogWest").position, Vector3.right);
                 dog.Follow(4.2f);
-                chase = GameAudio.Loop("chase_loop", null, 0.3f, bus: AudioBus.Ambience);
-                Rendering.PS1ScreenEffect.Distress = 0.35f;
-                Nerve.Instance?.Shock(10f);
-                Hint("<b>It's behind you.</b> Don't stop. {sprint} to run. Reset the breaker in the boiler room.");
+                GameAudio.Play("sting_soft", 0.8f, 0.8f);
+                chase = GameAudio.Loop("chase_loop", null, 0.35f, bus: AudioBus.Ambience);
+                if (heart != null) StartCoroutine(FadeAudio(heart, 0.6f, 2f));
+                Rendering.PS1ScreenEffect.Distress = 0.4f;
+                Nerve.Instance?.Shock(12f);
+                Hint("<b>It's behind you.</b> Don't turn around. {sprint} to run. Reset the breaker in the boiler room.");
+                StartCoroutine(KeepItDark(() => breakerPulled));
                 yield return new WaitUntil(() => breakerPulled);
             }
 
             // 9. Lights. It's a dog.
             dog.Stay();
             if (chase != null) Destroy(chase.gameObject);
+            if (heart != null) StartCoroutine(FadeAudio(heart, 0f, 1.5f));
+            StartCoroutine(FadeAudio(drone, 0f, 4f));
             Rendering.PS1ScreenEffect.Distress = 0f;
             Hint(null);
             yield return Restore();
@@ -355,26 +428,25 @@ namespace Semblance.Tutorial
                 if (mover != null) mover.WalkTo(A("TeoOut").position);
             }
             yield return new WaitForSeconds(2.5f);
-            Hint("Talk to Teodoro ({interact}). Ask what he's doing down here (About yourself).");
+            Hint("Talk to Teodoro ({interact}) and ask what he's doing down here: <b>About yourself</b>.");
             yield return new WaitUntil(() => Asked("Teodoro Baptiste", ResidentProfile.TopicSelf));
-            yield return new WaitUntil(() => Dialogue.DialogueUI.Instance == null || Dialogue.DialogueUI.Instance.Current == null);
 
-            // 10. The contradiction.
-            yield return Card("Reyes said Teo clocked out at ten. Teo says he's been down here all night. Two statements that can't both be true.");
-            Hint("Open your notebook ({notebook}), tick both of those notes, and link them.");
+            // 10. The contradiction. The hint says what to do; the card says why, once the conversation's over.
+            Hint("Reyes said Teo clocked out at ten. Teo says he never left. Open your notebook ({notebook}), tick both notes and <b>link</b> them.");
+            yield return Card("Two statements that can't both be true. A link that holds is a mark against somebody.\n\nIn Semblance, one of the people you meet won't be a person. It will make a few mistakes. So will everybody else. The job is telling the difference.");
             yield return new WaitUntil(() => Notebook.Instance != null && Notebook.Instance.Contradictions.Count > 0);
-            yield return new WaitUntil(() => NotebookUI.Instance == null || !NotebookUI.Instance.IsOpen);
-            yield return Card("A link that holds is a mark against somebody. But people are wrong for ordinary reasons all the time, and a contradiction that's been explained isn't proof of anything.\n\nIn Semblance, one of the people you meet won't be a person. It will make a few mistakes. So will everybody else. The job is telling the difference.");
+            Hint("Linked. Now back upstairs: put what Teo said to Reyes (<b>About what I've found...</b>).");
+            yield return new WaitUntil(() => !NotebookUI.Instance.IsOpen);
 
             // 11. Upstairs, and the ruling.
-            Hint("Back upstairs. Put what Teo said to Reyes (About what I've found...).");
             yield return new WaitUntil(() => Asked("Alma Reyes", "tut_swap"));
-            yield return new WaitUntil(() => Dialogue.DialogueUI.Instance == null || Dialogue.DialogueUI.Instance.Current == null);
-            Hint("In the notebook, find Reyes's note about Teo (on Teodoro's page), press <b>ok?</b> and rule it <b>Explained</b>.");
+            Hint("She was wrong for an ordinary reason. In the notebook, on <b>Teodoro's page</b>, press <b>ok?</b> beside what Reyes said and rule it <b>Explained</b>.");
             yield return new WaitUntil(() => AnyExplained());
+            Hint("An explained contradiction isn't proof of anything. Close the notebook.");
             yield return new WaitUntil(() => NotebookUI.Instance == null || !NotebookUI.Instance.IsOpen);
+            yield return new WaitUntil(() => Dialogue.DialogueUI.Instance == null || Dialogue.DialogueUI.Instance.Current == null);
             Hint(null);
-            yield return new WaitForSeconds(0.6f);
+            yield return new WaitForSeconds(0.5f);
 
             // 12. The folder.
             hud.ShowMessage("Reyes slides a folder across the counter without looking up from the phones. \"Semblance. Sheriff wants somebody to go up and look. You leave Saturday. Get some sleep, Klein.\"", 7f);

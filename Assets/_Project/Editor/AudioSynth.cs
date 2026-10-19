@@ -87,6 +87,10 @@ namespace Semblance.EditorTools
             Write("dog_bark", Bark());
             Write("power_down", PowerDown());
             Write("breaker_reset", BreakerReset());
+            Write("clock_tick_loop", Loop(ClockTick(), 0.01f));
+            Write("drip_loop", Loop(Drips(6f), 0.05f));
+            Write("growl", Growl());
+            Write("locker_rattle", LockerRattle());
 
             AssetDatabase.Refresh();
             Debug.Log("[Semblance] Generated audio into " + OutDir);
@@ -610,6 +614,76 @@ namespace Semblance.EditorTools
             LowPass(rise, 900f);
             b = Mix(b, rise, 0.8f, (int)(0.25f * Rate));
             Normalize(b, 0.9f);
+            return b;
+        }
+
+        /// <summary>A wall clock: tick, then a softer tock, once a second each.</summary>
+        private static float[] ClockTick()
+        {
+            var b = Buffer(2f);
+            b = Mix(b, Click(0.014f, 2400f), 0.5f, 0);
+            b = Mix(b, Click(0.014f, 1500f), 0.35f, Rate);
+            Normalize(b, 0.5f);
+            return b;
+        }
+
+        /// <summary>Water finding its way down a pipe somewhere, unevenly.</summary>
+        private static float[] Drips(float seconds)
+        {
+            var b = Buffer(seconds);
+            float t = 0.3f;
+            while (t < seconds - 0.3f)
+            {
+                var d = Buffer(0.12f);
+                float f0 = 1400f + (float)rng.NextDouble() * 900f;
+                for (int i = 0; i < d.Length; i++)
+                {
+                    float tt = i / (float)Rate;
+                    d[i] = Mathf.Sin(2 * Mathf.PI * (f0 - tt * 4000f) * tt) * Mathf.Exp(-tt / 0.03f);
+                }
+                b = Mix(b, Reverb(d, 0.5f, 0.35f), 0.5f + (float)rng.NextDouble() * 0.4f, (int)(t * Rate));
+                t += 0.5f + (float)rng.NextDouble() * 1.4f;
+            }
+            Normalize(b, 0.45f);
+            return b;
+        }
+
+        /// <summary>Low in the chest, from something you can't see. Rises, holds, breaks off.</summary>
+        private static float[] Growl()
+        {
+            var b = Buffer(1.6f);
+            for (int i = 0; i < b.Length; i++)
+            {
+                float t = i / (float)Rate;
+                float env = Mathf.Clamp01(t / 0.35f) * Mathf.Clamp01((1.6f - t) / 0.3f);
+                float f = 62f + Mathf.Sin(t * 9f) * 6f;
+                float pulse = Mathf.Sign(Mathf.Sin(2 * Mathf.PI * f * t)) * 0.4f + Mathf.Sin(2 * Mathf.PI * f * 2.01f * t) * 0.3f;
+                float rasp = Rand() * 0.35f * (0.6f + 0.4f * Mathf.Sin(2 * Mathf.PI * f * t));
+                b[i] = (pulse + rasp) * env;
+            }
+            LowPass(b, 520f);
+            Normalize(b, 0.85f);
+            return b;
+        }
+
+        /// <summary>A locker door tried from outside: the latch chattering in its frame.</summary>
+        private static float[] LockerRattle()
+        {
+            var b = Buffer(0.7f);
+            for (int k = 0; k < 7; k++)
+            {
+                int at = (int)((0.05f + k * 0.07f + (float)rng.NextDouble() * 0.02f) * Rate);
+                var c = Click(0.03f, 1800f);
+                b = Mix(b, c, 0.5f + (float)rng.NextDouble() * 0.5f, at);
+                var ring = Buffer(0.12f);
+                for (int i = 0; i < ring.Length; i++)
+                {
+                    float t = i / (float)Rate;
+                    ring[i] = Mathf.Sin(2 * Mathf.PI * 310f * t) * Mathf.Exp(-t / 0.035f) * 0.5f;
+                }
+                b = Mix(b, ring, 1f, at);
+            }
+            Normalize(b, 0.8f);
             return b;
         }
 
