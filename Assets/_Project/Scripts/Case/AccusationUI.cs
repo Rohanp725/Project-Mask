@@ -105,8 +105,16 @@ namespace Semblance.Case
                 var a = notebook.Get(link.a);
                 var b = notebook.Get(link.b);
                 if (NoteFacts.Explained(a, b) != null) continue; // holds up, but the town has an honest answer for it
-                foreach (var (subject, key) in NoteFacts.Implicated(a, b))
-                    if (subject == r.DisplayName) caughtOut.Add(key);
+                if (a.verdict == (int)Verdict.Explained || b.verdict == (int)Verdict.Explained) continue; // the detective explained it away
+                var implicated = NoteFacts.Implicated(a, b).ToList();
+                if (implicated.Count == 0) continue; // a hunch the facts can't back
+                if (string.IsNullOrEmpty(link.against))
+                {
+                    foreach (var (subject, key) in implicated)
+                        if (subject == r.DisplayName) caughtOut.Add(key);
+                }
+                else if (notebook.Targets(link).Contains(r.DisplayName))
+                    caughtOut.Add(implicated[0].proofKey); // the detective says who this one points at
             }
             // Some slips need no second note: a stranger who greets you by name.
             foreach (var e in notebook.EntriesFor(r.DisplayName))

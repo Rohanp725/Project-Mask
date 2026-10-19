@@ -17,6 +17,7 @@ namespace Semblance.Notes
     ///   fd|weather|winner|flavor|sermon   a Founders' Day account ("?" = not mentioned)
     ///   strange|hash           an answer to "Seen anything strange?" (identical answers from two people = an echo)
     ///   self|reason            a statement that can't be innocent on its face (knowing your name)
+    ///   claim|topic|value      something said or found that makes a checkable claim ("Ruth is in Tulsa" vs the certificate)
     /// </summary>
     public static class NoteFacts
     {
@@ -29,6 +30,73 @@ namespace Semblance.Notes
         public static string Observed(FeatureInstance f, string set) => $"obs|{(f != null ? f.id : "-")}|{(f != null ? (int)f.side : -1)}|{set}";
         public static string Strange(string rawAnswer) => "strange|" + StableHash.Of(Notebook.StripTags(rawAnswer ?? "").Trim());
         public const string KnowsName = "self|knows your name";
+
+        /// <summary>Claims that statements can make about the world, found in what people say.</summary>
+        public static string Claims(string rawText)
+        {
+            string t = Notebook.StripTags(rawText ?? "").ToLowerInvariant();
+            if (t.Contains("tulsa") && (t.Contains("ruth") || t.Contains("wife") || t.Contains("her sister"))) return "claim|ruth|away";
+            return null;
+        }
+
+        /// <summary>What a piece of evidence establishes, by its id.</summary>
+        public static string EvidenceFact(string id)
+        {
+            switch (id)
+            {
+                case "calder_certificate": return "claim|ruth|dead";
+                case "grave_headstone": return "claim|ruth|dead";
+                default: return null;
+            }
+        }
+
+        private static string ClaimText(string topic, string value)
+        {
+            if (topic == "ruth") return value == "away" ? "Ruth Calder is away in Tulsa" : value == "dead" ? "Ruth Calder died in August" : value;
+            return $"{topic} is {value}";
+        }
+
+        /// <summary>
+        /// Does anything else in the notebook back this note up? The records agreeing with gossip, my own eyes agreeing
+        /// with the records, several people telling Founders' Day the same way. Shown on the note; not a verdict.
+        /// </summary>
+        public static string Corroboration(NoteEntry e, Notebook notebook)
+        {
+            if (e == null || notebook == null || string.IsNullOrEmpty(e.fact)) return null;
+            var p = e.fact.Split('|');
+            switch (p[0])
+            {
+                case "say":
+                {
+                    bool rec = notebook.EntriesFor(e.subject).Any(x => x.fact != null && x.fact.StartsWith("rec|" + p[1] + "|" + p[2] + "|"));
+                    bool seen = notebook.EntriesFor(e.subject).Any(x => x.fact != null && x.fact.StartsWith("obs|" + p[1] + "|" + p[2] + "|"));
+                    return rec && seen ? "The records agree, and so do my own eyes." : rec ? "The records agree." : seen ? "I saw it myself." : null;
+                }
+                case "obs":
+                    if (p[1] == "-") return null;
+                    return notebook.EntriesFor(e.subject).Any(x => x.fact != null && x.fact.StartsWith("rec|" + p[1] + "|" + p[2] + "|")) ? "Matches the records." : null;
+                case "fd":
+                {
+                    int agree = 0;
+                    foreach (var other in notebook.Entries)
+                    {
+                        if (other == e || other.subject == e.subject || other.fact == null || !other.fact.StartsWith("fd|")) continue;
+                        var q = other.fact.Split('|');
+                        bool same = true, overlap = false;
+                        for (int i = 1; i <= 4; i++)
+                        {
+                            if (p[i] == "?" || q[i] == "?") continue;
+                            overlap = true;
+                            if (p[i] != q[i]) { same = false; break; }
+                        }
+                        if (same && overlap) agree++;
+                    }
+                    return agree >= 2 ? $"{agree} others tell it the same way." : null;
+                }
+                default:
+                    return null;
+            }
+        }
 
         /// <summary>Canon: it rained, Mae won, with cherry, and Crane preached the wheat and the tares.</summary>
         public static readonly string[] FoundersCanon = { "rain", "mae", "cherry", "tares" };
@@ -109,6 +177,13 @@ namespace Semblance.Notes
 
             if (ka == "self" && a.subject == b.subject) { why = $"{a.subject}: {pa[1]}."; return true; }
             if (kb == "self" && a.subject == b.subject) { why = $"{b.subject}: {pb[1]}."; return true; }
+
+            if (ka == "claim" && kb == "claim")
+            {
+                if (pa[1] == pb[1] && pa[2] != pb[2]) { why = $"One says {ClaimText(pa[1], pa[2])}; the other, that {ClaimText(pb[1], pb[2])}."; return true; }
+                why = pa[1] == pb[1] ? "They say the same thing." : "These are claims about different things.";
+                return false;
+            }
 
             if (ka == "fd" && kb == "fd")
             {
@@ -228,6 +303,16 @@ namespace Semblance.Notes
             if (pa[0] == "self" || pb[0] == "self")
             {
                 yield return (a.subject, "self|" + a.subject);
+                yield break;
+            }
+            if (pa[0] == "claim")
+            {
+                // The paper is the truth; whoever said otherwise is the one caught out. Two people disagreeing: both.
+                bool aSaid = a.kind == NoteKind.Statement || a.kind == NoteKind.Gossip;
+                bool bSaid = b.kind == NoteKind.Statement || b.kind == NoteKind.Gossip;
+                if (aSaid && !bSaid) yield return (a.source ?? a.subject, "claim|" + pa[1]);
+                else if (bSaid && !aSaid) yield return (b.source ?? b.subject, "claim|" + pb[1]);
+                else { yield return (a.subject, "claim|" + pa[1]); yield return (b.subject, "claim|" + pb[1]); }
                 yield break;
             }
             // Feature conflicts: one proof per feature, however many ways it's linked.

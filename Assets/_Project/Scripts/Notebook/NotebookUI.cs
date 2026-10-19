@@ -32,8 +32,12 @@ namespace Semblance.Notes
         private TextMeshProUGUI photoViewerCaption;
 
         private string currentSubject = Notebook.CaseSubject;
+        // Ticked notes stay ticked across pages and even across closing the book, so two people's stories can be linked.
         private readonly HashSet<int> selected = new HashSet<int>();
         private bool dirty;
+        private GameObject notesField;
+        private TMP_InputField notesInput;
+        private GameObject chooser;
 
         public bool IsOpen => root.activeSelf;
 
@@ -66,7 +70,6 @@ namespace Semblance.Notes
             else UI.SelectFirstOnEnable.Select(root);
             InputLock.Push(this, Close);
             Audio.GameAudio.Play("page_flip", 0.5f);
-            selected.Clear();
             Refresh();
         }
 
@@ -77,12 +80,24 @@ namespace Semblance.Notes
                 photoViewer.SetActive(false);
                 return;
             }
+            if (chooser != null && chooser.activeSelf)
+            {
+                chooser.SetActive(false);
+                return;
+            }
+            if (notesInput != null && notesInput.isFocused)
+            {
+                notesInput.DeactivateInputField();
+                return;
+            }
+            GameInput.TextEntry = false;
             root.SetActive(false);
             InputLock.Pop(this);
         }
 
         private void LateUpdate()
         {
+            GameInput.TextEntry = IsOpen && notesInput != null && notesInput.isFocused;
             if (IsOpen && dirty)
                 Refresh();
         }
@@ -102,16 +117,23 @@ namespace Semblance.Notes
                 bool onMe = currentSubject == ProfileTab;
                 string me = "Det. " + (Case.CaseDirector.Instance != null ? Case.CaseDirector.Instance.DetectiveName : "Klein");
                 var p = UIFactory.Button("Tab Me", subjectList, onMe ? "<b>" + me + "</b>" : me, 16, UIFactory.Ink,
-                    onMe ? UIFactory.Paper : UIFactory.PaperDark, () => { currentSubject = ProfileTab; selected.Clear(); Refresh(); });
+                    onMe ? UIFactory.Paper : UIFactory.PaperDark, () => { currentSubject = ProfileTab; Refresh(); });
                 p.GetComponentInChildren<TextMeshProUGUI>().alignment = TextAlignmentOptions.MidlineLeft;
                 UIFactory.Layout(p, preferredHeight: 30);
             }
             {
                 bool onMap = currentSubject == MapTab;
                 var m = UIFactory.Button("Tab Map", subjectList, onMap ? "<b>Map</b>" : "Map", 16, UIFactory.Ink,
-                    onMap ? UIFactory.Paper : UIFactory.PaperDark, () => { currentSubject = MapTab; selected.Clear(); Refresh(); });
+                    onMap ? UIFactory.Paper : UIFactory.PaperDark, () => { currentSubject = MapTab; Refresh(); });
                 m.GetComponentInChildren<TextMeshProUGUI>().alignment = TextAlignmentOptions.MidlineLeft;
                 UIFactory.Layout(m, preferredHeight: 30);
+            }
+            {
+                bool onNotes = currentSubject == NotesTab;
+                var n = UIFactory.Button("Tab Notes", subjectList, onNotes ? "<b>My notes</b>" : "My notes", 16, UIFactory.Ink,
+                    onNotes ? UIFactory.Paper : UIFactory.PaperDark, () => { currentSubject = NotesTab; Refresh(); });
+                n.GetComponentInChildren<TextMeshProUGUI>().alignment = TextAlignmentOptions.MidlineLeft;
+                UIFactory.Layout(n, preferredHeight: 30);
             }
             foreach (var subject in notebook.Subjects)
             {
@@ -120,13 +142,23 @@ namespace Semblance.Notes
                 string marks = score > 0 ? $"  <color={UIFactory.Hex(UIFactory.Red)}>{new string('*', Mathf.Min(score, 6))}</color>" : "";
                 bool current = s == currentSubject;
                 var b = UIFactory.Button("Tab " + s, subjectList, (current ? "<b>" : "") + s + (current ? "</b>" : "") + marks, 16, UIFactory.Ink,
-                    current ? UIFactory.Paper : UIFactory.PaperDark, () => { currentSubject = s; selected.Clear(); Refresh(); });
+                    current ? UIFactory.Paper : UIFactory.PaperDark, () => { currentSubject = s; Refresh(); });
                 b.GetComponentInChildren<TextMeshProUGUI>().alignment = TextAlignmentOptions.MidlineLeft;
                 UIFactory.Layout(b, preferredHeight: 30);
             }
 
             UIFactory.Clear(entryList);
-            if (currentSubject == ProfileTab)
+            bool notesPage = currentSubject == NotesTab;
+            if (notesField != null) notesField.SetActive(notesPage);
+            entryList.parent.parent.gameObject.SetActive(!notesPage);
+            linkButton.gameObject.SetActive(!notesPage);
+            pendingLabel.gameObject.SetActive(!notesPage);
+            if (notesPage)
+            {
+                header.text = "<b>MY NOTES</b>  <size=70%>in your own hand</size>";
+                if (notesInput != null && notesInput.text != notebook.PlayerNotes) notesInput.SetTextWithoutNotify(notebook.PlayerNotes);
+            }
+            else if (currentSubject == ProfileTab)
                 BuildProfile(notebook);
             else if (currentSubject == MapTab)
                 BuildMap();
@@ -139,11 +171,84 @@ namespace Semblance.Notes
             linkButton.interactable = selected.Count == 2 && left > 0;
             linkLabel.text = left <= 0 ? "No more links today. Sleep on it."
                 : selected.Count == 2 ? $"Link contradiction ({left} left today)" : $"Tick two entries to link ({selected.Count}/2)";
+            // What's ticked so far, wherever it was ticked, so a second note can be found on another page.
+            if (selected.Count == 1)
+            {
+                var pending = notebook.Get(selected.First());
+                pendingLabel.text = pending != null ? $"<color=#00000099>Ticked: <b>{pending.subject}</b>, \"{Short(pending.text, 46)}\". Tick another on any page.</color>" : "";
+            }
+            else pendingLabel.text = "";
             Canvas.ForceUpdateCanvases();
         }
 
         private const string MapTab = "~map";
         private const string ProfileTab = "~me";
+        private const string NotesTab = "~notes";
+        private TextMeshProUGUI pendingLabel;
+
+        private static string Short(string text, int max) => string.IsNullOrEmpty(text) || text.Length <= max ? text : text.Substring(0, max - 1) + "...";
+
+        /// <summary>A small question with a few answers, over the page (who a link points at; what a note is worth).</summary>
+        private void Ask(string question, List<(string label, System.Action pick)> options)
+        {
+            if (chooser == null)
+            {
+                var dim = UIFactory.Panel("Chooser", root.transform, new Color(0, 0, 0, 0.55f));
+                UIFactory.Stretch(dim.rectTransform);
+                chooser = dim.gameObject;
+            }
+            UIFactory.Clear(chooser.transform);
+            var box = UIFactory.Panel("Box", chooser.transform, UIFactory.Paper);
+            UIFactory.Place(box.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(520, 70 + options.Count * 40 + 44));
+            var title = UIFactory.Text("Question", box.transform, "<b>" + question + "</b>", 17, UIFactory.Ink, TextAlignmentOptions.Top);
+            UIFactory.Place(title.rectTransform, new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -14), new Vector2(480, 50));
+            float y = -66;
+            foreach (var (label, pick) in options)
+            {
+                var action = pick;
+                var b = UIFactory.Button("Option", box.transform, label, 15, UIFactory.Ink, UIFactory.PaperDark, () => { chooser.SetActive(false); action?.Invoke(); Refresh(); });
+                UIFactory.Place((RectTransform)b.transform, new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, y), new Vector2(480, 34));
+                y -= 40;
+            }
+            var cancel = UIFactory.Button("Cancel", box.transform, "Never mind", 14, UIFactory.Ink, new Color(0, 0, 0, 0.06f), () => chooser.SetActive(false));
+            UIFactory.Place((RectTransform)cancel.transform, new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(0, 10), new Vector2(160, 28));
+            chooser.SetActive(true);
+            chooser.transform.SetAsLastSibling();
+            UI.SelectFirstOnEnable.Select(chooser);
+        }
+
+        /// <summary>The people a link could count against: the subjects and speakers of its two notes.</summary>
+        private static List<string> Candidates(NoteEntry a, NoteEntry b)
+        {
+            var names = new List<string>();
+            foreach (var n in new[] { a.subject, a.source, b.subject, b.source })
+                if (!string.IsNullOrEmpty(n) && n != Notebook.CaseSubject && !names.Contains(n)) names.Add(n);
+            return names;
+        }
+
+        private void AskAgainst(ContradictionLink link)
+        {
+            var nb = Notebook.Instance;
+            var a = nb.Get(link.a); var b = nb.Get(link.b);
+            if (a == null || b == null) return;
+            var names = Candidates(a, b);
+            if (names.Count <= 1) return;
+            var options = names.Select(n => (n, (System.Action)(() => nb.SetAgainst(link, n)))).ToList();
+            if (names.Count == 2) options.Add(("Both of them", () => nb.SetAgainst(link, "both")));
+            Ask("Who does this contradiction count against?", options);
+        }
+
+        private void AskVerdict(NoteEntry entry)
+        {
+            var nb = Notebook.Instance;
+            var options = new List<(string, System.Action)>
+            {
+                ("Checks out: I've confirmed this is true", () => nb.SetVerdict(entry.id, Verdict.Verified)),
+                ("Explained: there's an innocent reason for it", () => nb.SetVerdict(entry.id, Verdict.Explained)),
+            };
+            if (entry.verdict != 0) options.Add(("Clear my ruling", () => nb.SetVerdict(entry.id, Verdict.None)));
+            Ask("What do I make of this note?", options);
+        }
 
         /// <summary>
         /// The detective's own file: who you are, where you are, what state you're in, and everything that has
@@ -355,12 +460,20 @@ namespace Semblance.Notes
                 if (a == null || b == null) continue;
                 bool holds = NoteFacts.Conflict(a, b, out string why);
                 string explained = holds ? NoteFacts.Explained(a, b) : null;
-                string verdict = !holds ? $"<color=#00000088><i>{why} It won't convince anyone.</i></color>"
+                string verdict = !holds ? $"<color=#00000088><i>{why} A hunch, not proof: it won't convince the town on its own.</i></color>"
                     : explained != null ? $"<color=#8a6a1a><b>Holds up, but</b> {explained} {why} It won't count against them.</color>"
                     : $"<color=#2f6b2a><b>Holds up.</b> {why}</color>";
-                var row = AddParagraph($"<b>{a.subject}</b>: {a.text}\n   <color={UIFactory.Hex(UIFactory.Red)}>vs</color>  <b>{b.subject}</b>: {b.text}\n   {verdict}");
+                if (a.verdict == (int)Verdict.Explained || b.verdict == (int)Verdict.Explained)
+                    verdict = "<color=#8a6a1a><i>I've explained one of these away myself. It won't count against anyone.</i></color>";
+                string targets = string.Join(" and ", notebook.Targets(link));
+                var row = AddParagraph($"<b>{a.subject}</b>: {a.text}\n   <color={UIFactory.Hex(UIFactory.Red)}>vs</color>  <b>{b.subject}</b>: {b.text}\n   {verdict}\n   <size=85%>Counts against <b>{targets}</b></size>");
                 var remove = UIFactory.Button("Remove", row.transform, "x", 14, UIFactory.Red, new Color(0, 0, 0, 0.06f), () => notebook.RemoveContradiction(link));
                 UIFactory.Place((RectTransform)remove.transform, new Vector2(1, 1), new Vector2(1, 1), Vector2.zero, new Vector2(24, 22));
+                if (Candidates(a, b).Count > 1)
+                {
+                    var who = UIFactory.Button("Who", row.transform, "who?", 12, UIFactory.Ink, new Color(0, 0, 0, 0.06f), () => AskAgainst(link));
+                    UIFactory.Place((RectTransform)who.transform, new Vector2(1, 1), new Vector2(1, 1), new Vector2(-28, 0), new Vector2(46, 22));
+                }
             }
 
             var top = notebook.Subjects.Where(x => x != Notebook.CaseSubject).Select(x => (x, notebook.SuspicionScore(x))).OrderByDescending(t => t.Item2).FirstOrDefault();
@@ -434,6 +547,11 @@ namespace Semblance.Notes
             });
             UIFactory.Layout(tick, preferredHeight: 26, preferredWidth: 34);
 
+            // The detective's ruling: confirmed, explained away, or still open.
+            string ruling = entry.verdict == (int)Verdict.Verified ? "<color=#2f6b2a>TRUE</color>" : entry.verdict == (int)Verdict.Explained ? "<color=#8a6a1a>FINE</color>" : "<color=#00000050>ok?</color>";
+            var judge = UIFactory.Button("Verdict", row, ruling, 12, UIFactory.Ink, new Color(0, 0, 0, 0.05f), () => AskVerdict(entry));
+            UIFactory.Layout(judge, preferredHeight: 26, preferredWidth: 42);
+
             var photoTex = notebook.GetPhoto(entry.photoIndex);
             if (photoTex != null)
             {
@@ -449,8 +567,17 @@ namespace Semblance.Notes
 
             string from = string.IsNullOrEmpty(entry.source) || entry.source == entry.subject ? "" : $", from {entry.source}";
             string stamp = $"<size=80%><color=#00000088>{GameClock.Stamp(entry.day, entry.hour)}{from}</color></size>";
-            string body = compact ? $"{entry.text} {stamp}" : $"<b>{entry.title}</b>  {stamp}\n{entry.text}";
+            string tail = "";
+            if (entry.verdict == (int)Verdict.Verified) tail = "  <size=80%><color=#2f6b2a>checks out</color></size>";
+            else if (entry.verdict == (int)Verdict.Explained) tail = "  <size=80%><color=#8a6a1a>explained away</color></size>";
+            else
+            {
+                string backing = NoteFacts.Corroboration(entry, notebook);
+                if (backing != null) tail = $"  <size=80%><color=#2f6b2a>{backing}</color></size>";
+            }
+            string body = compact ? $"{entry.text} {stamp}{tail}" : $"<b>{entry.title}</b>  {stamp}{tail}\n{entry.text}";
             var text = UIFactory.Text("Text", row, body, fontSize, UIFactory.Ink);
+            if (entry.verdict != 0) text.alpha = 0.6f;
             UIFactory.Layout(text, flexibleWidth: 1);
         }
 
@@ -474,7 +601,7 @@ namespace Semblance.Notes
                 linkLabel.text = "Your eyes are swimming. Sleep on it.";
                 return;
             }
-            nb.AddContradiction(ids[0], ids[1]);
+            var link = nb.AddContradiction(ids[0], ids[1]);
             var a = nb.Get(ids[0]);
             var b = nb.Get(ids[1]);
             bool holds = NoteFacts.Conflict(a, b, out string why);
@@ -482,6 +609,7 @@ namespace Semblance.Notes
             UI.PlayerHUD.Instance?.Toast(!holds ? $"<i>{why}</i>" : explained != null ? $"<b>That holds up</b>, but {explained}" : $"<b>That holds up.</b> {why}");
             selected.Clear();
             Refresh();
+            if (link != null && Candidates(a, b).Count > 1) AskAgainst(link);
         }
 
         // ------------------------------------------------------------ Layout
@@ -515,8 +643,38 @@ namespace Semblance.Notes
             linkButton = UIFactory.Button("Link", page.transform, "", 15, UIFactory.Light, UIFactory.Red, LinkSelected);
             linkLabel = linkButton.GetComponentInChildren<TextMeshProUGUI>();
             UIFactory.Place((RectTransform)linkButton.transform, new Vector2(1, 0), new Vector2(1, 0), new Vector2(-16, 10), new Vector2(300, 32));
-            var hint = UIFactory.Text("Hint", page.transform, "* suspicious   [ ] select   Tab/Esc close", 14, new Color(0, 0, 0, 0.5f), TextAlignmentOptions.MidlineLeft);
-            UIFactory.Place(hint.rectTransform, new Vector2(0, 0), new Vector2(0, 0), new Vector2(18, 10), new Vector2(500, 32));
+            var hint = UIFactory.Text("Hint", page.transform, "* suspicious   [ ] tick to link   ok? your ruling", 13, new Color(0, 0, 0, 0.5f), TextAlignmentOptions.MidlineLeft);
+            UIFactory.Place(hint.rectTransform, new Vector2(0, 0), new Vector2(0, 0), new Vector2(18, 4), new Vector2(540, 22));
+            pendingLabel = UIFactory.Text("Pending", page.transform, "", 13, UIFactory.Ink, TextAlignmentOptions.MidlineLeft);
+            UIFactory.Place(pendingLabel.rectTransform, new Vector2(0, 0), new Vector2(0, 0), new Vector2(18, 24), new Vector2(540, 22));
+
+            var close = UIFactory.Button("Close", page.transform, "Close", 15, UIFactory.Light, UIFactory.Red, Close);
+            UIFactory.Place((RectTransform)close.transform, new Vector2(1, 1), new Vector2(1, 1), new Vector2(-14, -9), new Vector2(84, 28));
+            header.rectTransform.sizeDelta = new Vector2(740, 34);
+
+            // The page for your own notes: a plain text field in the same paper.
+            notesField = new GameObject("Notes Field", typeof(Image), typeof(TMP_InputField));
+            notesField.transform.SetParent(page.transform, false);
+            notesField.GetComponent<Image>().color = new Color(0, 0, 0, 0.03f);
+            UIFactory.Stretch((RectTransform)notesField.transform, new Vector2(12, 50), new Vector2(-12, -52));
+            notesInput = notesField.GetComponent<TMP_InputField>();
+            var area = UIFactory.Rect("Text Area", notesField.transform);
+            UIFactory.Stretch(area, new Vector2(10, 8), new Vector2(-10, -8));
+            area.gameObject.AddComponent<RectMask2D>();
+            var placeholder = UIFactory.Text("Placeholder", area, "<i>Write whatever you like here. Hunches, a list of who was where, things to ask tomorrow.</i>", 16, new Color(UIFactory.Ink.r, UIFactory.Ink.g, UIFactory.Ink.b, 0.4f), TextAlignmentOptions.TopLeft);
+            UIFactory.Stretch(placeholder.rectTransform);
+            var body = UIFactory.Text("Text", area, "", 16, UIFactory.Ink, TextAlignmentOptions.TopLeft);
+            UIFactory.Stretch(body.rectTransform);
+            notesInput.textViewport = area;
+            notesInput.textComponent = body;
+            notesInput.placeholder = placeholder;
+            notesInput.lineType = TMP_InputField.LineType.MultiLineNewline;
+            notesInput.richText = false;
+            notesInput.characterLimit = 6000;
+            notesInput.caretColor = UIFactory.Ink;
+            notesInput.selectionColor = new Color(0.6f, 0.15f, 0.12f, 0.3f);
+            notesInput.onValueChanged.AddListener(v => { if (Notebook.Instance != null) Notebook.Instance.PlayerNotes = v; });
+            notesField.SetActive(false);
 
             var viewer = UIFactory.Panel("Photo Viewer", dim.transform, new Color(0, 0, 0, 0.85f));
             UIFactory.Stretch(viewer.rectTransform);

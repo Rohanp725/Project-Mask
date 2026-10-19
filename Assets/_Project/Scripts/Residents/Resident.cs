@@ -217,7 +217,8 @@ namespace Semblance.Residents
                 // What it claims, from the words as written (before stutters and mutters get in the way).
                 if (topic.title == ResidentProfile.TopicFoundersDay) t.fact = Notes.NoteFacts.Founders(response, DisplayName);
                 else if (topic.title == ResidentProfile.TopicStrange) t.fact = Notes.NoteFacts.Strange(response);
-                else if (topic.title.StartsWith("About ")) t.fact = Notes.NoteFacts.Gossip(FindByName(topic.title.Substring(6)), response);
+                else if (topic.title.StartsWith("About ") && topic.title != ResidentProfile.TopicSelf && topic.title != ResidentProfile.TopicTown) t.fact = Notes.NoteFacts.Gossip(FindByName(topic.title.Substring(6)), response);
+                else t.fact = Notes.NoteFacts.Claims(response);
                 topics.Add(t);
             }
             if (mods != null)

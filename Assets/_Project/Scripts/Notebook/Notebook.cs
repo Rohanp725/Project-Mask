@@ -27,7 +27,11 @@ namespace Semblance.Notes
         public string fact;
         /// <summary>What this note explains away (a neighbour's account): "feat:id", "founders", "flare". See NoteFacts.Explained.</summary>
         public string explains;
+        /// <summary>The detective's own ruling on the note: 0 none, 1 checks out (confirmed true), 2 explained (an innocent reason).</summary>
+        public int verdict;
     }
+
+    public enum Verdict { None = 0, Verified = 1, Explained = 2 }
 
     [Serializable]
     public class ContradictionLink
@@ -35,6 +39,8 @@ namespace Semblance.Notes
         public int a;
         public int b;
         public int day;
+        /// <summary>Who the detective says this counts against (a subject name). Empty: whoever the notes implicate.</summary>
+        public string against;
     }
 
     /// <summary>
@@ -56,6 +62,9 @@ namespace Semblance.Notes
         public IReadOnlyList<ContradictionLink> Contradictions => contradictions;
         public IReadOnlyList<string> Subjects => subjects;
         public IReadOnlyList<Texture2D> Photos => photos;
+
+        /// <summary>Free text the player writes for themselves.</summary>
+        public string PlayerNotes { get; set; } = "";
 
         /// <summary>Raised for genuinely new entries (not duplicates).</summary>
         public event Action<NoteEntry> EntryAdded;
@@ -106,17 +115,57 @@ namespace Semblance.Notes
             Changed?.Invoke();
         }
 
-        public bool AddContradiction(int a, int b)
+        public void SetVerdict(int id, Verdict value)
+        {
+            var e = Get(id);
+            if (e == null || e.verdict == (int)value) return;
+            e.verdict = (int)value;
+            if (value != Verdict.None) e.suspicious = false; // a note you've confirmed or explained isn't a suspicion anymore
+            Changed?.Invoke();
+        }
+
+        public ContradictionLink AddContradiction(int a, int b, string against = null)
         {
             if (a == b || Get(a) == null || Get(b) == null)
-                return false;
-            if (contradictions.Exists(c => (c.a == a && c.b == b) || (c.a == b && c.b == a)))
-                return false;
+                return null;
+            var existing = contradictions.Find(c => (c.a == a && c.b == b) || (c.a == b && c.b == a));
+            if (existing != null)
+                return existing;
             if (LinksLeftToday <= 0)
-                return false;
-            contradictions.Add(new ContradictionLink { a = a, b = b, day = GameClock.Instance != null ? GameClock.Instance.Day : 1 });
+                return null;
+            var link = new ContradictionLink { a = a, b = b, day = GameClock.Instance != null ? GameClock.Instance.Day : 1, against = against ?? "" };
+            contradictions.Add(link);
             Changed?.Invoke();
-            return true;
+            return link;
+        }
+
+        public void SetAgainst(ContradictionLink link, string subject)
+        {
+            if (link == null) return;
+            link.against = subject ?? "";
+            Changed?.Invoke();
+        }
+
+        /// <summary>Who a link points at: the detective's choice, else whoever the facts implicate, else both subjects.</summary>
+        public IEnumerable<string> Targets(ContradictionLink link)
+        {
+            if (!string.IsNullOrEmpty(link.against))
+            {
+                if (link.against == "both")
+                {
+                    var x = Get(link.a); var y = Get(link.b);
+                    if (x != null) yield return x.subject;
+                    if (y != null && (x == null || y.subject != x.subject)) yield return y.subject;
+                }
+                else yield return link.against;
+                yield break;
+            }
+            var a = Get(link.a); var b = Get(link.b);
+            if (a == null || b == null) yield break;
+            var implicated = NoteFacts.Implicated(a, b).Select(i => i.subject).Distinct().ToList();
+            if (implicated.Count > 0) { foreach (var s in implicated) yield return s; yield break; }
+            yield return a.subject;
+            if (b.subject != a.subject) yield return b.subject;
         }
 
         /// <summary>
@@ -156,16 +205,23 @@ namespace Semblance.Notes
 
         public Texture2D GetPhoto(int index) => index >= 0 && index < photos.Count ? photos[index] : null;
 
-        /// <summary>How strongly the player's own notes point at someone: stars + contradictions.</summary>
+        /// <summary>
+        /// How strongly the player's own notes point at someone: starred notes (unless they've since been confirmed
+        /// or explained), plus the links that point at them: two for a link that really holds, one for a hunch the
+        /// facts can't back, nothing for one the town has an innocent answer to.
+        /// </summary>
         public int SuspicionScore(string subject)
         {
-            int score = entries.Count(e => e.subject == subject && e.suspicious);
+            int score = entries.Count(e => e.subject == subject && e.suspicious && e.verdict == (int)Verdict.None);
             foreach (var c in contradictions)
             {
+                if (!Targets(c).Contains(subject)) continue;
                 var a = Get(c.a);
                 var b = Get(c.b);
-                if ((a != null && a.subject == subject) || (b != null && b.subject == subject))
-                    score += 2;
+                bool holds = NoteFacts.Conflict(a, b, out _);
+                if (!holds) { score += 1; continue; }
+                if (NoteFacts.Explained(a, b) != null || a.verdict == (int)Verdict.Explained || b.verdict == (int)Verdict.Explained) continue;
+                score += 2;
             }
             return score;
         }
@@ -182,6 +238,7 @@ namespace Semblance.Notes
             public List<string> subjects = new List<string>();
             public int nextId;
             public int photoCount;
+            public string playerNotes = "";
         }
 
         public static string PhotoDir => System.IO.Path.Combine(Application.persistentDataPath, "semblance_photos");
@@ -237,6 +294,7 @@ namespace Semblance.Notes
             contradictions = new List<ContradictionLink>(contradictions),
             subjects = new List<string>(subjects),
             nextId = nextId,
+            playerNotes = PlayerNotes ?? "",
         };
 
         public void LoadState(State state)
@@ -250,6 +308,8 @@ namespace Semblance.Notes
             if (!subjects.Contains(CaseSubject))
                 subjects.Insert(0, CaseSubject);
             nextId = Mathf.Max(state.nextId, entries.Count == 0 ? 1 : entries.Max(e => e.id) + 1);
+            PlayerNotes = state.playerNotes ?? "";
+            foreach (var c in contradictions) c.against ??= "";
             LoadPhotos(state.photoCount);
             foreach (var e in entries)
                 if (e.photoIndex >= photos.Count || (e.photoIndex >= 0 && photos[e.photoIndex] == null))

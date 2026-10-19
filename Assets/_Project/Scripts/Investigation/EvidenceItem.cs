@@ -45,7 +45,8 @@ namespace Semblance.Investigation
             interactor.Hud.ShowReading($"<b>{title}</b>\n{text}");
             if (Found) return;
             SaveSystem.Flags.Add("evidence:" + id);
-            Notebook.Instance?.Record(NoteKind.Evidence, string.IsNullOrEmpty(subject) ? Notebook.CaseSubject : subject, title, text, null, "evidence|" + id);
+            var entry = Notebook.Instance?.Record(NoteKind.Evidence, string.IsNullOrEmpty(subject) ? Notebook.CaseSubject : subject, title, text, null, "evidence|" + id);
+            if (entry != null && entry.fact == null) entry.fact = NoteFacts.EvidenceFact(id);
             if (nerveShock > 0) Nerve.Instance?.Shock(nerveShock);
             if (awareness > 0) MimicAwareness.Instance?.Raise(awareness, "evidence");
             if (nerveShock >= 10) Audio.GameAudio.Play("sting_soft", 0.5f);

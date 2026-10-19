@@ -144,8 +144,11 @@ namespace Semblance.Core
             }
         }
 
-        public static bool Pressed(InputAction a) { Ensure(); return a != null && a.WasPressedThisFrame(); }
-        public static bool Held(InputAction a) { Ensure(); return a != null && a.IsPressed(); }
+        /// <summary>True while the player is typing into a text field: game hotkeys are ignored.</summary>
+        public static bool TextEntry { get; set; }
+
+        public static bool Pressed(InputAction a) { Ensure(); return !TextEntry && a != null && a.WasPressedThisFrame(); }
+        public static bool Held(InputAction a) { Ensure(); return !TextEntry && a != null && a.IsPressed(); }
 
         /// <summary>Number keys pick dialogue choices directly.</summary>
         public static int PressedDigit()

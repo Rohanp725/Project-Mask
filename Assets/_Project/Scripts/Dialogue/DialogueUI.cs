@@ -261,7 +261,8 @@ namespace Semblance.Dialogue
             MarkAsked(q.Key);
             string answer = resident.Format(q.AnswerFor(resident), "clue:" + q.Key);
             Say(answer);
-            Notebook.Instance?.Record(NoteKind.Statement, resident.DisplayName, q.Question, Notebook.StripTags(answer), resident.DisplayName, $"clue|{resident.DisplayName}|{q.Key}");
+            var noted = Notebook.Instance?.Record(NoteKind.Statement, resident.DisplayName, q.Question, Notebook.StripTags(answer), resident.DisplayName, $"clue|{resident.DisplayName}|{q.Key}");
+            if (noted != null && noted.fact == null) noted.fact = NoteFacts.Claims(answer);
             RefreshChoices();
             TopicAsked?.Invoke(resident, "clue:" + q.Key);
             if (first) Case.MimicAwareness.Instance?.Raise(1.5f, "asked about a clue");
@@ -347,9 +348,9 @@ namespace Semblance.Dialogue
             }
             // ...and one note per day for the whole look, so something missing (or changed overnight) can be shown.
             string summary = Core.GameSettings.ListObservedDetails
-                ? $"Day {day}: I looked {resident.FirstName} over carefully. Everything I could see is in these notes, and nothing else."
-                : $"Day {day}: I studied {resident.FirstName} closely. I'll have to trust my own eyes about what I saw.";
-            var all = notebook.Record(NoteKind.Observation, resident.DisplayName, "A careful look", summary, null, $"observe-all|{resident.DisplayName}|{day}");
+                ? $"Everything I could see on {resident.FirstName} today is in the notes above, and nothing else. If the records list something that isn't here, it wasn't there to see."
+                : $"I studied {resident.FirstName} closely. I'll have to trust my own eyes about what I saw.";
+            var all = notebook.Record(NoteKind.Observation, resident.DisplayName, "Nothing else to see", summary, null, $"observe-all|{resident.DisplayName}|{day}");
             if (all.fact == null) all.fact = NoteFacts.Observed(null, set);
         }
 

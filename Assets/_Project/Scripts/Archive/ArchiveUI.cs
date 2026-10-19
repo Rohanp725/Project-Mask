@@ -159,8 +159,10 @@ namespace Semblance.Archive
 
             var title = UIFactory.Text("Title", drawer.transform, "PARISH RECORDS: FIRST CHURCH OF SEMBLANCE", 20, UIFactory.Light);
             UIFactory.Place(title.rectTransform, new Vector2(0, 1), new Vector2(0, 1), new Vector2(20, -12), new Vector2(700, 30));
-            var hint = UIFactory.Text("Hint", drawer.transform, "Esc to close", 14, new Color(1, 1, 1, 0.5f), TextAlignmentOptions.TopRight);
-            UIFactory.Place(hint.rectTransform, new Vector2(1, 1), new Vector2(1, 1), new Vector2(-20, -16), new Vector2(200, 24));
+            var close = UIFactory.Button("Close", drawer.transform, "Close", 15, UIFactory.Light, new Color(1, 1, 1, 0.12f), Close);
+            UIFactory.Place((RectTransform)close.transform, new Vector2(1, 1), new Vector2(1, 1), new Vector2(-16, -10), new Vector2(90, 30));
+            var hint = UIFactory.Text("Hint", drawer.transform, "Esc", 13, new Color(1, 1, 1, 0.45f), TextAlignmentOptions.TopRight);
+            UIFactory.Place(hint.rectTransform, new Vector2(1, 1), new Vector2(1, 1), new Vector2(-112, -16), new Vector2(60, 24));
 
             var listHolder = UIFactory.Rect("List Holder", drawer.transform);
             UIFactory.Place(listHolder, new Vector2(0, 1), new Vector2(0, 1), new Vector2(16, -50), new Vector2(250, 530));
