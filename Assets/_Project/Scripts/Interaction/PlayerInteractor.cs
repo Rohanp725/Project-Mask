@@ -44,17 +44,34 @@ namespace Semblance.Interaction
                 Current.Interact(this);
         }
 
+        /// <summary>
+        /// A paper on a desk sits inside the desk's crude box, a jar behind a counter's edge: the first thing a ray
+        /// hits is often the furniture, not the thing on it. So the nearest interactable wins as long as nothing
+        /// solid stands more than a furniture-edge's worth in front of it.
+        /// </summary>
+        private const float SeeThrough = 0.6f;
+
         private Interactable FindTarget()
         {
             var ray = new Ray(viewCamera.transform.position, viewCamera.transform.forward);
+            var best = Pick(Physics.RaycastAll(ray, range, layers, QueryTriggerInteraction.Collide));
+            if (best != null) return best;
+            // A thin sphere so small objects don't need pixel-perfect aim.
+            return Pick(Physics.SphereCastAll(ray, aimAssistRadius, range, layers, QueryTriggerInteraction.Collide));
+        }
 
-            // Precise ray first, then a thin sphere so small objects don't need pixel-perfect aim.
-            if (Physics.Raycast(ray, out var hit, range, layers, QueryTriggerInteraction.Collide)
-                && TryGetInteractable(hit, out var interactable))
-                return interactable;
-            if (Physics.SphereCast(ray, aimAssistRadius, out hit, range, layers, QueryTriggerInteraction.Collide)
-                && TryGetInteractable(hit, out interactable))
-                return interactable;
+        private Interactable Pick(RaycastHit[] hits)
+        {
+            System.Array.Sort(hits, (a, b) => a.distance.CompareTo(b.distance));
+            float blockedAt = float.PositiveInfinity;
+            foreach (var hit in hits)
+            {
+                if (hit.collider.transform.root == transform) continue; // our own capsule
+                if (TryGetInteractable(hit, out var interactable))
+                    return hit.distance <= blockedAt + SeeThrough ? interactable : null;
+                if (!hit.collider.isTrigger && hit.distance < blockedAt) blockedAt = hit.distance;
+                if (hit.distance > blockedAt + SeeThrough) return null;
+            }
             return null;
         }
 

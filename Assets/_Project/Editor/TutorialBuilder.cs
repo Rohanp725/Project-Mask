@@ -402,8 +402,8 @@ namespace Semblance.EditorTools
             // Klein's office: the east strip between the sheriff's room and the armory, glazed off from the floor,
             // his desk by the middle window with the lamp still on. The first pool of light.
             BuildKleinsOffice(office, rng);
-            var klein = OfficeDesk(office, new Vector3(6.3f, 0, 0.6f), 90f, rng, working: true);
-            DeskLamp(office, new Vector3(6.1f, FloorY + 0.76f, 1.25f), "LampShade", new Color(1f, 0.78f, 0.5f), 2.6f);
+            var klein = OfficeDesk(office, new Vector3(6.3f, 0, 0.6f), -90f, rng, working: true);
+            DeskLamp(office, new Vector3(6.35f, FloorY + 0.76f, -0.1f), "LampShade", new Color(1f, 0.78f, 0.5f), 2.6f);
             Round("Ashtray", klein, new Vector3(-0.1f, FloorY + 0.77f, -0.33f), 0.12f, 0.03f, "Glass");
             Round("Coffee Cup", klein, new Vector3(-0.55f, FloorY + 0.8f, -0.3f), 0.08f, 0.09f, "SignWhite");
             Part("Case Folder", klein, new Vector3(0.1f, FloorY + 0.772f, -0.3f), new Vector3(0.3f, 0.012f, 0.24f), "Mustard");
@@ -414,7 +414,7 @@ namespace Semblance.EditorTools
             Inspect(envelope, "Read the letter",
                 "A plain envelope, postmarked SEMBLANCE, OCT 10. Inside, one line in pencil, pressed hard enough to tear the paper:\n\n<i>\"One of us is not one of us.\"</i>\n\nClipped to it, in the sheriff's hand: <i>Klein. Look into this.</i>",
                 new Vector3(0.5f, 0.4f, 0.5f), clue: "tut_letter");
-            TutorialAnchor("Desk", new Vector3(5.4f, 0.1f, 0.6f), Vector3.right);
+            TutorialAnchor("Desk", new Vector3(5.6f, 0.1f, 1.35f), Vector3.right);
 
             BuildCubicles(office, rng);
             BuildSheriffsOffice(office, rng);
@@ -593,13 +593,15 @@ namespace Semblance.EditorTools
             Segment(new Vector3(4.4f, 0, -2.4f), new Vector3(4.4f, 0, 0.2f), true);
             Segment(new Vector3(4.4f, 0, 1.1f), new Vector3(4.4f, 0, 2.7f), true);
             Box("Door Lintel", office, new Vector3(4.4f, 2.72f, 0.65f), new Vector3(t, h - 2.14f, 1.0f), "StoreWall");
-            Segment(new Vector3(4.4f, 0, 2.7f), new Vector3(5.2f, 0, 2.7f), false);
+            Box("Office Wall", office, new Vector3(6.2f, 1.65f, 2.7f), new Vector3(3.6f + t, h, t), "StoreWall");
+            Part("Office Skirting", office, new Vector3(6.2f, 0.17f, 2.62f), new Vector3(3.6f, 0.14f, 0.03f), "Wood");
+            Part("Office Skirting", office, new Vector3(6.2f, 0.17f, 2.78f), new Vector3(3.6f, 0.14f, 0.03f), "Wood");
             Box("Corner Post", office, new Vector3(4.4f, 1.65f, 2.7f), new Vector3(t + 0.02f, h, t + 0.02f), "Wood");
             Box("Corner Post", office, new Vector3(4.4f, 1.65f, -2.4f), new Vector3(t + 0.02f, h, t + 0.02f), "Wood");
             TutorialDoor(office, "Klein's Door", new Vector3(4.4f, 0.1f, 0.2f), -90f);
             Part("Door Plate", office, new Vector3(4.355f, 1.7f, 0.65f), new Vector3(0.006f, 0.08f, 0.26f), "Brass");
             // The room: visitor's chair across the desk, cabinet in the corner, the hat and coat by the door, a bookcase.
-            Chair(office, new Vector3(5.1f, 0, 1.5f), 90f, "Leather");
+            Chair(office, new Vector3(5.25f, 0, 0.6f), 90f, "Leather"); // the visitor's, across the desk from him
             var cab = Piece("Filing Cabinet", office, new Vector3(7.6f, 0, -1.9f), 0f, new Vector3(0.5f, 1.32f, 0.62f), FloorY);
             Part("Body", cab, new Vector3(0, FloorY + 0.66f, 0), new Vector3(0.5f, 1.32f, 0.62f), "Galvanized");
             for (int d = 0; d < 3; d++)
@@ -611,8 +613,8 @@ namespace Semblance.EditorTools
             Part("Klein's Hat Crown", office, new Vector3(4.85f, FloorY + 1.95f, -2.0f), new Vector3(0.18f, 0.14f, 0.18f), "Suit");
             Part("Coat", office, new Vector3(4.93f, FloorY + 1.28f, -1.92f), new Vector3(0.2f, 0.8f, 0.12f), "Suit");
             Shelving("Bookshelf", office, new Vector3(6.6f, 0, 2.4f), 0f, 1.6f, 1.3f, 3, rng);
-            Picture(office, new Vector3(4.47f, 1.95f, -1.2f), 90f, new Vector2(0.42f, 0.32f), "Paper");
-            Part("Certificate Text", office, new Vector3(4.49f, 1.95f, -1.2f), new Vector3(0.002f, 0.2f, 0.3f), "Writing");
+            Picture(office, new Vector3(4.485f, 1.95f, -1.2f), 90f, new Vector2(0.42f, 0.32f), "Paper");
+            Part("Certificate Text", office, new Vector3(4.512f, 1.95f, -1.2f), new Vector3(0.002f, 0.2f, 0.3f), "Writing");
             Part("Rug", office, new Vector3(6.0f, FloorY + 0.006f, 0.2f), new Vector3(2.4f, 0.012f, 3.2f), "Rug");
         }
 
@@ -779,11 +781,10 @@ namespace Semblance.EditorTools
                 if (gapTo > gapFrom) { Slab(0f, gapFrom); Slab(gapTo, length); }
                 else Slab(0f, length);
             }
-            Mesh(new Vector3(x0, 0, z0), new Vector3(x1, 0, z0), 0.3f, 1.2f); // front, with the gate
-            Mesh(new Vector3(x0, 0, z0), new Vector3(x0, 0, z1));
+            Mesh(new Vector3(x0, 0, z0), new Vector3(x0, 0, z1), 0.4f, 1.3f); // the corridor side, with the gate
             var hinge = Group("Armory Gate Hinge", office);
-            hinge.localPosition = new Vector3(x0 + 1.2f, FloorY, z0);
-            hinge.localRotation = Quaternion.Euler(0, 180f, 0);
+            hinge.localPosition = new Vector3(x0, FloorY, z0 + 1.3f);
+            hinge.localRotation = Quaternion.Euler(0, 90f, 0);
             var gate = Box("Armory Gate", hinge, new Vector3(0.45f, h * 0.5f, 0), new Vector3(0.9f, h, 0.04f), "Galvanized");
             gate.GetComponent<Renderer>().enabled = false;
             foreach (var y in new[] { 0.03f, h * 0.5f, h - 0.03f })
@@ -800,11 +801,11 @@ namespace Semblance.EditorTools
             SetField(door, "hinge", hinge);
             SetField(door, "locked", true);
             SetField(door, "lockedMessage", "The armory. Chained and padlocked; the sheriff keeps the key on him. Five rifles, two shotguns, a box of flares. None of it any use for what's wrong tonight.");
-            Part("Armory Sign", office, new Vector3(x0 + 1.95f, FloorY + h - 0.16f, z0 - 0.035f), new Vector3(0.9f, 0.22f, 0.02f), "SignWhite");
-            Part("Sign Stripe", office, new Vector3(x0 + 1.95f, FloorY + h - 0.16f, z0 - 0.047f), new Vector3(0.9f, 0.04f, 0.004f), "PlainBarnRed");
-            Part("Sign Letters", office, new Vector3(x0 + 1.95f, FloorY + h - 0.19f, z0 - 0.047f), new Vector3(0.6f, 0.08f, 0.004f), "Writing");
-            foreach (var sx in new[] { x0 + 1.55f, x0 + 2.35f })
-                Part("Sign Wire", office, new Vector3(sx, FloorY + h - 0.03f, z0 - 0.035f), new Vector3(0.006f, 0.08f, 0.006f), "Metal");
+            Part("Armory Sign", office, new Vector3(x0 - 0.035f, FloorY + h - 0.16f, z0 + 2.1f), new Vector3(0.02f, 0.22f, 0.9f), "SignWhite");
+            Part("Sign Stripe", office, new Vector3(x0 - 0.047f, FloorY + h - 0.16f, z0 + 2.1f), new Vector3(0.004f, 0.04f, 0.9f), "PlainBarnRed");
+            Part("Sign Letters", office, new Vector3(x0 - 0.047f, FloorY + h - 0.19f, z0 + 2.1f), new Vector3(0.004f, 0.08f, 0.6f), "Writing");
+            foreach (var sz in new[] { z0 + 1.7f, z0 + 2.5f })
+                Part("Sign Wire", office, new Vector3(x0 - 0.035f, FloorY + h - 0.03f, sz), new Vector3(0.006f, 0.08f, 0.006f), "Metal");
             var rack = Piece("Gun Rack", office, new Vector3(6.6f, 0, 5.2f), 0f, new Vector3(2.4f, 1.9f, 0.4f), FloorY);
             Part("Rack Back", rack, new Vector3(0, FloorY + 0.95f, 0.15f), new Vector3(2.4f, 1.9f, 0.04f), "Wood");
             Part("Rack Shelf", rack, new Vector3(0, FloorY + 0.25f, 0), new Vector3(2.4f, 0.04f, 0.36f), "Wood");
