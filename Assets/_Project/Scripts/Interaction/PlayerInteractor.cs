@@ -30,8 +30,11 @@ namespace Semblance.Interaction
                 if (Core.GameInput.Pressed(Core.GameInput.Interact)) hud.DismissReading();
                 return;
             }
-            Current = InputLock.IsLocked || (controller != null && controller.InputLocked) ? null : FindTarget();
-            hud.SetPrompt(Current != null ? Current.Prompt : null);
+            // Inside a wardrobe you can still reach what's on its floor; otherwise a lock means no interaction.
+            bool hiding = InputLock.Top is Events.HidingSpot;
+            Current = (InputLock.IsLocked && !hiding) || (controller != null && controller.InputLocked) ? null : FindTarget();
+            if (hiding && Current is Events.HidingSpot) Current = null;
+            hud.SetPrompt(Current != null ? Current.Prompt : hiding ? "Climb out" : null);
 
             if (Current == null || Cursor.lockState != CursorLockMode.Locked)
                 return;

@@ -36,6 +36,11 @@ namespace Semblance.Notes
         {
             string t = Notebook.StripTags(rawText ?? "").ToLowerInvariant();
             if (t.Contains("tulsa") && (t.Contains("ruth") || t.Contains("wife") || t.Contains("her sister"))) return "claim|ruth|away";
+            if (t.Contains("four of us") || t.Contains("there are four")) return "claim|marsh_children|four";
+            if (t.Contains("she doesn't eat")) return "claim|mae_eats|no";
+            if (t.Contains("slice of yesterday's cherry")) return "claim|mae_eats|yes";
+            if (t.Contains("out of my album") || t.Contains("somebody put that in the box")) return "claim|thorne_photo|stolen";
+            if (t.Contains("sleeps beside me") || t.Contains("comes to bed")) return "claim|harlan_sleeps|home";
             return null;
         }
 
@@ -46,6 +51,10 @@ namespace Semblance.Notes
             {
                 case "calder_certificate": return "claim|ruth|dead";
                 case "grave_headstone": return "claim|ruth|dead";
+                case "marsh_grave": return "claim|marsh_children|five";
+                case "marsh_crayons": return "claim|marsh_children|five";
+                case "thorne_album": return "claim|thorne_photo|bev";
+                case "hollis_bedroll": return "claim|harlan_sleeps|barn";
                 default: return null;
             }
         }
@@ -53,6 +62,10 @@ namespace Semblance.Notes
         private static string ClaimText(string topic, string value)
         {
             if (topic == "ruth") return value == "away" ? "Ruth Calder is away in Tulsa" : value == "dead" ? "Ruth Calder died in August" : value;
+            if (topic == "marsh_children") return value == "four" ? "the Marshes have four children" : "there was a fifth Marsh child";
+            if (topic == "mae_eats") return value == "no" ? "Mae doesn't eat" : "Mae eats pie for breakfast every morning";
+            if (topic == "thorne_photo") return value == "stolen" ? "somebody else took the photograph from Bev's album" : "Bev put the photograph in the mailbox herself";
+            if (topic == "harlan_sleeps") return value == "home" ? "Harlan sleeps in his own bed" : "Harlan has been sleeping in the barn";
             return $"{topic} is {value}";
         }
 

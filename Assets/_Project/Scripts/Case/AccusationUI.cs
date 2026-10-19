@@ -125,8 +125,9 @@ namespace Semblance.Case
             // Physical: evidence about them or found in their household, a cold hand nobody explained, a flare in a photo
             // that nobody explained. Each counts once.
             string household = CaseDirector.Household(r);
-            int physical = entries.Count(e => e.kind == NoteKind.Evidence && !e.title.StartsWith("The real "))
-                + notebook.EntriesFor(household).Count(e => e.kind == NoteKind.Evidence)
+            // Evidence filed under a person is a side story (a dead wife's shoes, a drowned boy's crayons); only what the
+            // creature itself leaves in a house counts, and that's filed under the household.
+            int physical = notebook.EntriesFor(household).Count(e => e.kind == NoteKind.Evidence)
                 + (entries.Any(e => e.title == "Shook hands" && e.fact == "cold") ? 1 : 0)
                 + (entries.Any(e => e.kind == NoteKind.Photo && e.text.Contains("flared white")) && !entries.Any(e => e.explains == "flare")
                    && PhotographedSomeoneElse(notebook, r) ? 1 : 0);

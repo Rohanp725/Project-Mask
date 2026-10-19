@@ -439,6 +439,15 @@ namespace Semblance.EditorTools
             AddText(grave, "1983", new Vector3(0, 0.45f, 1.097f), new Vector2(0.4f, 0.1f), new Color(0.3f, 0.3f, 0.28f), Quaternion.identity);
             AddInspectable(stone, "Read headstone", "A fresh grave. There was a name carved here, but it has been chiselled away.");
 
+            // A small, older stone near the fence, the grass around it cut with scissors.
+            var small = Group("Small Grave", root);
+            small.position = new Vector3(-11.5f, 0, 41f);
+            small.rotation = Quaternion.Euler(0, 90f, 0);
+            var smallStone = Box("Headstone", small, new Vector3(0, 0.28f, 0.6f), new Vector3(0.45f, 0.56f, 0.12f), "Stone");
+            AddText(small, "DANIEL\nMARSH\n<size=70%>1971 - 1979</size>", new Vector3(0, 0.3f, 0.535f), new Vector2(0.4f, 0.4f), new Color(0.3f, 0.3f, 0.28f), Quaternion.identity, wear: 0.25f);
+            Box("Trim", small, new Vector3(0, 0.005f, -0.2f), new Vector3(0.9f, 0.01f, 1.4f), "Sage", collider: false);
+            Evidence(smallStone, "marsh_grave", "A boy's grave", "A small stone, older than the new ones. DANIEL MARSH, 1971-1979. 'Our boy.' The grass around it is cut with scissors, and there's a grey crayon lying on the ledge, worn to a stub.", Semblance.Case.CastNames.June, "Read the small stone");
+            Box("Crayon", small, new Vector3(0.1f, 0.57f, 0.6f), new Vector3(0.012f, 0.012f, 0.06f), "Metal", collider: false);
             ExtraTrees.Add(new Vector3(-27f, 0, 62f));
             ExtraTrees.Add(new Vector3(-12f, 0, 63f));
         }
@@ -581,6 +590,11 @@ namespace Semblance.EditorTools
             Box("Mailbox Post", frame, new Vector3(4.2f, 0.55f, -1.1f), new Vector3(0.1f, 1.1f, 0.1f), "Wood");
             // A rural mailbox: flat sides, a rounded top, the door facing the road, a red flag on the side.
             var mailbox = Box("Mailbox", frame, new Vector3(4.2f, 1.17f, -1.1f), new Vector3(0.3f, 0.2f, 0.52f), "Galvanized");
+            string mailboxSubject = def.Family switch
+            {
+                "Hollis" => Semblance.Case.CastNames.Nell, "Marsh" => Semblance.Case.CastNames.June, "Whitlock" => Semblance.Case.CastNames.Ada, "Vance" => Semblance.Case.CastNames.Irene,
+                "Thorne" => Semblance.Case.CastNames.Bev, "Kessler" => Semblance.Case.CastNames.Greta, "Calder" => Semblance.Case.CastNames.Amos, "Dobbs" => Semblance.Case.CastNames.Wendell, _ => null,
+            };
             MeshPart("Mailbox Top", frame, cylinderMesh, new Vector3(4.2f, 1.27f, -1.1f), new Vector3(0.3f, 0.26f, 0.3f), "Galvanized").transform.localRotation = Quaternion.Euler(90f, 0, 0);
             Box("Mailbox Door", frame, new Vector3(4.2f, 1.2f, -1.365f), new Vector3(0.3f, 0.3f, 0.015f), "Metal", collider: false);
             Box("Flag Pivot", frame, new Vector3(4.36f, 1.15f, -1.0f), new Vector3(0.02f, 0.04f, 0.04f), "Metal", collider: false);
@@ -589,7 +603,10 @@ namespace Semblance.EditorTools
             flag.localRotation = def.Family == "Hollis" ? Quaternion.identity : Quaternion.Euler(90f, 0, 0); // the Hollis flag is up
             Box("Flag Arm", flag, new Vector3(0, 0.12f, 0), new Vector3(0.015f, 0.24f, 0.025f), "PlainBarnRed", collider: false);
             Box("Flag Plate", flag, new Vector3(0, 0.22f, 0.04f), new Vector3(0.015f, 0.07f, 0.1f), "PlainBarnRed", collider: false);
-            AddInspectable(mailbox, "Check mailbox", def.Family.ToUpperInvariant() + ". " + def.Mailbox, "mailbox:" + def.Family);
+            if (mailboxSubject != null)
+                Evidence(mailbox, "mailbox_" + def.Family, "The " + def.Family + " mailbox", def.Mailbox, mailboxSubject, "Check mailbox");
+            else
+                AddInspectable(mailbox, "Check mailbox", def.Family.ToUpperInvariant() + ". " + def.Mailbox, "mailbox:" + def.Family);
             // Generous trigger around the mailbox so it's easy to target (local units are scaled by the box).
             var mailboxTrigger = mailbox.GetComponent<BoxCollider>();
             mailboxTrigger.isTrigger = true;

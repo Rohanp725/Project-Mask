@@ -741,7 +741,8 @@ namespace Semblance.EditorTools
             var board = Part("Hymn Board", root, new Vector3(-2.8f, 2.2f, -inZ + 0.05f), new Vector3(0.7f, 0.9f, 0.04f), "Wood");
             AddText(root, "4\n46\n ", new Vector3(-2.8f, 2.2f, -inZ + 0.075f), new Vector2(0.55f, 0.8f), new Color(0.85f, 0.82f, 0.7f));
             // The third number is on a fresh white card, in red paint.
-            Part("Hymn Card", root, new Vector3(-2.8f, 1.9f, -inZ + 0.074f), new Vector3(0.48f, 0.22f, 0.006f), "Paper");
+            var hymnCard = Part("Hymn Card", root, new Vector3(-2.8f, 1.9f, -inZ + 0.074f), new Vector3(0.48f, 0.22f, 0.006f), "Paper");
+            Evidence(EvidenceInspect(hymnCard, new Vector3(0.5f, 0.3f, 0.3f)), "hymn_card", "The red hymn card", "A fresh white card in the hymn board's third slot: 213, in the same red enamel as the welcome sign. The hymnals stop at 180. Father Crane takes it down; it's back by the service.", null, "Look at the card");
             AddText(root, "213", new Vector3(-2.8f, 1.9f, -inZ + 0.08f), new Vector2(0.44f, 0.2f), new Color(0.55f, 0.08f, 0.06f), wear: 0.04f);
             Inspect(board, "Read the hymn board", "Hymns 4, 46 and 213. The hymnals in the pews only go up to 180. The 213 is on a fresh white card, in the same red paint as the sign on the highway.", new Vector3(0.8f, 1f, 0.3f), clue: "hymnboard");
 
@@ -863,7 +864,7 @@ namespace Semblance.EditorTools
                     stock.transform.localRotation = Quaternion.Euler(-8f, 0, 0);
                     Inspect(gunRack, "Look at the gun rack", "Harlan's double-barrel. Loaded. There are fresh scratches on the stock where it's been leaned against the back door every night.", new Vector3(0.3f, 0.6f, 1.3f), clue: "gunrack");
                     var hymnal = Part("Hymnal", root, new Vector3(-2.9f, FloorY + 0.8f, -1.3f), new Vector3(0.18f, 0.04f, 0.24f), "BarnRed");
-                    Inspect(hymnal, "Read the hymnal", "Nell's hymnal, swollen with use. A ribbon marks 'Abide With Me'. In the margin, in her hand: 'Harlan's hands were warm this morning. Thank you, Lord.' The same line, every morning of September. October's margins are blank.", new Vector3(0.4f, 0.3f, 0.4f), clue: "hymnal");
+                    Evidence(EvidenceInspect(hymnal, new Vector3(0.4f, 0.3f, 0.4f)), "hollis_hymnal", "Nell's hymnal", "Nell's hymnal, swollen with use. A ribbon marks 'Abide With Me'. In the margin, in her hand: 'Harlan's hands were warm this morning. Thank you, Lord.' The same line, every morning of September. October's margins are blank.", Semblance.Case.CastNames.Nell, "Read the hymnal");
                     break;
                 }
                 case "Marsh":
@@ -872,7 +873,12 @@ namespace Semblance.EditorTools
                     for (int i = 0; i < 4; i++)
                         Drawing(root, new Vector3(-0.2f + i * 0.42f, 1.3f + (i % 2) * 0.1f, -inZ + 0.03f), 0f, rng, 6, i >= 2);
                     var drawing = Drawing(root, new Vector3(1.55f, 1.25f, -inZ + 0.03f), 0f, rng, 6, true);
-                    Inspect(drawing, "Look at the drawings", "Crayon drawings taped to the wall: Mama, Daddy, four kids, the house. In every one since September there's a fifth grown-up standing a little behind the others. In the newest, it's holding Mama's hand.", new Vector3(2.2f, 0.6f, 0.3f), clue: "drawings");
+                    Evidence(EvidenceInspect(drawing, new Vector3(2.2f, 0.6f, 0.3f)), "marsh_drawings", "The children's drawings", "Crayon drawings taped to the wall: Mama, Daddy, four kids, the house. In every one since September there's a fifth grown-up standing a little behind the others, in grey. In the newest, it's holding Mama's hand.", Semblance.Case.CastNames.June, "Look at the drawings");
+                    // An old crayon tin pushed to the back of the dresser top, a name scratched inside the lid.
+                    var tin = Part("Crayon Tin", root, new Vector3(-inX + 0.3f, FloorY + 1.63f, 1.5f), new Vector3(0.2f, 0.05f, 0.13f), "Rust");
+                    for (int c = 0; c < 6; c++)
+                        Part("Crayon", root, new Vector3(-inX + 0.24f + c * 0.025f, FloorY + 1.66f, 1.5f), new Vector3(0.012f, 0.012f, 0.1f), c == 5 ? "Metal" : new[] { "BarnRed", "Blue", "Mustard", "Sage", "PlainPink" }[c]);
+                    Evidence(EvidenceInspect(tin, new Vector3(0.4f, 0.3f, 0.4f)), "marsh_crayons", "A boy's crayon tin", "A flat tin of crayons, most of them worn to stubs, pushed to the back of the shelf. Scratched inside the lid: DANNY M. The grey one is the only crayon in it that still has a point. It's the only one nobody has used in four years.", Semblance.Case.CastNames.June, "Look in the tin");
                     foreach (var p in new[] { new Vector3(0.6f, FloorY + 0.08f, 0.8f), new Vector3(1.4f, FloorY + 0.06f, 1.2f) })
                         Part("Toy Block", root, p, new Vector3(0.12f, 0.12f, 0.12f), rng.NextDouble() < 0.5 ? "BarnRed" : "Blue");
                     break;
@@ -905,7 +911,7 @@ namespace Semblance.EditorTools
                     foreach (var a in new[] { -25f, 25f })
                         Part("Needle", rocker, new Vector3(0, FloorY + 0.48f, 0.1f), new Vector3(0.008f, 0.008f, 0.3f), "Chrome").transform.localRotation = Quaternion.Euler(0, a, 0);
                     Round("Wool", rocker, new Vector3(0.17f, FloorY + 0.49f, -0.12f), 0.1f, 0.09f, "Sage");
-                    Inspect(knitting, "Look at the knitting", "Ruth's knitting, a half-finished sleeve. Somebody has kept adding to it since August. The new rows are perfectly even, machine-even, and they're knitted backwards.", new Vector3(0.5f, 0.4f, 0.5f), clue: "knitting");
+                    Evidence(EvidenceInspect(knitting, new Vector3(0.5f, 0.4f, 0.5f)), "calder_knitting", "Ruth's knitting", "Ruth's knitting, a half-finished sleeve. Somebody has kept adding to it since August. The new rows are even, machine-even, and they're knitted backwards: every stitch mirrored, the way a left hand makes a right hand's work.", Semblance.Case.CastNames.Amos, "Look at the knitting");
                     break;
                 }
                 case "Kessler":
@@ -937,12 +943,20 @@ namespace Semblance.EditorTools
                         if (f < 3) Part("Head", print, new Vector3(fx, -0.2f + fh + 0.025f, 0.024f), new Vector3(0.04f, 0.045f, 0.004f), "Photo");
                     }
                     Part("Smear", print, new Vector3(0.16f, 0.1f, 0.025f), new Vector3(0.12f, 0.1f, 0.004f), "Smear");
-                    Inspect(photo, "Look at the photo", "The Thorne family, 1979, in front of the barn. Bev, the two boys, Silas. Silas is a smear from the shoulders up, like he turned his head too fast. Everyone else is pin-sharp. Silas says he never moves in photos. 1979: years before anything came to Semblance.", new Vector3(0.8f, 0.7f, 0.3f), clue: "thornephoto");
+                    Evidence(EvidenceInspect(photo, new Vector3(0.8f, 0.7f, 0.3f)), "thorne_photo", "The Thorne photograph", "The Thorne family, 1979, in front of the barn. Bev, the two boys, Silas. Silas is a smear from the shoulders up, like he turned his head too fast. Everyone else is pin-sharp. 1979: years before anything came to Semblance.", Semblance.Case.CastNames.Silas, "Look at the photo");
+                    // The family album on the side table, one corner-mount empty.
+                    var album = Part("Album", root, new Vector3(4.0f, FloorY + 0.62f, -inZ + 0.62f), new Vector3(0.3f, 0.035f, 0.24f), "Leather");
+                    Part("Album Page", root, new Vector3(4.0f, FloorY + 0.642f, -inZ + 0.62f), new Vector3(0.27f, 0.004f, 0.21f), "Paper");
+                    Evidence(EvidenceInspect(album, new Vector3(0.4f, 0.3f, 0.4f)), "thorne_album", "The family album", "The Thorne album, open on the side table. A page of 1979, and one set of corner-mounts empty where a photograph was taken out. On the facing page, in Bev's hand, fresh pencil: 'Show him this one.'", Semblance.Case.CastNames.Bev, "Look at the album");
                     var engine = Piece("Engine Parts", root, new Vector3(1.8f, 0, 1.8f), 0f, new Vector3(1.0f, 0.75f, 0.6f), FloorY);
                     Part("Bench", engine, new Vector3(0, FloorY + 0.7f, 0), new Vector3(1f, 0.05f, 0.6f), "Wood");
                     Legs(engine, 1f, 0.6f, 0.7f, 0.05f, "Wood");
-                    Part("Carburettor", engine, new Vector3(-0.2f, FloorY + 0.82f, 0), new Vector3(0.25f, 0.2f, 0.2f), "Metal");
-                    Round("Gear", engine, new Vector3(0.25f, FloorY + 0.74f, 0.05f), 0.2f, 0.04f, "Metal");
+                    Part("Rag", engine, new Vector3(0.05f, FloorY + 0.728f, 0), new Vector3(0.8f, 0.006f, 0.5f), "PlainCream");
+                    var carb = Part("Carburettor", engine, new Vector3(-0.25f, FloorY + 0.8f, 0), new Vector3(0.18f, 0.14f, 0.16f), "Metal");
+                    for (int pc = 0; pc < 9; pc++)
+                        Part("Part", engine, new Vector3(-0.05f + (pc % 5) * 0.09f, FloorY + 0.745f, -0.15f + (pc / 5) * 0.2f), new Vector3(0.04f, 0.025f, 0.05f), pc % 3 == 0 ? "Brass" : "Metal");
+                    Round("Bottle", engine, new Vector3(0.42f, FloorY + 0.84f, -0.2f), 0.07f, 0.22f, "Glass");
+                    Inspect(carb, "Look at the bench", "A carburettor in forty pieces on a clean rag, laid out in the order they came off. A bottle, two-thirds down. Silas takes engines apart at night when he can't sleep, Bev says. The rag is clean because he never puts one back together.", new Vector3(1.1f, 0.5f, 0.7f), clue: "thornebench");
                     break;
                 }
                 case "Vance":
@@ -954,20 +968,24 @@ namespace Semblance.EditorTools
                         MothCase(root, new Vector3(-inX + 0.03f, 1.5f + (i % 2) * 0.5f, z), 90f, rng, 3 + rng.Next(4));
                     }
                     var empty = MothCase(root, new Vector3(inX - 0.03f, 1.6f, 0.9f), -90f, rng, 0);
-                    Inspect(empty, "Look at the case", "A display case, empty except for one pin and a label in Irene's spidery hand: 'Sept. 22nd. Large. Grey. It would not hold still, and it would not die.'", new Vector3(0.3f, 0.6f, 0.7f), clue: "mothcase");
+                    Evidence(EvidenceInspect(empty, new Vector3(0.3f, 0.6f, 0.7f)), "vance_case", "The empty case", "A display case, empty except for one pin and a label in Irene's spidery hand: 'Sept. 22nd. Large. Grey. It would not hold still, and it would not die.'", Semblance.Case.CastNames.Irene, "Look at the case");
+                    // A funeral card, soft at the folds, propped against the radio.
+                    var card = Part("Funeral Card", root, new Vector3(4.0f, FloorY + 0.66f, -inZ + 0.6f), new Vector3(0.09f, 0.13f, 0.004f), "Paper");
+                    card.transform.localRotation = Quaternion.Euler(-12f, 0, 0);
+                    Evidence(EvidenceInspect(card, new Vector3(0.3f, 0.3f, 0.3f)), "vance_card", "A funeral card", "CARL JAMES VANCE. 1931-1979. 'Gone before us.' The card has been folded and unfolded so many times the crease has gone soft as cloth. On the back, in pencil: 'porch light'.", Semblance.Case.CastNames.Irene, "Read the card");
                     break;
                 }
                 case "Whitlock":
                 {
                     var suitcase = Case("Suitcase", root, new Vector3(inX - 1.9f, FloorY + 0.12f, inZ - 2.4f), new Vector3(0.6f, 0.22f, 0.4f), 8f);
-                    Inspect(suitcase, "Look at the suitcase", "Ada's suitcase, still packed. A Greyhound ticket to Tulsa is tucked under the strap, dated April 1980. Never punched.", new Vector3(0.8f, 0.5f, 0.6f), clue: "suitcase");
+                    Evidence(EvidenceInspect(suitcase, new Vector3(0.8f, 0.5f, 0.6f)), "whitlock_suitcase", "Ada's suitcase", "Ada's suitcase, still packed. A Greyhound ticket to Tulsa is tucked under the strap, dated April 1980. Never punched. The clothes inside are three years out of fashion and freshly ironed.", Semblance.Case.CastNames.Ada, "Look at the suitcase");
                     // A stack of pie tins and the recipe card beside them.
                     for (int t = 0; t < 3; t++)
                         Round("Pie Tin", root, new Vector3(-2.3f + t * 0.01f, FloorY + 0.79f + t * 0.025f, -1.6f), 0.26f, 0.025f, "Galvanized");
                     var tins = Part("Recipe Card", root, new Vector3(-2.0f, FloorY + 0.783f, -1.45f), new Vector3(0.13f, 0.004f, 0.08f), "Paper");
                     tins.transform.localRotation = Quaternion.Euler(0, 20f, 0);
                     Part("Card Line", root, new Vector3(-2.0f, FloorY + 0.786f, -1.45f), new Vector3(0.1f, 0.002f, 0.006f), "BarnRed").transform.localRotation = Quaternion.Euler(0, 20f, 0);
-                    Inspect(tins, "Look at the recipe", "Pie tins and a recipe card in Mae's handwriting: 'Cherry. Earl's mother's.' Somebody has written underneath, in pencil, very carefully: 'cherry cherry cherry cherry'.", new Vector3(0.4f, 0.3f, 0.4f), clue: "recipe");
+                    Evidence(EvidenceInspect(tins, new Vector3(0.4f, 0.3f, 0.4f)), "whitlock_recipe", "Mae's recipe card", "A recipe card in Mae's handwriting: 'Cherry. Earl's mother's.' Somebody has written underneath, in pencil, very carefully: 'cherry cherry cherry cherry'. The pencil is the one from the pad by the telephone, where Mae writes her lists at three in the morning.", Semblance.Case.CastNames.Mae, "Look at the recipe");
                     break;
                 }
             }
@@ -1040,6 +1058,15 @@ namespace Semblance.EditorTools
             Crate(root, new Vector3(-inX + 0.6f, 0, 3.5f), 10f);
             Crate(root, new Vector3(-inX + 0.7f, 0, 4.2f), -5f, 0.5f);
             Barrel(root, new Vector3(inX - 0.5f, 0, 3.2f));
+            if (Anchors.TryGetValue("Barn:Hollis", out var hollisBarn) && hollisBarn == root)
+            {
+                // Where Harlan really sleeps: a bedroll in the end stall, a thermos, a box of shells.
+                var roll = Part("Bedroll", root, new Vector3(-inX + 1.3f, FloorY + 0.08f, -inZ + 0.9f), new Vector3(0.7f, 0.16f, 1.9f), "Fabric");
+                Part("Blanket", root, new Vector3(-inX + 1.3f, FloorY + 0.17f, -inZ + 1.2f), new Vector3(0.72f, 0.04f, 1.2f), "PlainBlue");
+                Round("Thermos", root, new Vector3(-inX + 1.8f, FloorY + 0.14f, -inZ + 0.4f), 0.09f, 0.28f, "Galvanized");
+                Part("Shell Box", root, new Vector3(-inX + 1.85f, FloorY + 0.04f, -inZ + 0.7f), new Vector3(0.12f, 0.08f, 0.08f), "BarnRed");
+                Evidence(EvidenceInspect(roll, new Vector3(1.2f, 0.6f, 2.2f)), "hollis_bedroll", "A bedroll in the barn", "A bedroll in the end stall, a thermos, a box of shells. Somebody sleeps out here, and has for a month by the state of the blanket. The straw beside it is pressed flat where a shotgun lies at night.", Semblance.Case.CastNames.Harlan, "Look at the bedroll");
+            }
             Part("Lantern Hook", root, new Vector3(0, ceiling - 1.3f, 2.5f), new Vector3(0.02f, 0.4f, 0.02f), "Metal");
             // A hurricane lantern: tin base and cap, a glass globe between, a wire bail.
             Round("Lantern Base", root, new Vector3(0, ceiling - 1.74f, 2.5f), 0.14f, 0.05f, "Rust");

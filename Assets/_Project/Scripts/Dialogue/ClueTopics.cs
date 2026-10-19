@@ -178,7 +178,7 @@ namespace Semblance.Dialogue
                 ("Father Crane", "Wendell. I left it. It's the best advice anyone's given this town in a year, and it came from the man we all think is cracked."),
                 ("Wendell", "Me. It's not advice. It's instructions."));
 
-            Add("hymnboard", Seen("hymnboard"), "The hymn board says 213. The hymnals only go up to 180.",
+            Add("hymnboard", Any(Seen("hymnboard"), Evidence("hymn_card")), "The hymn board says 213. The hymnals only go up to 180.",
                 null, null,
                 ("Father Crane", "I don't put that card up. I take it down. It's back by the service, in the same red as the sign. I've stopped taking it down. I announce it. God forgive me, I announce it."),
                 ("Nell", "I looked for it the first Sunday. Turned every page. Harlan told me to stop looking and sing."));
@@ -219,7 +219,7 @@ namespace Semblance.Dialogue
                 ("Amos", "Her size. Six. I drive to Barlow and I buy them and I don't know why. I think if I stop buying them she's gone."),
                 ("Mae", "He came in here with a shoebox in September and sat with it on the stool next to him. Didn't say a word. I didn't either."));
 
-            Add("knitting", Seen("knitting"), "Ruth's knitting has been kept up since August. The new rows are perfect, and backwards.",
+            Add("knitting", Evidence("calder_knitting"), "Ruth's knitting has been kept up since August. The new rows are perfect, and backwards.",
                 null, null,
                 ("Amos", "I don't touch it. I can't. I come down in the mornings and there's more of it, and I tell myself I did it in my sleep. I've never held a needle in my life."),
                 ("Nell", "Backwards? Ruth couldn't purl backwards to save her life. I taught her."));
@@ -244,35 +244,35 @@ namespace Semblance.Dialogue
                 null, null,
                 ("Harlan", "Since September. Something walks the corn at night and it doesn't trip the wire. I sit with the gun. I haven't fired it. I'd like to know what I'm firing at first."),
                 ("Nell", "He sits up. I pretend to sleep so he thinks one of us is. Neither of us is."));
-            Add("hymnal", Seen("hymnal"), "Your hymnal. 'Harlan's hands were warm this morning. Thank you, Lord.' Every morning in September.",
+            Add("hymnal", Evidence("hollis_hymnal"), "Your hymnal. 'Harlan's hands were warm this morning. Thank you, Lord.' Every morning in September.",
                 null, null,
                 ("Nell", "I thank the Lord for small things. Some mornings he's cold as the pump handle, from sitting up. I started writing down the warm ones. ...I stopped in October. I don't want to talk about why I stopped."),
                 ("Harlan", "She writes in church. I don't read it. Whatever she wrote, she meant kindly."));
-            Add("hymnal_nell", Seen("hymnal"), "Why did you stop?", null, "hymnal",
+            Add("hymnal_nell", Evidence("hollis_hymnal"), "Why did you stop?", null, "hymnal",
                 ("Nell", "Because there weren't any warm ones to write. Because I'd have been writing the cold ones. Because I'm his wife, Detective, and I know what I know, and I'm asking you not to make me say it."));
 
-            Add("drawings", Seen("drawings"), "The children's drawings. Since September there's a fifth grown-up standing behind the family.",
+            Add("drawings", Evidence("marsh_drawings"), "The children's drawings. Since September there's a fifth grown-up standing behind the family.",
                 null, null,
                 ("June", "Children draw things. There are four of us in this house. Four. I've asked her who the tall one is and she says 'the other one'. I've stopped asking."),
                 ("Hank", "Which one of us is she drawing it behind? ...Don't tell June I asked that."));
-            Add("drawings_june", Seen("drawings"), "'The other one.'", null, "drawings",
+            Add("drawings_june", Evidence("marsh_drawings"), "'The other one.'", null, "drawings",
                 ("June", "That's what she says. 'The other one, Mama.' Like there's a one and an other one. She's five. She can't count past twelve and she's never once drawn it with a face."));
 
-            Add("thornephoto", Seen("thornephoto"), "The family photograph from 1979. Silas is a smear from the shoulders up.",
+            Add("thornephoto", Evidence("thorne_photo"), "The family photograph from 1979. Silas is a smear from the shoulders up.",
                 null, null,
                 ("Silas", "I don't hold still for cameras. Never have. You'll find every picture of me the same. Nineteen seventy-nine, Detective. Think about that date before you think about anything else."),
                 ("Bev", "He moved. He always moves. I've got a box of pictures with no husband in them. It used to be funny."));
 
-            Add("mothcase", Seen("mothcase"), "An empty display case. 'It would not hold still, and it would not die.'",
+            Add("mothcase", Evidence("vance_case"), "An empty display case. 'It would not hold still, and it would not die.'",
                 null, null,
                 ("Irene", "September twenty-second. Grey, big as my hand, and it came off the pin. Moths don't come off the pin. I'd put it through the thorax. It walked to the edge of the case and it looked at me, and I'm aware of how that sounds."),
                 ("Doc", "She brought it to me in a jar. I said it was dead. It was dead. The next morning the jar was empty and the lid was on."));
 
-            Add("suitcase", Seen("suitcase"), "There's a packed suitcase in the Whitlock house. A ticket to Tulsa from 1980, never used.",
+            Add("suitcase", Evidence("whitlock_suitcase"), "There's a packed suitcase in the Whitlock house. A ticket to Tulsa from 1980, never used.",
                 null, null,
                 ("Ada", "I didn't go. Mama needed me after Daddy. I keep it packed so I remember I could. That was three years ago, Detective. I could still go. Any day."),
                 ("Mae", "She stays for me. I never once asked her to. I never once told her not to, either."));
-            Add("recipe", Seen("recipe"), "A recipe card in Mae's kitchen. 'Cherry. Earl's mother's.' And underneath, 'cherry cherry cherry cherry'.",
+            Add("recipe", Evidence("whitlock_recipe"), "A recipe card in Mae's kitchen. 'Cherry. Earl's mother's.' And underneath, 'cherry cherry cherry cherry'.",
                 null, null,
                 ("Mae", "Earl's mother's. Somebody's been in my kitchen. ...Or I did it. I don't sleep. People do things when they don't sleep."),
                 ("Ada", "Mama writes when she can't sleep. Lists, mostly. That one scared me. I don't know why that one."));
@@ -286,41 +286,61 @@ namespace Semblance.Dialogue
                 ("Doc", "He would. And he's not wrong, and I'm still the one who'll answer for it. ...Did he look well to you, Detective? Really look at him. I can't anymore. I see the August in his face."));
             Cross("cattle_told_wendell", Evidence("kessler_carcass", "kessler_vet_report", "kessler_fence"), After("Greta Kessler", "cattle_greta"), "Greta loses a cow every time you ring the bell.",
                 ("Wendell", "...Then I'm feeding it. Every count, I'm ringing the dinner bell. ...No. No, I ring it so I can see them all in one place. If it eats on bell nights, that's because it knows where everyone is. That's not on me. Tell me that's not on me."));
-            Cross("suitcase_told_ada", Seen("suitcase"), After("Mae Whitlock", "suitcase"), "Mae says she never asked you to stay.",
+            Cross("suitcase_told_ada", Evidence("whitlock_suitcase"), After("Mae Whitlock", "suitcase"), "Mae says she never asked you to stay.",
                 ("Ada", "She wouldn't. She'd sooner die. ...She told you that? Then she's been thinking about it too. I thought I was the only one in that house still thinking about Tulsa."));
-            Cross("hymnal_told_harlan", Seen("hymnal"), After("Nell Hollis", "hymnal_nell"), "Nell stopped writing in October because there were no warm mornings left to write.",
+            Cross("hymnal_told_harlan", Evidence("hollis_hymnal"), After("Nell Hollis", "hymnal_nell"), "Nell stopped writing in October because there were no warm mornings left to write.",
                 ("Harlan", "...She said that. To you. ...I sit up with a gun every night, Detective, and I come to bed cold, and my wife lies there counting. I didn't know she'd started. I didn't know she'd stopped."));
-            Cross("drawings_told_hank", Seen("drawings"), After("June Marsh", "drawings_june"), "June says your daughter calls it 'the other one'.",
+            Cross("drawings_told_hank", Evidence("marsh_drawings"), After("June Marsh", "drawings_june"), "June says your daughter calls it 'the other one'.",
                 ("Hank", "The other one. ...June didn't tell me that. June tells me everything. ...I drive to Barlow and back every night and I've started wondering which one of us she means. Don't you dare put that in your book."));
             Cross("bell_told_greta", Evidence("bell_note"), After("Wendell Dobbs", "bellnote_wendell"), "Wendell says all two hundred and twelve come to the bell. Every one.",
                 ("Greta", "And something among them, he'll have said. I've stood in that crowd at three in the morning in my nightdress and looked at every face. They all looked back. That's the trouble. They all looked right back."));
             Cross("mirrors_told_mae", Any(Evidence("store_rack", "store_receipt"), Seen("storenotice")), After("Otis Pruitt", "mirrors"), "Otis says the coins were cold as a well. In August.",
                 ("Mae", "Cold coins. The salesman paid me in cold coins in June. I told Otis. He'd forgotten, or he didn't want to remember. Everything it touches goes cold, Detective. Everything."));
 
+            // ---------------------------------------------------------------- The new leads
+            Add("crayons", Evidence("marsh_crayons"), "A tin of crayons with 'Danny M.' scratched inside the lid.", null, null,
+                ("June", "...Where did you find that. That was in the attic. That was put away. ...There are four of us, Detective. Please. Four."),
+                ("Hank", "Danny's. ...June put those away in '79 and I've never seen them since. If the girl's found them, then that's where the grey one came from, and June's going to find out, and I don't know what happens then."));
+            Add("marshgrave", Evidence("marsh_grave"), "There's a small stone in the churchyard. Daniel Marsh, 1971 to 1979.", null, null,
+                ("June", "...I cut the grass with Ruth's old scissors. Nobody else goes. The children don't know it's there. They were born after. There's no reason for them to know. There are four of them. There are four."),
+                ("Hank", "The creek. August of '79. I was in Barlow. ...I'm always in Barlow. She never said his name again, not once, and I let her not say it, because it was easier, and now the girl's drawing him and I don't know how to tell June that's not a monster, that's just her son."),
+                ("Father Crane", "I buried him. June hasn't said his name since. I let the stone stand and I let her not see it, and I keep the grass cut when she doesn't come. Grief has its own rules, Detective. Don't mistake them for the other thing's."));
+            Add("bedroll", Evidence("hollis_bedroll"), "There's a bedroll in the end stall of your barn.", null, null,
+                ("Harlan", "...So you know. September. Something walks the corn at night. I'd rather meet it with the gun than wake up to it in the house. I come in at dawn so Nell thinks I was there. She doesn't think that. We both pretend."),
+                ("Nell", "...The barn. I knew. I've known since the first cold morning. I didn't want it said out loud, because if he's in the barn he's cold for a reason, and if he isn't, he's cold for the other one."));
+            Add("funeralcard", Evidence("vance_card"), "Carl Vance. 1979. 'Porch light' on the back.", null, null,
+                ("Irene", "I leave it on for him. I know what that sounds like. Four years. The moths come instead, and I keep them, because they came. One of them wouldn't die, Detective. I'd like you to remember that when you're deciding what I am."));
+            Add("album", Evidence("thorne_album"), "'Show him this one.' In your hand, Bev, on the page where the photograph was.", null, null,
+                ("Bev", "...Yes. I took it out and I put it in the box and I told you somebody else did. He takes engines apart all night and he drinks and he shakes and he doesn't sleep and I'm afraid of him, Detective, and I couldn't say that to your face, so I let a photograph say it. I'm not sorry."),
+                ("Silas", "Bev did that? ...Well. She's not wrong to be scared. I'm scared. I shake, I've shaken since Korea, and lately I don't know if it's the shaking or something else. Look at me all you like. I'd like to know too."));
+            Add("thornebench", Seen("thornebench"), "Forty pieces of a carburettor on a clean rag.", null, null,
+                ("Silas", "I can't sleep. I take something apart. Hands won't let me put it back. There's a bench full of things I've started."),
+                ("Bev", "He's up all night out there. I hear the pieces go down one by one. If he ever puts one back together I'll know he's sleeping again."));
+
             // Mailboxes: the family's own business, mostly.
-            Add("mailbox:Hollis", Seen("mailbox:Hollis"), "There's a baby tooth in your mailbox.", null, null,
+            Add("mailbox:Hollis", Evidence("mailbox_Hollis"), "There's a baby tooth in your mailbox.", null, null,
                 ("Harlan", "Grandbabies. They play post office. It's a game."),
                 ("Nell", "The little one's. She puts them in for the mailman. He leaves her a penny. ...He hasn't left a penny since September. I keep putting pennies in myself."));
-            Add("mailbox:Marsh", Seen("mailbox:Marsh"), "The drawing in your mailbox. A family of four, and a fifth one added in a different crayon.", null, null,
+            Add("mailbox:Marsh", Evidence("mailbox_Marsh"), "The drawing in your mailbox. A family of four, and a fifth one added in a different crayon.", null, null,
                 ("June", "She mails us things. We're the only address she knows. The tall one wasn't there when she drew it. I'd swear to that. It was added."),
                 ("Hank", "Different crayon. We don't own a grey crayon. I've looked."));
             Add("mailbox:Pruitt", Seen("mailbox:Pruitt"), "Everything in your mailbox is addressed to 'Occupant'.", null, null,
                 ("Doc", "Forty years I've doctored this county and the seed company calls me Occupant. There's your mystery, Detective."),
                 ("Lyle", "Nobody writes to us. Nobody writes to anybody. Wendell's the only man in town who's sent a letter since spring."),
                 ("Otis", "Pa says it's the m-modern world. I think the modern world doesn't know we're here. I'm n-not sure I mind."));
-            Add("mailbox:Calder", Seen("mailbox:Calder"), "Letters to Ruth Calder, all stamped return to sender.", null, null,
+            Add("mailbox:Calder", Evidence("mailbox_Calder"), "Letters to Ruth Calder, all stamped return to sender.", null, null,
                 ("Amos", "Her sister in Tulsa. I wrote and said Ruth was poorly. She wrote back. I didn't answer. The rest came back on their own. You can't write to a woman who isn't there to read it."));
-            Add("mailbox:Whitlock", Seen("mailbox:Whitlock"), "A note in your mailbox: 'Gone to Mae's. Back by dark. Don't let it in.'", null, null,
+            Add("mailbox:Whitlock", Evidence("mailbox_Whitlock"), "A note in your mailbox: 'Gone to Mae's. Back by dark. Don't let it in.'", null, null,
                 ("Ada", "I leave Mama notes. She doesn't read them. 'It' is the cat. We don't have a cat anymore. I keep writing it anyway."),
                 ("Mae", "Ada leaves me notes like I'm a child. 'Don't let it in.' I've never let anything in. Things come in on their own."));
-            Add("mailbox:Dobbs", Seen("mailbox:Dobbs"), "Your mailbox has been cleaned. Carefully.", null, null,
+            Add("mailbox:Dobbs", Evidence("mailbox_Dobbs"), "Your mailbox has been cleaned. Carefully.", null, null,
                 ("Wendell", "I didn't clean it. Somebody wanted to know what I'd sent. I'd already sent it. That's the only reason you're standing here."));
-            Add("mailbox:Kessler", Seen("mailbox:Kessler"), "The vet's invoice. Fourteen head, cause of death undetermined.", null, null,
+            Add("mailbox:Kessler", Evidence("mailbox_Kessler"), "The vet's invoice. Fourteen head, cause of death undetermined.", null, null,
                 ("Greta", "He wrote undetermined because the other word would have got him laughed out of Barlow. He said it to me, though, in the yard. He said 'drained'."));
-            Add("mailbox:Thorne", Seen("mailbox:Thorne"), "The photograph in your mailbox. 1979, and the father's face is blurred.", null, null,
+            Add("mailbox:Thorne", Evidence("mailbox_Thorne"), "The photograph in your mailbox. 1979, and the father's face is blurred.", null, null,
                 ("Bev", "Somebody put that in the box. We didn't. It's ours, it was in the album. Somebody took it out of my album and put it where you'd find it."),
                 ("Silas", "Somebody wants you looking at me. Nineteen seventy-nine, Detective. Ask yourself who in this town wants you looking at the one man with an alibi four years long."));
-            Add("mailbox:Vance", Seen("mailbox:Vance"), "Your mailbox is full of dead moths.", null, null,
+            Add("mailbox:Vance", Evidence("mailbox_Vance"), "Your mailbox is full of dead moths.", null, null,
                 ("Irene", "They come to the box. Not the porch light, the box. I don't know why. I've kept every one. I've stopped pinning them."));
 
             // What the household's evidence says, to the household.

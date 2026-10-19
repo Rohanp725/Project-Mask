@@ -65,10 +65,21 @@ namespace Semblance.Investigation
             if (inside == null) Debug.LogWarning($"[Semblance] No 'inside' spot for {place}: shed skin not placed.");
             if (kitchen == null) Debug.LogWarning($"[Semblance] No 'kitchen' spot for {place}: sketches not placed.");
 
+            // Not left in the middle of the floor: the skin is on the floor of the wardrobe (you have to climb in or
+            // crouch and look), or behind the altar in the church; the sketches are tucked under the mattress, or under
+            // the altar cloth. Finding them takes looking, not walking through.
+            var house = inside != null ? inside.parent : null;
             if (inside != null)
             {
-                var skin = Prop("Shed Skin", OnFloor(inside.position + inside.right * 1.1f + inside.forward * 0.8f, 0.04f), new Vector3(0.5f, 0.04f, 0.18f), new Color(0.82f, 0.76f, 0.62f));
+                Vector3 skinAt;
+                if (place.StartsWith("Cellar:") && house != null)
+                    skinAt = OnFloor(house.TransformPoint(new Vector3(4.4f, 0.3f, -0.9f)), 0.04f);           // the wardrobe's floor
+                else
+                    skinAt = OnFloor(kitchen != null ? kitchen.position - kitchen.forward * 2.2f : inside.position, 0.04f); // behind the altar
+                var skin = Prop("Shed Skin", skinAt, new Vector3(0.42f, 0.04f, 0.16f), new Color(0.82f, 0.76f, 0.62f));
                 skin.transform.rotation = Quaternion.Euler(0, Random.Range(0f, 360f), 0);
+                var skinBox = skin.GetComponent<BoxCollider>();
+                skinBox.size = new Vector3(1.6f, 12f, 2.2f); // reachable from the wardrobe's inside point, or just outside its doors
                 // Filed under the household: it says which family, not which person.
                 skin.AddComponent<EvidenceItem>().Configure("shed_skin", "Shed skin",
                     "A long curl of dry, papery skin, like a snake's, but with a fingerprint whorl still on one end. Whoever lives here sheds.",
@@ -78,12 +89,28 @@ namespace Semblance.Investigation
             if (kitchen != null && GameSettings.Difficulty != Difficulty.Hard)
             {
                 // Spread across the kitchen table (or, for Father Crane, the altar), never floating beside it.
-                var papers = Prop("Sketches", OnSurface(kitchen.position, new[] { "Kitchen Table", "Altar" }, 3f, 0.03f, new Vector3(0.35f, 0, 0)), new Vector3(0.4f, 0.03f, 0.3f), new Color(0.88f, 0.86f, 0.78f));
-                papers.transform.rotation = Quaternion.Euler(0, Random.Range(-25f, 25f), 0);
+                Vector3 papersAt;
+                Quaternion papersRot;
+                if (place.StartsWith("Cellar:") && house != null)
+                {
+                    // A corner of paper showing under the mattress on the room side of the bed.
+                    papersAt = house.TransformPoint(new Vector3(3.22f, 0.405f, 2.35f));
+                    papersRot = house.rotation * Quaternion.Euler(0, 12f, 0);
+                }
+                else
+                {
+                    // Under the altar cloth, on the wall side of the Bible.
+                    papersAt = OnSurface(kitchen.position, new[] { "Altar" }, 3f, 0.012f, new Vector3(0.55f, 0, -0.3f));
+                    papersRot = Quaternion.Euler(0, Random.Range(-25f, 25f), 0);
+                }
+                var papers = Prop("Sketches", papersAt, new Vector3(0.18f, 0.012f, 0.14f), new Color(0.88f, 0.86f, 0.78f));
+                papers.transform.rotation = papersRot;
+                var papersBox = papers.GetComponent<BoxCollider>();
+                papersBox.size = new Vector3(3f, 30f, 3f); // a small corner, so the trigger stays generous
                 // The drawings never say whose face it is: they describe it, and the detective has to match it to the records.
                 papers.AddComponent<EvidenceItem>().Configure("practice_sketches", "Pencil sketches",
                     $"Dozens of pencil drawings of the same face, over and over, more accurate each time. {FaceDescription(mimic)} {DrawingDetail(mimic)}",
-                    CaseDirector.Household(mimic), "Look at the papers", 10f, 10f);
+                    CaseDirector.Household(mimic), "Pull the papers out", 10f, 10f);
             }
 
             // The real resident.

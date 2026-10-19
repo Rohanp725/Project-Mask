@@ -45,17 +45,21 @@ namespace Semblance.Events
             ShowSlats(true);
             Audio.GameAudio.PlayAt("door_creak_2", transform.position, 0.5f, 1.3f, 15f);
             UI.PlayerHUD.Instance?.SetHint("Hiding. Hold your breath.", 0f);
-            UI.PlayerHUD.Instance?.SetPrompt("Climb out");
             enteredFrame = Time.frameCount;
         }
 
         private int enteredFrame;
+        private PlayerInteractor interactor;
 
         private void Update()
         {
             // The same key that got you in gets you out (Esc works too).
+            // E climbs out, unless you're looking at something on the wardrobe floor (then E examines it).
             if (Occupied == this && Time.frameCount > enteredFrame + 2 && GameInput.Pressed(GameInput.Interact))
-                Leave();
+            {
+                if (interactor == null) interactor = FindFirstObjectByType<PlayerInteractor>();
+                if (interactor == null || interactor.Current == null) Leave();
+            }
         }
 
         public void Leave()
