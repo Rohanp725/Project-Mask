@@ -27,8 +27,11 @@ namespace Semblance.Case
             root.SetActive(false);
         }
 
+        public static bool IsOpen => Instance != null && Instance.root != null && Instance.root.activeSelf;
+
         public void Open()
         {
+            UI.PlayerHUD.Instance?.SetHint(null);
             chosen = null;
             root.SetActive(true);
             if (root.GetComponent<UI.SelectFirstOnEnable>() == null) root.AddComponent<UI.SelectFirstOnEnable>();
@@ -52,6 +55,7 @@ namespace Semblance.Case
                     ? $"The first lanterns reach the church while the bell's still humming. {speaker.FirstName} looks at you a long time. <i>\"You rang that for nothing? Don't do that to us again, Detective.\"</i>"
                     : "The first lanterns reach the church while the bell's still humming. Nobody says anything. They just look at you.", 6f);
                 MimicAwareness.Instance?.Raise(5f, "the bell");
+                MimicAwareness.Instance?.Expose(10f, "rang the bell for nothing");
             }
             // Backing out of the accusation doesn't call it off: if it was hunting you, it still is.
             if (!accusing && Save.SaveSystem.Flags.Contains("hunt:forced") && EndingDirector.Instance != null && !EndingDirector.Instance.IsPlaying)

@@ -107,7 +107,7 @@ namespace Semblance.EditorTools
             var teo = TutorialProfile("Teodoro Baptiste", TeoProfile);
             var residents = Group("Residents", null);
             PlaceTutorialResident(residents, alma, new Vector3(-2.3f, 0.1f, -4.68f), 0f);
-            TutorialAnchor("Dispatch", new Vector3(-6.33f, 0.1f, -3.1f), Vector3.left);
+            TutorialAnchor("Dispatch", new Vector3(-6.97f, 0.1f, -3.1f), Vector3.left); // the seat is behind her here
             PlaceTutorialResident(residents, teo, new Vector3(12f, -3.5f, -0.9f), 180f);
             TutorialAnchor("TeoCloset", new Vector3(12f, -3.5f, -0.9f), Vector3.back);
 
@@ -159,7 +159,7 @@ namespace Semblance.EditorTools
             => Box(name, parent, new Vector3((xA + xB) * 0.5f, (yA + yB) * 0.5f, z), new Vector3(xB - xA, yB - yA, 0.2f), material);
 
         /// <summary>A door in a wall: hinge at the given corner, panel 0.9 wide swinging about it. Returns the Door.</summary>
-        private static World.Door TutorialDoor(Transform parent, string name, Vector3 hingePos, float yaw, bool locked = false, string lockedMessage = null)
+        private static World.Door TutorialDoor(Transform parent, string name, Vector3 hingePos, float yaw, bool locked = false, string lockedMessage = null, bool plate = false)
         {
             var hinge = Group(name + " Hinge", parent);
             hinge.localPosition = hingePos;
@@ -174,6 +174,11 @@ namespace Semblance.EditorTools
             foreach (var x in new[] { -0.05f, 0.95f })
                 Box("Casing", hinge, new Vector3(x, 1.05f, 0), new Vector3(0.08f, 2.14f, 0.3f), "Wood", collider: false);
             Box("Casing Head", hinge, new Vector3(0.45f, 2.13f, 0), new Vector3(1.08f, 0.08f, 0.3f), "Wood", collider: false);
+            if (plate)
+            {
+                var brass = Box("Door Plate", hinge, new Vector3(0.45f, 1.7f, 0.04f), new Vector3(0.26f, 0.08f, 0.006f), "Brass", collider: false);
+                brass.transform.SetParent(panel.transform, true); // it swings with the door
+            }
             var door = panel.AddComponent<World.Door>();
             SetField(door, "hinge", hinge);
             if (locked)
@@ -598,8 +603,7 @@ namespace Semblance.EditorTools
             Part("Office Skirting", office, new Vector3(6.2f, 0.17f, 2.78f), new Vector3(3.6f, 0.14f, 0.03f), "Wood");
             Box("Corner Post", office, new Vector3(4.4f, 1.65f, 2.7f), new Vector3(t + 0.02f, h, t + 0.02f), "Wood");
             Box("Corner Post", office, new Vector3(4.4f, 1.65f, -2.4f), new Vector3(t + 0.02f, h, t + 0.02f), "Wood");
-            TutorialDoor(office, "Klein's Door", new Vector3(4.4f, 0.1f, 0.2f), -90f);
-            Part("Door Plate", office, new Vector3(4.355f, 1.7f, 0.65f), new Vector3(0.006f, 0.08f, 0.26f), "Brass");
+            TutorialDoor(office, "Klein's Door", new Vector3(4.4f, 0.1f, 0.2f), -90f, plate: true);
             // The room: visitor's chair across the desk, cabinet in the corner, the hat and coat by the door, a bookcase.
             var cab = Piece("Filing Cabinet", office, new Vector3(7.6f, 0, -1.9f), 0f, new Vector3(0.5f, 1.32f, 0.62f), FloorY);
             Part("Body", cab, new Vector3(0, FloorY + 0.66f, 0), new Vector3(0.5f, 1.32f, 0.62f), "Galvanized");
@@ -713,8 +717,7 @@ namespace Semblance.EditorTools
             Box("Door Lintel", office, new Vector3(4.4f, 2.72f, -2.95f), new Vector3(t, h - 2.14f, 1.0f), "StoreWall");
             Segment(new Vector3(4.4f, 0, -2.4f), new Vector3(8.0f, 0, -2.4f), false);
             Box("Corner Post", office, new Vector3(4.4f, 1.65f, -2.4f), new Vector3(t + 0.02f, h, t + 0.02f), "Wood");
-            TutorialDoor(office, "Sheriff's Door", new Vector3(4.4f, 0.1f, -3.4f), -90f, true, "The sheriff's office. Locked, and his light's off. He went home at six like a man with a home.");
-            Part("Door Plate", office, new Vector3(4.355f, 1.7f, -2.95f), new Vector3(0.006f, 0.08f, 0.26f), "Brass");
+            TutorialDoor(office, "Sheriff's Door", new Vector3(4.4f, 0.1f, -3.4f), -90f, true, "The sheriff's office. Locked, and his light's off. He went home at six like a man with a home.", plate: true);
             // Inside: the big desk, the flag, the cabinet, the hat on the stand, his tube off.
             var desk = Table("Sheriff's Desk", office, new Vector3(6.4f, 0, -4.3f), 0f, 2.0f, 0.9f, "Wood", 0.78f);
             Part("Modesty Panel", desk, new Vector3(0, FloorY + 0.4f, 0.4f), new Vector3(1.9f, 0.74f, 0.03f), "Wood");
@@ -896,7 +899,7 @@ namespace Semblance.EditorTools
             Part("Speaker", office, new Vector3(-7.95f, 2.3f, -3.1f), new Vector3(0.1f, 0.3f, 0.4f), "Wood");
             Part("Speaker Cloth", office, new Vector3(-7.89f, 2.3f, -3.1f), new Vector3(0.004f, 0.24f, 0.32f), "Fabric");
             SoundEmitter(dispatch, new Vector3(0, 1f, 0), "static_loop", 0.05f, 6f);
-            Chair(office, new Vector3(-6.75f, 0, -3.1f), -90f, "Leather");
+            Chair(office, new Vector3(-6.55f, 0, -3.1f), -90f, "Leather");
             Part("Extinguisher Bracket", office, new Vector3(-7.95f, 1.1f, 0.2f), new Vector3(0.06f, 0.2f, 0.16f), "Metal");
             Round("Extinguisher", office, new Vector3(-7.84f, 0.95f, 0.2f), 0.14f, 0.5f, "BarnRed");
             Part("Extinguisher Hose", office, new Vector3(-7.78f, 1.1f, 0.12f), new Vector3(0.03f, 0.2f, 0.03f), "HideBlack");

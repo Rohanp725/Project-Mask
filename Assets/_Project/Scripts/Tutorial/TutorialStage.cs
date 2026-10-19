@@ -79,7 +79,13 @@ namespace Semblance.Tutorial
             foreach (var l in emergencyLights) if (l != null) l.enabled = false;
             if (dog != null) dog.Vanish();
             var alma = Resident.FindByName("Alma Reyes");
-            if (alma != null && alma.TryGetComponent<ResidentBehaviour>(out var ab)) ab.ForceSeated = true; // behind her desk, on the phones
+            if (alma != null)
+            {
+                // Seated exactly where she was put: the agent would slide her off the chair's collider.
+                if (alma.TryGetComponent<ResidentBehaviour>(out var ab)) ab.ForceSeated = true;
+                var almaAgent = alma.GetComponent<UnityEngine.AI.NavMeshAgent>();
+                if (almaAgent != null) almaAgent.enabled = false;
+            }
             // Teo waits in the closet with the door held shut until the lights are back: no agent to pull him out.
             var teoStart = Resident.FindByName("Teodoro Baptiste");
             if (teoStart != null)
@@ -202,12 +208,16 @@ namespace Semblance.Tutorial
             alma.TryGetComponent<ResidentBehaviour>(out var behaviour);
             if (behaviour != null) behaviour.ForceSeated = false;
             yield return new WaitForSeconds(1.2f);
+            var agent = alma.GetComponent<UnityEngine.AI.NavMeshAgent>();
             var mover = alma.GetComponent<ResidentMover>();
             var target = A("Dispatch");
-            if (mover != null) mover.WalkTo(target.position);
+            // Stand up, walk to the set (the agent stops short of the chair), then sit on it exactly.
+            if (agent != null) { agent.enabled = true; if (UnityEngine.AI.NavMesh.SamplePosition(alma.transform.position, out var onMesh, 1f, UnityEngine.AI.NavMesh.AllAreas)) agent.Warp(onMesh.position); }
+            if (mover != null) mover.WalkTo(target.position + Vector3.right * 0.6f);
             float t = 0f;
-            while (t < 14f && Vector3.Distance(alma.transform.position, target.position) > 0.35f) { t += Time.deltaTime; yield return null; }
-            alma.transform.rotation = target.rotation;
+            while (t < 14f && Vector3.Distance(alma.transform.position, target.position) > 0.9f) { t += Time.deltaTime; yield return null; }
+            if (agent != null) agent.enabled = false;
+            alma.transform.SetPositionAndRotation(target.position, target.rotation);
             if (behaviour != null) behaviour.ForceSeated = true;
         }
 

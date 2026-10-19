@@ -37,7 +37,30 @@ namespace Semblance.World
         private AudioSource engine;
         private int enteredFrame;
 
-        public override string Prompt => "Get in the car";
+        public override string Prompt => Dead ? "It won't turn over" : "Get in the car";
+
+        /// <summary>The engine's gone until morning (it died under you during a hunt).</summary>
+        public bool Dead { get; private set; }
+
+        /// <summary>Coughs, dies, the lights go, and a moment later you're out of it. It stays dead till morning.</summary>
+        public void Die()
+        {
+            if (Dead) return;
+            Dead = true;
+            stalledUntil = float.PositiveInfinity;
+            SetLights(false);
+            Audio.GameAudio.Play("lamp_die", 0.7f, 0.6f);
+            if (engine) Destroy(engine.gameObject);
+            if (IsDriving) StartCoroutine(DieAndGetOut());
+        }
+
+        private IEnumerator DieAndGetOut()
+        {
+            PlayerHUD.Instance?.ShowMessage("The engine coughs twice and dies. The headlights go with it. The key turns and nothing happens.", 4f);
+            yield return new WaitForSeconds(2.6f);
+            if (IsDriving) Exit();
+            PlayerHUD.Instance?.ShowMessage("Nothing. It's not going anywhere, and neither are you unless you run.", 3.5f);
+        }
 
         public void Configure(Transform seatPoint, Light[] lights)
         {
@@ -49,6 +72,15 @@ namespace Semblance.World
         private Quaternion homeRotation;
 
         private void Awake() => Instance = this;
+
+        private void OnEnable() => Core.GameFlow.Woke += Revive;
+        private void OnDisable() => Core.GameFlow.Woke -= Revive;
+
+        private void Revive(int day)
+        {
+            Dead = false;
+            stalledUntil = 0f;
+        }
 
         private void Start()
         {
@@ -68,6 +100,12 @@ namespace Semblance.World
         public override void Interact(PlayerInteractor interactor)
         {
             if (IsDriving) return;
+            if (Dead)
+            {
+                Audio.GameAudio.Play("flashlight_click", 0.5f, 0.6f);
+                interactor.Hud.ShowMessage("The key turns. Nothing. The battery's flat, or something's been at the wires. It'll be morning before it goes anywhere.", 4f);
+                return;
+            }
             player = interactor.transform;
             controller = player.GetComponent<FirstPersonController>();
             cameraRoot = player.Find("Camera Root");

@@ -397,7 +397,7 @@ namespace Semblance.Residents
             // Shown a thing, not told a story: they answer about the thing, in the words they'd use if asked about it.
             if (evidenceId != null)
             {
-                if (mimic) Case.MimicAwareness.Instance?.Raise(6f, "confronted");
+                if (mimic) { Case.MimicAwareness.Instance?.Raise(6f, "confronted"); Case.MimicAwareness.Instance?.Expose(25f, "shown proof"); }
                 var q = Dialogue.ClueTopics.ForEvidence(this, evidenceId);
                 if (mimic && (director.Noise == null || !director.Noise.MimicConfrontsHumanly) && q == null)
                 {
@@ -428,7 +428,10 @@ namespace Semblance.Residents
                 DisplayName == Case.CastNames.Doc ? "Then I wrote it down wrong. I'm old. Old men write things down wrong." : "Doc wrote it down wrong. He's old. Old men write things down wrong.",
             };
             if (mimic)
+            {
                 Case.MimicAwareness.Instance?.Raise(6f, "confronted");
+                Case.MimicAwareness.Instance?.Expose(15f, "confronted with a contradiction");
+            }
             if (mimic && (director.Noise == null || !director.Noise.MimicConfrontsHumanly))
             {
                 if (TryGetComponent<ResidentBehaviour>(out var behaviour)) behaviour.Glitch(1.2f);

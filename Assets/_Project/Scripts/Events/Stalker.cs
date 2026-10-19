@@ -52,6 +52,7 @@ namespace Semblance.Events
         /// <summary>The first night it only follows: at the edge of the light, never closing, gone after a minute.</summary>
         private bool stalkOnly;
         private float seenTotal;
+        private float carSince = -1f, nextChurchHint;
 
         public static bool Begin(bool forced = false, bool stalkOnly = false)
         {
@@ -158,6 +159,20 @@ namespace Semblance.Events
             {
                 Rendering.DayNightCycle.HuntDarkness = Mathf.MoveTowards(Rendering.DayNightCycle.HuntDarkness, 0.55f, Time.deltaTime * 0.2f);
                 Rendering.LampSwitch.ForceOn = true;
+            }
+
+            // The car gets you a little way, and then it doesn't: it dies under you, and you're on foot.
+            var car = World.DetectiveCar.Instance;
+            if (!stalkOnly && car != null && car.IsDriving && !car.Dead)
+            {
+                if (carSince < 0f) { carSince = Time.time; car.Stall(1.2f); }
+                else if (Time.time - carSince > 8f) car.Die();
+                else if (Time.time - carSince > 4f && !car.IsStalled && Random.value < Time.deltaTime * 0.6f) car.Stall(0.8f);
+            }
+            if (forced && Time.time > nextChurchHint && !AccusationUI.IsOpen)
+            {
+                nextChurchHint = Time.time + 2f;
+                PlayerHUD.Instance?.SetHint($"<b>Run. Get to the church and ring the bell.</b>\n<size=75%>{BellRope.DirectionHint(cam.transform.position)}</size>", 0f);
             }
 
             bool seen = PlayerSeesMe();

@@ -48,7 +48,15 @@ namespace Semblance.Investigation
             var entry = Notebook.Instance?.Record(NoteKind.Evidence, string.IsNullOrEmpty(subject) ? Notebook.CaseSubject : subject, title, text, null, "evidence|" + id);
             if (entry != null && entry.fact == null) entry.fact = NoteFacts.EvidenceFact(id);
             if (nerveShock > 0) Nerve.Instance?.Shock(nerveShock);
-            if (awareness > 0) MimicAwareness.Instance?.Raise(awareness, "evidence");
+            if (awareness > 0)
+            {
+                var mimic = CaseDirector.Instance != null ? CaseDirector.Instance.Mimic : null;
+                if (mimic != null && mimic.isActiveAndEnabled && Vector3.Distance(mimic.transform.position, transform.position) < 12f)
+                {
+                    MimicAwareness.Instance?.Raise(awareness, "evidence, while it watched");
+                    MimicAwareness.Instance?.Expose(awareness * 0.6f, "took something while it watched");
+                }
+            }
             if (nerveShock >= 10) Audio.GameAudio.Play("sting_soft", 0.5f);
             SideMysteries.OnClueFound(id);
             if (id == "bell_note" || id == "wendell_tally")

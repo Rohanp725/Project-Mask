@@ -16,6 +16,10 @@ namespace Semblance.Save
         public int day;
         public float hour;
         public float awareness;
+        public float exposure;
+        public int plotDay = -1;
+        public int huntDay = -1;
+        public bool victimKnown;
         public float nerve;
         public int film;
         public float battery;

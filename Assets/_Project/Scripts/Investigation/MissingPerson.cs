@@ -39,10 +39,8 @@ namespace Semblance.Investigation
             EndingDirector.MissingPersonFound = true;
             SaveSystem.Flags.Add("found:missing");
             Nerve.Instance?.Shock(20f);
-            MimicAwareness.Instance?.Raise(40f, "found its victim");
-            Events.EventDirector.ForcedHuntPending = true;
+            MimicAwareness.Instance?.VictimFound();
             SaveSystem.Flags.Add("hunt:forced");
-            UI.PlayerHUD.Instance?.SetHint("<i>It knows you found them. Get to the church bell.</i>", 0f);
             Audio.GameAudio.Play("stinger_3", 0.7f);
             Notebook.Instance?.Record(NoteKind.Evidence, original.DisplayName, "The real " + original.FirstName,
                 $"I found {original.DisplayName} alive in the dark under {CaseDirector.Instance.HidingPlace.Replace("Cellar:", "the ").Replace("Crypt", "the church")}{(CaseDirector.Instance.HidingPlace.StartsWith("Cellar:") ? " farmhouse" : "")}, starved and terrified. The {original.FirstName} walking around town is <b>not</b> {original.FirstName}.",

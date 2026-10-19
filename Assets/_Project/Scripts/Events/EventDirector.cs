@@ -37,6 +37,7 @@ namespace Semblance.Events
         private string lastEvent;
         private int huntDay = -1;
         private float huntAt = -1f;
+        private float nextLampDeath;
         private int afterHoursDay = -1;
         private float afterHoursAt = -1f;
         private Transform diner;
@@ -55,6 +56,55 @@ namespace Semblance.Events
                 resumeGrace = true; // give a reloaded player the motel to gather themselves in
             };
             GameFlow.SleepInterruption = SleepEvent;
+            // The morning after it started plotting: somebody tells you it was asking after you, and there's a note.
+            GameFlow.Woke += day =>
+            {
+                var aware = MimicAwareness.Instance;
+                if (aware == null || !aware.IsPlotting || Save.SaveSystem.Flags.Contains("plot:morning")) return;
+                Save.SaveSystem.Flags.Add("plot:morning");
+                PlotMorning(day);
+            };
+        }
+
+        /// <summary>It asked where you sleep, and somebody noticed. And it answered the question itself, under your door.</summary>
+        private void PlotMorning(int day)
+        {
+            var mimic = Mimic;
+            if (mimic == null) return;
+            // A townsperson who'd have been asked: never the mimic, never its family.
+            var witnesses = Resident.All.Where(r => r != null && r != mimic && r.isActiveAndEnabled && r.LastName != mimic.LastName
+                && r.Avatar != null && r.Avatar.Modifications != null).OrderBy(_ => Random.value).ToList();
+            var witness = witnesses.FirstOrDefault(r => r.DisplayName == CastNames.Mae || r.DisplayName == CastNames.Otis || r.DisplayName == CastNames.Crane) ?? witnesses.FirstOrDefault();
+            if (witness != null)
+            {
+                string title = "About " + mimic.DisplayName;
+                string line = $"{mimic.FirstName} came by yesterday asking which room you've got at the motel. Asked twice. I said I didn't know. Thought you'd want telling.";
+                var existing = witness.Avatar.Modifications.ExtraGossip.FirstOrDefault(g => g.title == title);
+                if (existing != null) existing.response = existing.response + "\n\n" + line;
+                else witness.Avatar.Modifications.ExtraGossip.Add(new DialogueTopic(title, line));
+            }
+            // The note, on the floor inside Room 6.
+            var wake = GameFlow.Instance != null ? GameFlow.Instance.WakeSpot : null;
+            if (wake != null)
+            {
+                var note = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                note.name = "Note Under The Door";
+                note.transform.position = wake.position + wake.forward * 1.1f + Vector3.up * 0.016f;
+                note.transform.rotation = Quaternion.Euler(0, wake.eulerAngles.y + 14f, 0);
+                note.transform.localScale = new Vector3(0.21f, 0.004f, 0.28f);
+                var paper = Resources.FindObjectsOfTypeAll<Material>().FirstOrDefault(m => m.name == "Paper");
+                var r = note.GetComponent<Renderer>();
+                if (paper != null) r.sharedMaterial = paper;
+                var box = note.GetComponent<BoxCollider>();
+                box.isTrigger = true;
+                box.size = new Vector3(2f, 60f, 2f);
+                var insp = note.AddComponent<Interaction.InspectableObject>();
+                typeof(Interaction.InspectableObject).GetField("prompt", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)?.SetValue(insp, "Pick up the note");
+                insp.SetDescription("A sheet of lined paper pushed under the door in the night. Block capitals, pressed so hard the pencil's gone through in two places:\n\n<b>YOU ARE NOT FROM HERE. GO HOME.</b>\n\nNo name. The paper smells faintly of the diner.");
+                insp.SetClue("plot_note");
+                Notebook.Instance?.Record(NoteKind.Event, Notebook.CaseSubject, "A note under the door",
+                    "Somebody pushed a note under the door of Room 6 in the night: GO HOME. Whoever wrote it knows where I sleep, and wanted me to know they know.", null, "plot_note");
+            }
         }
 
         private static int Tier => MimicAwareness.Instance != null ? MimicAwareness.Instance.Tier : 0;
@@ -64,6 +114,8 @@ namespace Semblance.Events
         private static Resident WornFace()
         {
             var mimic = Mimic;
+            // Once it's plotting it has stopped practising: it wears its own face in the dark.
+            if (mimic != null && MimicAwareness.Instance != null && MimicAwareness.Instance.IsPlotting) return mimic;
             var others = Resident.All.Where(r => r != mimic && r.isActiveAndEnabled).ToList();
             if (mimic == null || (others.Count > 0 && Random.value < 0.5f))
                 return others.Count > 0 ? others[Random.Range(0, others.Count)] : mimic;
@@ -110,26 +162,29 @@ namespace Semblance.Events
             // The calendar sets a floor under how bad the nights get, whatever the player does.
             int eventTier = Mathf.Max(tier, Mathf.Clamp(clock.Day - 2, 0, 2));
 
-            // The hunt: once per night, some time after the mimic has decided you're a threat.
-            // The hunt comes when it decides you're a threat, from the third night on if you've got close,
-            // and always on the last night.
-            float awareness = MimicAwareness.Instance != null ? MimicAwareness.Instance.Value : 0f;
-            // The night after the disappearance it only follows you; from then on it hunts.
-            int last = clock.LastDay;
-            bool stalkNight = clock.Day == last - 2 && tier >= 1;
-            bool huntWorthy = tier >= 3 || (clock.Day >= last - 1 && tier >= 2) || clock.Day >= last || stalkNight;
+            // The hunt: once per night, and only when it has decided. The first night of plotting it only follows.
+            bool stalk = false;
+            bool huntWorthy = MimicAwareness.Instance != null && MimicAwareness.Instance.WantsHunt(clock, out stalk);
             if (night && huntWorthy && clock.Hour >= 21.5f && huntDay != clock.Day)
             {
                 if (huntAt < 0) huntAt = Time.time + Random.Range(25f, 80f);
                 else if (Time.time > huntAt && !InputLock.IsLocked)
                 {
                     huntAt = -1f;
-                    bool stalk = stalkNight && !(tier >= 3 || clock.Day >= last - 1);
                     if (!stalk) MimicAwareness.Instance?.WarnOfHunt();
                     if (Stalker.Begin(false, stalk)) huntDay = clock.Day;
                     else huntAt = Time.time + 20f; // nowhere to come from (a cellar, the crypt): try again shortly
                     return;
                 }
+            }
+            // Plotting nights: the lamps along your way die as you reach them.
+            bool plotting = MimicAwareness.Instance != null && MimicAwareness.Instance.IsPlotting;
+            if (night && plotting && Time.time > nextLampDeath)
+            {
+                nextLampDeath = Time.time + Random.Range(35f, 60f);
+                var lamp = Rendering.LampSwitch.Lamps.Where(l => l != null && l.IsOn && Vector3.Distance(l.transform.position, player.position) < 14f)
+                    .OrderBy(l => Vector3.Distance(l.transform.position, player.position)).FirstOrDefault();
+                if (lamp != null) { lamp.Kill(Random.Range(15f, 30f)); GameAudio.PlayAt("lamp_die", lamp.transform.position, 0.6f, 1f, 25f); }
             }
 
             // After midnight, once a night, Mae's lights come on by themselves if you're anywhere near the road.
@@ -151,10 +206,10 @@ namespace Semblance.Events
 
             // A night gets two or three things, spaced out, so each one lands; a night of constant scares is just noise.
             if (nightEventsDay != clock.Day) { nightEventsDay = clock.Day; nightEvents = 0; }
-            int cap = GameSettings.ReduceScares ? 1 : tier >= 2 ? 3 : 2;
+            int cap = GameSettings.ReduceScares ? 1 : plotting ? 4 : tier >= 2 ? 3 : 2;
             if (night && nightEvents < cap && Time.time > nextNight)
             {
-                nextNight = Time.time + Random.Range(90f, 180f) * (1f - tier * 0.1f);
+                nextNight = Time.time + Random.Range(90f, 180f) * (1f - tier * 0.1f) * (plotting ? 0.65f : 1f);
                 var evt = PickNightEvent(eventTier);
                 if (evt != null) StartCoroutine(Run(evt));
             }
@@ -187,7 +242,7 @@ namespace Semblance.Events
                 (1f, "name", NameCalled),
             };
             if (indoors) options.Add((1.2f, "knock", Knocking));
-            if (World.DetectiveCar.Instance != null && World.DetectiveCar.Instance.IsDriving) options.Add((3f, "car", CarStalls));
+            if (World.DetectiveCar.Instance != null && World.DetectiveCar.Instance.IsDriving) options.Add((MimicAwareness.Instance != null && MimicAwareness.Instance.IsPlotting ? 6f : 3f, "car", CarStalls));
             if (tier >= 1) options.Add((1f, "steps", FootstepsBehind));
             if (tier >= 2 && !GameSettings.ReduceScares)
             {
@@ -544,7 +599,8 @@ namespace Semblance.Events
         {
             int tier = Tier;
             var fader = ScreenFader.Instance;
-            if (tier >= 1 && Random.value < 0.55f && GameFlow.Instance != null && GameFlow.Instance.WakeSpot != null && Mimic != null)
+            bool plotting = MimicAwareness.Instance != null && MimicAwareness.Instance.IsPlotting;
+            if ((plotting || (tier >= 1 && Random.value < 0.55f)) && GameFlow.Instance != null && GameFlow.Instance.WakeSpot != null && Mimic != null)
             {
                 var spot = GameFlow.Instance.WakeSpot;
                 GameFlow.Instance.PlacePlayerAtWakeSpot();

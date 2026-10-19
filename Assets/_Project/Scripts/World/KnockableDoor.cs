@@ -247,7 +247,7 @@ namespace Semblance.World
             {
                 Save.SaveSystem.Flags.Add(wokeFlag);
                 Events.Nerve.Instance?.Shock(4f);
-                if (CaseDirector.Instance != null && CaseDirector.Instance.Mimic == who) MimicAwareness.Instance?.Raise(5f, "woken at night");
+                if (CaseDirector.Instance != null && CaseDirector.Instance.Mimic == who) { MimicAwareness.Instance?.Raise(5f, "woken at night"); MimicAwareness.Instance?.Expose(8f, "woken at night"); }
             }
             who.DoorstepGreeting = Greeting(who, hour, wakingThem);
             RecordAnswer(who, hour, wakingThem);
@@ -300,7 +300,7 @@ namespace Semblance.World
         {
             var mover = who.GetComponent<ResidentMover>();
             Events.Nerve.Instance?.Shock(8f);
-            if (CaseDirector.Instance != null && CaseDirector.Instance.Mimic == who) MimicAwareness.Instance?.Raise(8f, "caught in its house");
+            if (CaseDirector.Instance != null && CaseDirector.Instance.Mimic == who) { MimicAwareness.Instance?.Raise(8f, "caught in its house"); MimicAwareness.Instance?.Expose(15f, "caught in its house"); }
             if (mover != null) mover.WalkTo(interactor.transform.position);
             float t = 0f;
             while (t < 6f && Vector3.Distance(who.transform.position, interactor.transform.position) > 1.8f) { t += Time.deltaTime; yield return null; }

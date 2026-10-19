@@ -264,7 +264,18 @@ namespace Semblance.Dialogue
             if (noted != null && noted.fact == null) noted.fact = NoteFacts.Claims(answer);
             RefreshChoices();
             TopicAsked?.Invoke(resident, "clue:" + q.Key);
-            if (first) Case.MimicAwareness.Instance?.Raise(1.5f, "asked about a clue");
+            if (first)
+            {
+                Case.MimicAwareness.Instance?.Raise(1.5f, "asked about a clue");
+                // Asked about something found in its own house: it knows what you've been looking at.
+                var director = Case.CaseDirector.Instance;
+                if (director != null && resident == director.Mimic)
+                {
+                    string home = resident.LastName.ToLowerInvariant();
+                    if (q.EvidenceIds.Exists(id => id.StartsWith(home)))
+                        Case.MimicAwareness.Instance?.Expose(8f, "asked about its own house");
+                }
+            }
         }
 
         /// <summary>Things the detective can put to this person: linked contradictions and evidence about them.</summary>
