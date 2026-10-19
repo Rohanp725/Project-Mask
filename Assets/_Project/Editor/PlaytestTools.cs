@@ -6,6 +6,7 @@ using Semblance.Dialogue;
 using Semblance.Interaction;
 using Semblance.Notes;
 using Semblance.Residents;
+using UnityEditor;
 using UnityEngine;
 using UnityEngine.AI;
 
@@ -41,6 +42,28 @@ namespace Semblance.EditorTools
             if (clock != null) clock.Advance(seconds / 60f);
             Place(target, Quaternion.LookRotation(Vector3.ProjectOnPlane(target - p.position, Vector3.up).sqrMagnitude > 0.01f ? Vector3.ProjectOnPlane(target - p.position, Vector3.up) : p.forward));
             return distance;
+        }
+
+        private static double pushUntil;
+        private static Vector3 pushDir;
+        private static bool pushing;
+
+        /// <summary>Shove the character controller in a direction for a while, as a held key would (editor ticks).</summary>
+        private static float pushSpeed = WalkSpeed;
+
+        public static void Push(Vector3 direction, float seconds, float speed = WalkSpeed)
+        {
+            pushSpeed = speed;
+            pushDir = direction.normalized;
+            pushUntil = EditorApplication.timeSinceStartup + seconds;
+            if (!pushing) { pushing = true; EditorApplication.update += PushStep; }
+        }
+
+        private static void PushStep()
+        {
+            var cc = Player.GetComponent<CharacterController>();
+            if (EditorApplication.timeSinceStartup > pushUntil || cc == null || !cc.enabled) { pushing = false; EditorApplication.update -= PushStep; return; }
+            cc.Move((pushDir * pushSpeed + Vector3.down * 2f) * 0.016f);
         }
 
         public static void Place(Vector3 position, Quaternion rotation, float pitch = 0f)

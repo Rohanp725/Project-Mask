@@ -502,6 +502,10 @@ namespace Semblance.EditorTools
                 foreach (var side in new[] { -1f, 1f })
                     Part("Casing", root, new Vector3(doorX + side * (doorSize.x * 0.5f + 0.04f), doorSize.y * 0.5f + 0.05f, inZ - 0.02f), new Vector3(0.08f, doorSize.y + 0.1f, 0.04f), "Wood");
                 Part("Casing Head", root, new Vector3(doorX, doorSize.y + 0.1f, inZ - 0.02f), new Vector3(doorSize.x + 0.16f, 0.08f, 0.04f), "Wood");
+                // The wall above the door, papered like the rest (it used to show the siding from inside).
+                float lintelBottom = doorSize.y + 0.14f, lintelTop = h + 0.05f;
+                if (lintelTop - lintelBottom > 0.05f)
+                    Part("Lining Lintel", root, new Vector3(doorX, (lintelBottom + lintelTop) * 0.5f, inZ - gap), new Vector3(doorSize.x + 0.08f, lintelTop - lintelBottom, lining), paper);
                 cursor = doorX + doorSize.x * 0.5f + 0.04f;
             }
             if (inX - cursor > 0.05f)
@@ -1184,8 +1188,12 @@ namespace Semblance.EditorTools
                     }
                     case 5:
                     {
-                        var patch = Part("Mirror Patch", root, new Vector3(roomX + 1.62f, 1.6f, 1.6f), new Vector3(0.01f, 0.9f, 0.6f), "SignWhite");
-                        Inspect(patch, "Look at the wall", "A clean pale rectangle in the wallpaper where a mirror used to hang. The four screws have been lined up on the nightstand: perfectly straight, perfectly spaced.", new Vector3(0.3f, 1f, 0.8f), clue: "mirrorpatch");
+                        // Paper that never saw the sun: the shape of a mirror, with the four screw holes it hung from.
+                        var patch = Part("Mirror Patch", root, new Vector3(roomX + 1.62f, 1.6f, 1.6f), new Vector3(0.01f, 0.9f, 0.6f), "MotelPaperPale");
+                        foreach (var dy in new[] { -0.4f, 0.4f })
+                            foreach (var dz in new[] { -0.25f, 0.25f })
+                                Part("Screw Hole", root, new Vector3(roomX + 1.612f, 1.6f + dy, 1.6f + dz), new Vector3(0.01f, 0.025f, 0.025f), "Metal");
+                        Inspect(patch, "Look at the wall", "A clean pale rectangle in the wallpaper where a mirror used to hang, four screw holes at the corners. The screws themselves have been lined up on the nightstand: perfectly straight, perfectly spaced.", new Vector3(0.3f, 1f, 0.8f), clue: "mirrorpatch");
                         for (int s = 0; s < 4; s++)
                             Part("Screw", root, new Vector3(roomX + 0.58f + s * 0.06f, FloorY + 0.6f, -inZ + 0.38f), new Vector3(0.012f, 0.012f, 0.04f), "Metal");
                         break;
@@ -1203,7 +1211,8 @@ namespace Semblance.EditorTools
             const float roomX = 0f;
             // The picture window beside the door, through the front wall, so the desk can be seen from the lot.
             float winX = -1.7f;
-            Part("Office Window", root, new Vector3(winX, 1.45f, inZ + 0.1f), new Vector3(1.7f, 1.3f, 0.34f), "WindowLit");
+            Part("Window", root, new Vector3(winX, 1.45f, inZ + WallThickness + 0.01f), new Vector3(1.7f, 1.3f, 0.02f), "WindowLit");
+            Part("Window Inner", root, new Vector3(winX, 1.45f, inZ - 0.035f), new Vector3(1.7f, 1.3f, 0.02f), "Glass");
             Part("Window Frame", root, new Vector3(winX, 2.13f, inZ + 0.1f), new Vector3(1.8f, 0.07f, 0.4f), "Wood");
             Part("Window Frame", root, new Vector3(winX, 0.77f, inZ + 0.1f), new Vector3(1.8f, 0.07f, 0.4f), "Wood");
             foreach (var fx in new[] { -0.9f, 0.9f })

@@ -30,8 +30,8 @@ namespace Semblance.Core
             {
                 if (NotebookUI.Instance.IsOpen)
                     NotebookUI.Instance.Close();
-                else if (!InputLock.IsLocked)
-                    NotebookUI.Instance.Open();
+                else if (!InputLock.IsLocked || InputLock.Top is Dialogue.DialogueUI)
+                    NotebookUI.Instance.Open(); // the notebook comes out mid-conversation too
             }
         }
     }

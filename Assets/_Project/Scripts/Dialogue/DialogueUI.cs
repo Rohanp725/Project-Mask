@@ -14,8 +14,8 @@ using UnityEngine.UI;
 namespace Semblance.Dialogue
 {
     /// <summary>
-    /// Conversation window: the resident's line (typed out), and numbered choices for each topic,
-    /// "Look them over" and "Leave". Choose with the mouse or number keys; Esc leaves.
+    /// Conversation window: the resident's line (typed out), and clickable choices for each topic,
+    /// "Look them over" and "Leave". Choose with the mouse (or a gamepad); Esc leaves. The notebook opens over it.
     /// </summary>
     public class DialogueUI : MonoBehaviour
     {
@@ -231,9 +231,8 @@ namespace Semblance.Dialogue
                 if (!active) continue;
                 var c = choices[i];
                 choiceActions.Add(c.Action);
-                string number = i < 9 ? (i + 1).ToString() : "-";
                 string label = c.IsBack ? $"<color=#{accent}>< </color>{c.Label}" : c.Label;
-                choiceButtons[i].label.text = $"<color=#{accent}><size=80%>{number}.</size></color> {label}";
+                choiceButtons[i].label.text = label;
                 // Greyed once asked, dimmest while it's the thing being answered.
                 choiceButtons[i].label.alpha = c.Current ? 0.4f : c.Asked ? 0.55f : 1f;
                 // Long questions wrap onto a second line; the row grows to fit.
@@ -362,8 +361,8 @@ namespace Semblance.Dialogue
 
         private void LateUpdate()
         {
-            if (!IsOpen)
-                return;
+            if (!IsOpen || !ReferenceEquals(InputLock.Top, this))
+                return; // the notebook (or a chooser) is open over the conversation: it waits
 
             // Typewriter reveal
             int before = bodyText.maxVisibleCharacters;
@@ -377,18 +376,13 @@ namespace Semblance.Dialogue
                 Audio.GameAudio.Play(Audio.GameAudio.Variant("voice_blip", 5), whisper ? 0.08f : 0.22f, pitch * Random.Range(0.95f, 1.05f));
             }
 
-            // Mouths move while the line is still being typed out.
+            // Mouths move while a spoken line is still being typed out; looking them over or a handshake is you, not them.
             if (resident != null && resident.TryGetComponent<ResidentBehaviour>(out var behaviour))
-                behaviour.IsTalking = bodyText.maxVisibleCharacters < bodyText.textInfo.characterCount;
+                behaviour.IsTalking = bodyText.maxVisibleCharacters < bodyText.textInfo.characterCount
+                    && currentTopic != "observe" && currentTopic != "hands";
 
             if (Keyboard.current != null && Keyboard.current.spaceKey.wasPressedThisFrame)
                 revealProgress = 99999f;
-            int digit = GameInput.PressedDigit();
-            if (digit >= 0)
-            {
-                Choose(digit);
-                return;
-            }
             // Gamepad (and arrow keys): move a highlight through the choices, confirm with the south button.
             if (choiceActions.Count > 0)
             {

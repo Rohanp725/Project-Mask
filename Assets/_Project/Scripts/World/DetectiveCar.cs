@@ -45,7 +45,25 @@ namespace Semblance.World
             headlights = lights;
         }
 
+        private Vector3 homePosition;
+        private Quaternion homeRotation;
+
         private void Awake() => Instance = this;
+
+        private void Start()
+        {
+            homePosition = transform.position;
+            homeRotation = transform.rotation;
+        }
+
+        /// <summary>Back in the motel lot, parked the way it was: where it is every morning.</summary>
+        public void ReturnHome()
+        {
+            if (IsDriving) Exit();
+            speed = 0f;
+            transform.SetPositionAndRotation(homePosition, homeRotation);
+            Physics.SyncTransforms();
+        }
 
         public override void Interact(PlayerInteractor interactor)
         {

@@ -1452,6 +1452,18 @@ namespace Semblance.EditorTools
                         : null;
                     panel.AddComponent<World.KnockableDoor>().Configure(def.AnchorKey.Substring(6), inside, outside, lockedKnock);
                 }
+                if (def.Interior == InteriorKind.Diner || def.Interior == InteriorKind.Store)
+                {
+                    // Shops keep hours. After close the door's locked unless whoever runs the place is still inside.
+                    var shop = panel.AddComponent<World.BusinessHours>();
+                    var half = new Vector3(width * 0.5f, height, depth * 0.5f);
+                    if (def.Interior == InteriorKind.Diner)
+                        shop.Configure(6.5f, 21.5f, new[] { Semblance.Case.CastNames.Mae, Semblance.Case.CastNames.Ada },
+                            "Locked. The sign in the glass is turned to CLOSED, and under it Mae's hours in paint: 6:30 TO 9:30. The lights are off.", root, half);
+                    else
+                        shop.Configure(8f, 18f, new[] { Semblance.Case.CastNames.Otis },
+                            "Locked. A card in the door, in Otis's capitals: BACK AT 8. Nothing moves inside.", root, half);
+                }
                 if (def.Interior == InteriorKind.Motel && i == 1)
                 {
                     // Room 3 stays shut until the morning someone goes missing.
@@ -1475,26 +1487,35 @@ namespace Semblance.EditorTools
                 AddInspectable(plaque, def.DoorPrompt, def.DoorDescription, def.DoorClue);
             }
 
-            // Windows go right through the wall so they read from inside and out.
+            // Windows: a pane on each face of the wall (the lamp glows outward at night, the sky shows inward by day),
+            // trimmed frame and sill outside, casing, rod and curtains inside. Nothing pokes through anything.
             bool anyLit = false;
             int floors = height >= 5.5f ? 2 : 1;
+            string trim = def.Interior == InteriorKind.Barn ? "Wood" : "Trim";
+            string curtain = def.Interior == InteriorKind.Motel ? "CurtainRose" : def.Interior == InteriorKind.Diner ? "Curtain"
+                : new[] { "Curtain", "CurtainRose", "CurtainMoss", "CurtainBlue" }[rng.Next(4)];
+            if (def.Interior == InteriorKind.Barn || def.Interior == InteriorKind.Church) curtain = null;
+            float winW = def.Interior == InteriorKind.Motel ? 0.9f : 1f;
             for (int floor = 0; floor < floors; floor++)
             {
                 float y = 1.6f + floor * 2.6f;
                 if (y + 0.6f > height - 0.2f && !def.Pitched)
                     break;
-                for (float x = -width * 0.5f + 1.4f; x <= width * 0.5f - 1.4f; x += 2.4f)
+                var xs = new List<float>();
+                if (def.Interior == InteriorKind.Motel)
+                    foreach (var d in doorXs) xs.Add(d - 1.15f); // one window per room, beside its door
+                else
+                    for (float x = -width * 0.5f + 1.4f; x <= width * 0.5f - 1.4f; x += 2.4f)
+                    {
+                        if (floor == 0 && doorXs.Exists(d => Mathf.Abs(d - x) < doorSize.x * 0.5f + 0.8f))
+                            continue;
+                        xs.Add(x);
+                    }
+                foreach (float x in xs)
                 {
-                    if (floor == 0 && doorXs.Exists(d => Mathf.Abs(d - x) < doorSize.x * 0.5f + 0.8f))
-                        continue;
                     bool lit = rng.NextDouble() < def.LitWindowChance;
                     anyLit |= lit && floor == 0;
-                    Box("Window", root, new Vector3(x, y, frontWallZ), new Vector3(1f, 1.1f, t + 0.06f), lit ? "WindowLit" : "WindowDark", collider: false);
-                    Box("Mullion", root, new Vector3(x, y, frontWallZ), new Vector3(0.06f, 1.1f, t + 0.1f), "Wood", collider: false);
-                    Box("Transom", root, new Vector3(x, y + 0.05f, frontWallZ), new Vector3(1f, 0.06f, t + 0.1f), "Wood", collider: false);
-                    Box("Sill", root, new Vector3(x, y - 0.58f, frontWallZ + 0.06f), new Vector3(1.15f, 0.07f, t + 0.16f), "Wood", collider: false);
-                    if (lit && rng.NextDouble() < 0.5)
-                        Box("Curtain", root, new Vector3(x + (rng.NextDouble() < 0.5 ? -0.3f : 0.3f), y, frontWallZ), new Vector3(0.38f, 1.06f, t + 0.08f), "Curtain", collider: false);
+                    AddWindow(root, x, y, frontWallZ, t, winW, 1.1f, lit, trim, curtain, rng);
                 }
             }
 
@@ -1690,7 +1711,13 @@ namespace Semblance.EditorTools
             Mat("Wallpaper", 0.4f, 0.38f, 0.3f);
             Mat("Vinyl", 0.46f, 0.13f, 0.12f);
             Mat("Curtain", 0.5f, 0.44f, 0.34f);
+            Mat("CurtainRose", 0.5f, 0.28f, 0.28f);
+            Mat("CurtainMoss", 0.34f, 0.4f, 0.28f);
+            Mat("CurtainBlue", 0.3f, 0.36f, 0.48f);
+            Mat("Trim", 0.74f, 0.7f, 0.6f);
+            Mat("Glass", 0.18f, 0.22f, 0.26f, new Color(0.34f, 0.4f, 0.47f)); // emission driven by the hour (DayNightCycle)
             Mat("MotelPaper", 0.38f, 0.31f, 0.27f);
+            Mat("MotelPaperPale", 0.52f, 0.44f, 0.39f); // the same paper where something hung and kept the light off it
             Mat("DinerWall", 0.55f, 0.53f, 0.46f);
             Mat("StoreWall", 0.46f, 0.42f, 0.32f);
             Mat("Screen", 0.08f, 0.1f, 0.11f, new Color(0.5f, 0.6f, 0.66f) * 0.7f, fogPierce: 0.2f);
@@ -1740,7 +1767,7 @@ namespace Semblance.EditorTools
             { "Sage", ("siding", 0.28f) }, { "Blue", ("siding", 0.28f) }, { "Cream", ("siding", 0.28f) }, { "BarnRed", ("planks_vertical", 0.5f) },
             { "Roof", ("shingles", 0.4f) }, { "Door", ("planks_vertical", 0.9f) }, { "Wood", ("planks", 0.9f) }, { "Floor", ("planks", 0.7f) },
             { "Ceiling", ("planks", 0.5f) }, { "Bark", ("bark", 1.2f) }, { "Pine", ("needles", 0.8f) }, { "Corn", ("stalks", 1.5f) },
-            { "CornLeaf", ("stalks", 1.5f) }, { "Hay", ("hay", 1f) }, { "Fabric", ("fabric", 2f) }, { "Rug", ("fabric", 1.5f) }, { "Curtain", ("fabric", 3f) },
+            { "CornLeaf", ("stalks", 1.5f) }, { "Hay", ("hay", 1f) }, { "Fabric", ("fabric", 2f) }, { "Rug", ("fabric", 1.5f) }, { "Curtain", ("fabric", 3f) }, { "CurtainRose", ("fabric", 3f) }, { "CurtainMoss", ("fabric", 3f) }, { "CurtainBlue", ("fabric", 3f) },
         };
 
         private static void Mat(string name, float r, float g, float b, Color? emission = null, float fogPierce = 0f, float depthOffset = 0f)
@@ -1849,6 +1876,47 @@ namespace Semblance.EditorTools
             if (parent != null)
                 go.transform.SetParent(parent, false);
             return go.transform;
+        }
+
+        /// <summary>
+        /// One window in a front wall at local (x, y): glass flush on both faces, muntins over each pane, a trimmed
+        /// frame with sill and apron outside, casing and a window stool inside, and (where somebody lives or eats)
+        /// a rod with two curtain panels pushed back unevenly, one in five drawn nearly shut.
+        /// </summary>
+        private static void AddWindow(Transform root, float x, float y, float wallZ, float t, float w, float h, bool lit, string trim, string curtain, System.Random rng)
+        {
+            float outer = wallZ + t * 0.5f, inner = wallZ - t * 0.5f;
+            // Glass. The outer pane is what the town sees (named "Window": events and the day/night cycle look for it).
+            Box("Window", root, new Vector3(x, y, outer + 0.01f), new Vector3(w, h, 0.02f), lit ? "WindowLit" : "Glass", collider: false);
+            Box("Window Inner", root, new Vector3(x, y, inner - 0.035f), new Vector3(w, h, 0.02f), "Glass", collider: false);
+            // Muntins, on the glass each side.
+            Box("Mullion", root, new Vector3(x, y, outer + 0.03f), new Vector3(0.05f, h, 0.02f), trim, collider: false);
+            Box("Transom", root, new Vector3(x, y + 0.08f, outer + 0.03f), new Vector3(w, 0.05f, 0.02f), trim, collider: false);
+            Box("Mullion", root, new Vector3(x, y, inner - 0.055f), new Vector3(0.05f, h, 0.02f), "Wood", collider: false);
+            Box("Transom", root, new Vector3(x, y + 0.08f, inner - 0.055f), new Vector3(w, 0.05f, 0.02f), "Wood", collider: false);
+            // Frame outside: jambs, head, a sill that stands proud, an apron under it.
+            const float fw = 0.09f;
+            foreach (var side in new[] { -1f, 1f })
+                Box("Jamb", root, new Vector3(x + side * (w * 0.5f + fw * 0.5f), y, outer + 0.03f), new Vector3(fw, h + 2 * fw, 0.06f), trim, collider: false);
+            Box("Head", root, new Vector3(x, y + h * 0.5f + fw * 0.5f, outer + 0.035f), new Vector3(w + 2 * fw, fw, 0.07f), trim, collider: false);
+            Box("Sill", root, new Vector3(x, y - h * 0.5f - 0.035f, outer + 0.06f), new Vector3(w + 2 * fw + 0.06f, 0.07f, 0.14f), trim, collider: false);
+            Box("Apron", root, new Vector3(x, y - h * 0.5f - 0.1f, outer + 0.02f), new Vector3(w + 2 * fw, 0.06f, 0.04f), trim, collider: false);
+            // Casing inside.
+            foreach (var side in new[] { -1f, 1f })
+                Box("Casing", root, new Vector3(x + side * (w * 0.5f + 0.04f), y, inner - 0.045f), new Vector3(0.08f, h + 0.16f, 0.04f), "Wood", collider: false);
+            Box("Casing Head", root, new Vector3(x, y + h * 0.5f + 0.04f, inner - 0.045f), new Vector3(w + 0.16f, 0.08f, 0.04f), "Wood", collider: false);
+            Box("Window Stool", root, new Vector3(x, y - h * 0.5f - 0.03f, inner - 0.07f), new Vector3(w + 0.2f, 0.05f, 0.1f), "Wood", collider: false);
+            if (curtain == null) return;
+            // Rod above the casing; a panel each side, hung clear of everything, pushed back unevenly the way real ones are.
+            float rodZ = inner - 0.13f;
+            Box("Curtain Rod", root, new Vector3(x, y + h * 0.5f + 0.16f, rodZ), new Vector3(w + 0.5f, 0.025f, 0.025f), "Brass", collider: false);
+            float drop = h + 0.36f;
+            bool drawn = rng.NextDouble() < 0.2;
+            float wl = drawn ? 0.55f + (float)rng.NextDouble() * 0.2f : 0.24f + (float)rng.NextDouble() * 0.14f;
+            float wr = drawn ? 0.45f + (float)rng.NextDouble() * 0.2f : 0.24f + (float)rng.NextDouble() * 0.14f;
+            float edge = w * 0.5f + 0.25f;
+            Box("Curtain", root, new Vector3(x - edge + wl * 0.5f, y + 0.06f, rodZ), new Vector3(wl, drop, 0.05f), curtain, collider: false);
+            Box("Curtain", root, new Vector3(x + edge - wr * 0.5f, y + 0.06f, rodZ), new Vector3(wr, drop, 0.05f), curtain, collider: false);
         }
 
         private static GameObject Box(string name, Transform parent, Vector3 localPos, Vector3 size, string material, bool collider = true)

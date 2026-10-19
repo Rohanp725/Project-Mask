@@ -37,6 +37,9 @@ namespace Semblance.Events
         private string lastEvent;
         private int huntDay = -1;
         private float huntAt = -1f;
+        private int afterHoursDay = -1;
+        private float afterHoursAt = -1f;
+        private Transform diner;
 
         private void Awake() => Instance = this;
 
@@ -126,6 +129,23 @@ namespace Semblance.Events
                     if (Stalker.Begin(false, stalk)) huntDay = clock.Day;
                     else huntAt = Time.time + 20f; // nowhere to come from (a cellar, the crypt): try again shortly
                     return;
+                }
+            }
+
+            // After midnight, once a night, Mae's lights come on by themselves if you're anywhere near the road.
+            if (night && clock.Hour >= 24f && afterHoursDay != clock.Day && !GameSettings.ReduceScares)
+            {
+                if (diner == null) { var go = GameObject.Find("Diner"); diner = go != null ? go.transform : null; }
+                if (diner != null && Vector3.Distance(player.position, diner.position) < 45f && !AmbientAudio.IsIndoors(player.position))
+                {
+                    if (afterHoursAt < 0) afterHoursAt = Time.time + Random.Range(4f, 15f);
+                    else if (Time.time > afterHoursAt)
+                    {
+                        afterHoursAt = -1f;
+                        afterHoursDay = clock.Day;
+                        StartCoroutine(Run(AfterHours()));
+                        return;
+                    }
                 }
             }
 
@@ -413,6 +433,60 @@ namespace Semblance.Events
                 LogEvent("A face at the window", $"Someone was pressed against the window {LocationMarker.Describe(window.position)}, looking in at me. Pale. Smiling. It was a face I knew.");
             }
             face?.Vanish();
+        }
+
+        /// <summary>
+        /// The diner lights up after close, jukebox going, door unlocked. Go in and the music stops with the door,
+        /// the lights are out, and every stool from the counter is standing in a ring in the middle of the floor.
+        /// Don't, and it's dark again by the time you cross the road.
+        /// </summary>
+        private IEnumerator AfterHours()
+        {
+            var hours = diner.GetComponentInChildren<World.BusinessHours>();
+            var windows = diner.GetComponentsInChildren<MeshRenderer>().Where(m => m.name == "Window").ToList();
+            var stools = diner.GetComponentsInChildren<Transform>().Where(t => t.name == "Stool").ToList();
+            var block = new MaterialPropertyBlock();
+            block.SetColor(Shader.PropertyToID("_EmissionColor"), new Color(1f, 0.72f, 0.38f) * 1.1f);
+            foreach (var w in windows) w.SetPropertyBlock(block);
+            if (hours != null) hours.Override = true;
+            var music = GameAudio.Loop("jukebox_loop", diner, 0.3f, 34f);
+            float started = Time.time;
+            bool entered = false;
+            while (Time.time - started < 80f)
+            {
+                bool inside = hours != null ? hours.Inside(player.position) : Vector3.Distance(player.position, diner.position) < 5f;
+                if (inside) { entered = true; break; }
+                yield return null;
+            }
+            if (music != null) Destroy(music.gameObject);
+            Rendering.DayNightCycle.Instance?.RefreshWindows();
+            if (!entered)
+            {
+                if (hours != null) hours.Override = false;
+                Nerve.Instance?.Shock(4f);
+                LogEvent("Lights at Mae's", $"Mae's was lit up at {GameClock.Instance.Label}, hours after close, and the jukebox was going. By the time I got across the road it was dark and the door was locked.");
+                yield break;
+            }
+            // Inside: dark, silent, and the stools have been arranged.
+            var lamps = diner.GetComponentsInChildren<Light>().Where(l => l.enabled).ToList();
+            foreach (var l in lamps) l.enabled = false;
+            GameAudio.Play("stinger_1", 0.6f);
+            Nerve.Instance?.Shock(10f);
+            var homes = stools.Select(s => (s.position, s.rotation)).ToList();
+            Vector3 ringCenter = diner.TransformPoint(new Vector3(0f, 0f, 0.9f));
+            for (int i = 0; i < stools.Count; i++)
+            {
+                float a = i / (float)stools.Count * Mathf.PI * 2f;
+                var p = ringCenter + new Vector3(Mathf.Cos(a), 0f, Mathf.Sin(a)) * 1.25f;
+                stools[i].position = new Vector3(p.x, stools[i].position.y, p.z);
+            }
+            PlayerHUD.Instance?.ShowMessage("The jukebox stops the moment the door opens. The lights are off. Every stool from the counter is standing in a ring in the middle of the floor.", 6.5f);
+            LogEvent("Mae's, after hours", $"Mae's was lit at {GameClock.Instance.Label}, long after close, the jukebox going and the door open. When I went in the music stopped and the lights were out. Every stool from the counter had been set in a ring in the middle of the floor. Nobody was there. I didn't stay to count them.");
+            float t = 0f;
+            while (t < 30f && Vector3.Distance(player.position, diner.position) < 9f) { t += Time.deltaTime; yield return null; }
+            for (int i = 0; i < stools.Count; i++) stools[i].SetPositionAndRotation(homes[i].position, homes[i].rotation);
+            foreach (var l in lamps) if (l != null) l.enabled = true;
+            if (hours != null) hours.Override = false;
         }
 
         private IEnumerator LightsOut()

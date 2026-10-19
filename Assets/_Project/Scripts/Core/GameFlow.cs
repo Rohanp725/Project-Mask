@@ -76,6 +76,8 @@ namespace Semblance.Core
                 {
                     EndingDirector.MissingPersonFound = SaveSystem.Flags.Contains("found:missing");
                     PlacePlayerAtWakeSpot();
+            World.Door.CloseAll();                     // the town shut its doors overnight
+            World.DetectiveCar.Instance?.ReturnHome(); // and the car is in the lot, however you got back
                     GameResumed?.Invoke();
                     var clock = GameClock.Instance;
                     if (ScreenFader.Instance != null)

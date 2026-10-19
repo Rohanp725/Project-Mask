@@ -60,7 +60,12 @@ namespace Semblance.Rendering
             targetCamera = camera;
         }
 
+        public static DayNightCycle Instance { get; private set; }
         private readonly List<Renderer> litWindows = new List<Renderer>();
+        private readonly List<Renderer> glassPanes = new List<Renderer>();
+
+        /// <summary>Something changed a window by hand (an event): put every pane back the way the hour wants it.</summary>
+        public void RefreshWindows() => windowGlow = -1f;
         private Color windowEmission;
         private float windowGlow = -1f;
         private static readonly int EmissionId = Shader.PropertyToID("_EmissionColor");
@@ -68,12 +73,18 @@ namespace Semblance.Rendering
         private void Start()
         {
             // Every lit window shares one material; its glow is scaled per renderer so the asset itself never changes.
+            Instance = this;
             foreach (var r in FindObjectsByType<Renderer>(FindObjectsInactive.Include))
-                if (r.sharedMaterial != null && r.sharedMaterial.name == "WindowLit")
+            {
+                if (r.sharedMaterial == null) continue;
+                if (r.sharedMaterial.name == "WindowLit")
                 {
                     if (litWindows.Count == 0) windowEmission = r.sharedMaterial.GetColor(EmissionId);
                     litWindows.Add(r);
                 }
+                else if (r.sharedMaterial.name == "Glass")
+                    glassPanes.Add(r);
+            }
         }
 
         private void LateUpdate()
@@ -95,6 +106,11 @@ namespace Semblance.Rendering
             block.SetColor(EmissionId, Color.Lerp(dayGlass, windowEmission, glow));
             foreach (var r in litWindows)
                 if (r != null) r.SetPropertyBlock(block);
+            // Plain glass: a pale sheen of sky by day, near-black at night.
+            var pane = new MaterialPropertyBlock();
+            pane.SetColor(EmissionId, Color.Lerp(new Color(0.34f, 0.4f, 0.47f), new Color(0.02f, 0.025f, 0.035f), glow));
+            foreach (var r in glassPanes)
+                if (r != null) r.SetPropertyBlock(pane);
         }
 
         public void Apply(float hour)

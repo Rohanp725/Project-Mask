@@ -134,7 +134,12 @@ namespace Semblance.Player
                 verticalVelocity = -2f;
             verticalVelocity += gravity * Time.deltaTime;
 
-            controller.Move((horizontalVelocity + Vector3.up * verticalVelocity) * Time.deltaTime);
+            // A long frame (the town loading in, a hitch) would otherwise move the capsule a long way at once; a big
+            // step into a stool or a table top ends with the controller shoved up onto it. Short steps never do.
+            Vector3 motion = (horizontalVelocity + Vector3.up * verticalVelocity) * Time.deltaTime;
+            int steps = Mathf.Clamp(Mathf.CeilToInt(motion.magnitude / 0.06f), 1, 8);
+            for (int i = 0; i < steps; i++)
+                controller.Move(motion / steps);
         }
 
         private void UpdateCrouch(bool hasControl)

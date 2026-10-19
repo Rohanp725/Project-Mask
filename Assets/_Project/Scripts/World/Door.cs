@@ -9,7 +9,7 @@ namespace Semblance.World
         [SerializeField] private Transform hinge;
         [Tooltip("Positive swings the door inward (away from the building's front).")]
         [SerializeField] private float openAngle = 100f;
-        [SerializeField] private float swingSpeed = 320f;
+        [SerializeField] private float swingSpeed = 200f;
         [SerializeField] private bool locked;
         [SerializeField, TextArea(1, 3)] private string lockedMessage = "It's locked.";
 
@@ -18,13 +18,14 @@ namespace Semblance.World
         private bool isOpen;
 
         private KnockableDoor knock;
+        private BusinessHours hours;
 
         public bool IsOpen => isOpen;
         public bool IsLocked => locked;
 
         public override string Prompt =>
             !isOpen && knock != null && knock.WantsKnock ? "Knock" :
-            locked ? "Try door" : isOpen ? "Close door" : "Open door";
+            locked || (!isOpen && ClosedForBusiness) ? "Try door" : isOpen ? "Close door" : "Open door";
 
         public override bool CanInteract => base.CanInteract && (knock == null || !knock.Busy);
 
@@ -36,7 +37,25 @@ namespace Semblance.World
                 hinge = transform.parent;
             closedRotation = hinge.localRotation;
             knock = GetComponent<KnockableDoor>();
+            hours = GetComponent<BusinessHours>();
             panel = GetComponent<Collider>();
+        }
+
+        /// <summary>A shop after hours, to whoever's looking at it from outside.</summary>
+        private bool ClosedForBusiness => hours != null && Camera.main != null && hours.ClosedTo(Camera.main.transform.position);
+
+        /// <summary>Morning: every door in town is shut again, without a sound.</summary>
+        public static void CloseAll()
+        {
+            foreach (var d in FindObjectsByType<Door>(FindObjectsInactive.Exclude))
+            {
+                d.isOpen = false;
+                d.residentHoldUntil = 0f;
+                d.wasResidentOpen = false;
+                d.currentAngle = 0f;
+                if (d.hinge != null) d.hinge.localRotation = d.closedRotation;
+                if (d.panel != null) d.panel.isTrigger = false;
+            }
         }
 
         public override void Interact(PlayerInteractor interactor)
@@ -50,6 +69,13 @@ namespace Semblance.World
             if (locked)
             {
                 interactor.Hud.ShowMessage(lockedMessage, 4f);
+                return;
+            }
+            // A shop after hours: locked unless whoever runs it is still inside (or you are).
+            if (!isOpen && hours != null && hours.ClosedTo(interactor.transform.position))
+            {
+                Audio.GameAudio.Play("door_close", 0.3f, 1.5f); // a rattle against the lock
+                interactor.Hud.ShowMessage(hours.ClosedMessage, 4.5f);
                 return;
             }
             // Somebody of the house is standing right there: they step between you and their door.
@@ -99,11 +125,18 @@ namespace Semblance.World
                 nextResidentCheck = Time.time + 0.2f + Random.value * 0.05f;
                 Vector3 center = hinge.position + hinge.right * 0.6f;
                 foreach (var r in Residents.Resident.All)
-                    if ((r.transform.position - center).sqrMagnitude < 2.6f)
+                {
+                    if (r == null) continue;
+                    float sq = (r.transform.position - center).sqrMagnitude;
+                    // Right at it, or a few metres off and walking this way: open before they get here, not after.
+                    bool coming = sq < 2.6f || (sq < 12f && r.TryGetComponent<Residents.ResidentMover>(out var mover)
+                        && Vector3.Dot(mover.Velocity, center - r.transform.position) > 0.4f);
+                    if (coming)
                     {
-                        residentHoldUntil = Time.time + 1.5f;
+                        residentHoldUntil = Time.time + 2.2f;
                         break;
                     }
+                }
             }
             bool residentOpen = Time.time < residentHoldUntil;
             if (residentOpen != wasResidentOpen && !isOpen)
