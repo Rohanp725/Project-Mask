@@ -387,12 +387,39 @@ namespace Semblance.Residents
         /// The detective puts a contradiction or a piece of evidence to them. Innocent people explain (often with
         /// a human reason); the mimic insists, deflects, and slips.
         /// </summary>
-        public string Confront(string about)
+        public string Confront(string about, string evidenceId = null)
         {
             var director = Case.CaseDirector.Instance;
             bool mimic = director != null && director.Mimic == this;
             bool defensive = director != null && director.Noise != null && director.Noise.Defensive == this;
             var rng = new System.Random(Core.StableHash.Of(DisplayName + about));
+
+            // Shown a thing, not told a story: they answer about the thing, in the words they'd use if asked about it.
+            if (evidenceId != null)
+            {
+                if (mimic) Case.MimicAwareness.Instance?.Raise(6f, "confronted");
+                var q = Dialogue.ClueTopics.ForEvidence(this, evidenceId);
+                if (mimic && (director.Noise == null || !director.Noise.MimicConfrontsHumanly) && q == null)
+                {
+                    if (TryGetComponent<ResidentBehaviour>(out var b)) b.Glitch(1.2f);
+                    return $"{FirstName} looks at it for a long time without blinking.\n\"I've never seen that before in my life.\"";
+                }
+                if (q != null)
+                {
+                    string said = Format(q.AnswerFor(this), "clue:" + q.Key);
+                    Save.SaveSystem.Flags.Add(Dialogue.ClueTopics.AskedFlag(this, q.Key));
+                    return $"{FirstName} looks at it, then at you.\n{said}";
+                }
+                if (defensive)
+                    return $"{FirstName} won't look at it.\n\"I don't have to explain that to you. Not to you, not to anyone.\"";
+                string[] blank =
+                {
+                    "I don't know what that is, and I don't see what it's got to do with me.",
+                    "That's somebody else's business, Detective. Put it back where you found it.",
+                    "You went through somebody's things for that? ...No. I've nothing to say about it.",
+                };
+                return $"\"{blank[rng.Next(blank.Length)]}\"";
+            }
             string[] deflect =
             {
                 "That's how it's always been, Detective. Ask anyone. Ask them all.",

@@ -48,7 +48,7 @@ namespace Semblance.Player
 
             var canvas = UIFactory.Canvas("Flashlight Canvas", transform, 11);
             label = UIFactory.Text("Battery", canvas.transform, "", 14, new Color(1, 1, 1, 0.55f), TextAlignmentOptions.TopRight);
-            UIFactory.Place(label.rectTransform, new Vector2(1, 1), new Vector2(1, 1), new Vector2(-16, -34), new Vector2(240, 22));
+            UIFactory.Place(label.rectTransform, new Vector2(1, 1), new Vector2(1, 1), new Vector2(-16, -52), new Vector2(240, 22)); // under the clock and its date
         }
 
         private void Start()
@@ -63,7 +63,7 @@ namespace Semblance.Player
 
         private void Update()
         {
-            if (GameInput.Pressed(GameInput.Flashlight) && !InputLock.IsLocked)
+            if (GameInput.Pressed(GameInput.Flashlight) && (!InputLock.IsLocked || InputLock.Top is Events.HidingSpot))
             {
                 IsOn = !IsOn && battery > 0f;
                 Audio.GameAudio.Play("flashlight_click", 0.6f);
@@ -80,7 +80,7 @@ namespace Semblance.Player
             }
 
             bool dead = Time.time < deadUntil;
-            bool covered = InputLock.IsLocked && !(InputLock.Top is Dialogue.DialogueUI);
+            bool covered = InputLock.IsLocked && !(InputLock.Top is Dialogue.DialogueUI) && !(InputLock.Top is Events.HidingSpot);
             beam.enabled = IsOn && !dead && !covered;
             if (beam.enabled)
             {

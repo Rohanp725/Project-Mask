@@ -149,7 +149,7 @@ namespace Semblance.Dialogue
                             menu = Menu.Root;
                             currentTopic = "confront";
                             MarkAsked("confront|" + about.GetHashCode());
-                            string reply = resident.Confront(about);
+                            string reply = about.StartsWith("evidence|") ? resident.Confront(about, about.Substring(9)) : resident.Confront(about);
                             Say(reply);
                             Notebook.Instance?.Record(NoteKind.Statement, resident.DisplayName, "When I confronted them", Notebook.StripTags(reply), resident.DisplayName,
                                 $"confront|{resident.DisplayName}|{about.GetHashCode()}");
@@ -286,7 +286,7 @@ namespace Semblance.Dialogue
             foreach (var e in notebook.EntriesFor(resident.DisplayName))
             {
                 if (e.kind != NoteKind.Evidence) continue;
-                options.Add(("The " + e.title.ToLowerInvariant(), e.text));
+                options.Add(("The " + e.title.ToLowerInvariant(), "evidence|" + (e.key != null && e.key.StartsWith("evidence|") ? e.key.Substring(9) : e.title)));
                 if (options.Count >= 6) break;
             }
             return options;

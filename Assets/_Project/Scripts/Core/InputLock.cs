@@ -54,7 +54,8 @@ namespace Semblance.Core
 
         private static void Apply()
         {
-            bool locked = IsLocked;
+            // A wardrobe locks movement, not the mouse: you keep looking through the slats.
+            bool locked = IsLocked && !(Top is Events.HidingSpot);
             Cursor.lockState = locked ? CursorLockMode.None : CursorLockMode.Locked;
             Cursor.visible = locked;
             Changed?.Invoke();

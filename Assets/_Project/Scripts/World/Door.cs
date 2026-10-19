@@ -9,7 +9,7 @@ namespace Semblance.World
         [SerializeField] private Transform hinge;
         [Tooltip("Positive swings the door inward (away from the building's front).")]
         [SerializeField] private float openAngle = 100f;
-        [SerializeField] private float swingSpeed = 220f;
+        [SerializeField] private float swingSpeed = 320f;
         [SerializeField] private bool locked;
         [SerializeField, TextArea(1, 3)] private string lockedMessage = "It's locked.";
 
@@ -28,12 +28,15 @@ namespace Semblance.World
 
         public override bool CanInteract => base.CanInteract && (knock == null || !knock.Busy);
 
+        private Collider panel;
+
         private void Awake()
         {
             if (hinge == null)
                 hinge = transform.parent;
             closedRotation = hinge.localRotation;
             knock = GetComponent<KnockableDoor>();
+            panel = GetComponent<Collider>();
         }
 
         public override void Interact(PlayerInteractor interactor)
@@ -47,6 +50,13 @@ namespace Semblance.World
             if (locked)
             {
                 interactor.Hud.ShowMessage(lockedMessage, 4f);
+                return;
+            }
+            // Somebody of the house is standing right there: they step between you and their door.
+            var guard = !isOpen && knock != null ? knock.Guard(interactor.transform.position) : null;
+            if (guard != null)
+            {
+                interactor.Hud.ShowMessage($"{guard.FirstName} steps in front of the door. \"Not without me, you don't.\"", 4f);
                 return;
             }
             isOpen = !isOpen;
@@ -104,6 +114,8 @@ namespace Semblance.World
                 return;
             currentAngle = Mathf.MoveTowards(currentAngle, target, swingSpeed * Time.deltaTime);
             hinge.localRotation = closedRotation * Quaternion.Euler(0, currentAngle, 0);
+            // Once it starts to swing, the slab stops being a wall: nobody waits on a door to finish opening.
+            if (panel != null) panel.isTrigger = currentAngle >= 3f; // still there to look at and close, not to bump into
         }
     }
 }

@@ -25,6 +25,8 @@ namespace Semblance.Dialogue
         public Func<bool> Available;
         /// <summary>Kept for the odd question everyone can answer; most have none, so only the people concerned get asked.</summary>
         public string Default;
+        /// <summary>The evidence ids this question is about (filled from its trigger).</summary>
+        public List<string> EvidenceIds = new List<string>();
         /// <summary>An extra condition, e.g. something another person has already told you (cross-questioning).</summary>
         public Func<bool> Requires;
         public Dictionary<string, string> Answers = new Dictionary<string, string>();
@@ -46,7 +48,19 @@ namespace Semblance.Dialogue
 
         private static Func<bool> Flag(string flag) => () => SaveSystem.Flags.Contains(flag);
         private static Func<bool> Seen(string clue) => Flag("seen:" + clue);
-        private static Func<bool> Evidence(params string[] ids) => () => ids.Any(id => SaveSystem.Flags.Contains("evidence:" + id));
+        private static readonly List<string> pendingEvidence = new List<string>();
+        private static Func<bool> Evidence(params string[] ids)
+        {
+            pendingEvidence.AddRange(ids); // the next Add() remembers which evidence this question is about
+            return () => ids.Any(id => SaveSystem.Flags.Contains("evidence:" + id));
+        }
+
+        /// <summary>The question (and this person's answer) that bears on a piece of evidence, for confronting them with it.</summary>
+        public static ClueQuestion ForEvidence(Resident r, string evidenceId)
+        {
+            Ensure();
+            return All.FirstOrDefault(q => q.Parent == null && q.EvidenceIds.Contains(evidenceId) && q.Answers.ContainsKey(r.FirstName));
+        }
         private static Func<bool> Any(params Func<bool>[] conditions) => () => conditions.Any(c => c());
         /// <summary>True once that person has been asked that question: what they said can be put to somebody else.</summary>
         private static Func<bool> After(string displayName, string key) => Flag($"asked|{displayName}|{key}");
@@ -61,6 +75,8 @@ namespace Semblance.Dialogue
         private static ClueQuestion Add(string key, Func<bool> available, string question, string fallback = null, string parent = null, params (string who, string says)[] answers)
         {
             var q = new ClueQuestion { Key = key, Question = question, Available = available, Default = fallback, Parent = parent };
+            q.EvidenceIds.AddRange(pendingEvidence);
+            pendingEvidence.Clear();
             foreach (var (who, says) in answers) q.Answers[who] = says;
             All.Add(q);
             return q;

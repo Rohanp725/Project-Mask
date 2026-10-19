@@ -44,7 +44,7 @@ namespace Semblance.EditorTools
         private static readonly List<Action> DeferredLamps = new List<Action>();
         private static readonly List<Vector3> ExtraTrees = new List<Vector3>();
         private static Shader litShader;
-        private static Mesh cubeMesh, quadMesh, prismMesh, coneMesh, pyramidMesh, cylinderMesh, domeMesh, bellMesh;
+        private static Mesh cubeMesh, quadMesh, prismMesh, coneMesh, pyramidMesh, cylinderMesh, domeMesh, bellMesh, boxInsideMesh;
         private static int generatedMeshCount;
 
         // ---------------------------------------------------------------- Definitions
@@ -145,6 +145,7 @@ namespace Semblance.EditorTools
             domeMesh = GetOrCreateMesh("SiloCap", () => CreateCone(8, 0f, 1f));
             cylinderMesh = GetOrCreateMesh("Cylinder6", () => CreateCylinder(6));
             bellMesh = GetOrCreateMesh("Bell", CreateBell);
+            boxInsideMesh = GetOrCreateMesh("BoxInside", CreateBoxInside);
             if (TextureSynth.Load("grass") == null)
                 TextureSynth.GenerateAll();
             MenuBuilder.EnsureFontAsset();
@@ -632,7 +633,7 @@ namespace Semblance.EditorTools
             var houseRoot = BuildBuilding(parent, house, frame.TransformPoint(new Vector3(def.HouseOffsetX, 0, houseZ)), def.Yaw + 180f, rng);
             houseRoot.SetParent(frame, true);
             float porchFront = house.Size.z * 0.5f;
-            Box("Porch Deck", houseRoot, new Vector3(0, 0.15f, porchFront + 1f), new Vector3(6f, 0.3f, 2f), "Wood");
+            Box("Porch Deck", houseRoot, new Vector3(0, 0.05f, porchFront + 1f), new Vector3(6f, 0.1f, 2f), "Wood"); // flush with the floor inside
             Box("Porch Roof", houseRoot, new Vector3(0, 2.75f, porchFront + 1f), new Vector3(6.4f, 0.15f, 2.2f), "Roof", collider: false);
             Box("Porch Post L", houseRoot, new Vector3(-2.8f, 1.4f, porchFront + 1.9f), new Vector3(0.15f, 2.6f, 0.15f), "Wood");
             Box("Porch Post R", houseRoot, new Vector3(2.8f, 1.4f, porchFront + 1.9f), new Vector3(0.15f, 2.6f, 0.15f), "Wood");
@@ -2020,6 +2021,25 @@ namespace Semblance.EditorTools
             mesh.name = name;
             AssetDatabase.CreateAsset(mesh, path);
             return mesh;
+        }
+
+        /// <summary>A unit box whose faces point inward: the inside of a wardrobe, lit properly, invisible from outside.</summary>
+        private static Mesh CreateBoxInside()
+        {
+            var faces = new List<Vector3[]>();
+            foreach (var axis in new[] { Vector3.right, Vector3.up, Vector3.forward })
+                foreach (var sign in new[] { -1f, 1f })
+                {
+                    var n = axis * sign;                       // the face sits at +n*0.5 and must face -n (inward)
+                    var u = axis == Vector3.up ? Vector3.right : Vector3.up;
+                    var v = Vector3.Cross(n, u).normalized;
+                    var c = n * 0.5f;
+                    var quad = new[] { c - u * 0.5f - v * 0.5f, c - u * 0.5f + v * 0.5f, c + u * 0.5f + v * 0.5f, c + u * 0.5f - v * 0.5f };
+                    if (Vector3.Dot(Vector3.Cross(quad[1] - quad[0], quad[2] - quad[0]), -n) < 0f)
+                        System.Array.Reverse(quad);
+                    faces.Add(quad);
+                }
+            return BuildFlatMesh(faces);
         }
 
         /// <summary>1x1 quad on the XZ plane, facing up.</summary>

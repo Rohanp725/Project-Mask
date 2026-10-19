@@ -89,7 +89,7 @@ namespace Semblance.UI
                 if (minuteKey != shownMinute)
                 {
                     shownMinute = minuteKey;
-                    clockText.text = clock.Label;
+                    clockText.text = clock.Label + $"\n<size=75%><color=#{ColorUtility.ToHtmlStringRGB(textColor * 0.8f)}>{GameFlow.DateLine(clock.Day + (clock.Hour >= 24f ? 1 : 0))}</color></size>";
                 }
             }
             if (hintText.gameObject.activeSelf && hintHideTime > 0 && Time.unscaledTime > hintHideTime)
@@ -236,7 +236,7 @@ namespace Semblance.UI
             toastLayout.spacing = 2;
 
             clockText = UIFactory.Text("Clock", canvasGO.transform, "", 16, new Color(textColor.r, textColor.g, textColor.b, 0.7f), TextAlignmentOptions.TopRight);
-            UIFactory.Place(clockText.rectTransform, new Vector2(1, 1), new Vector2(1, 1), new Vector2(-16, -12), new Vector2(300, 26));
+            UIFactory.Place(clockText.rectTransform, new Vector2(1, 1), new Vector2(1, 1), new Vector2(-16, -12), new Vector2(320, 44));
 
             hintText = UIFactory.Text("Hint", canvasGO.transform, "", 17, textColor, TextAlignmentOptions.Top);
             UIFactory.Place(hintText.rectTransform, new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -14), new Vector2(1000, 72));

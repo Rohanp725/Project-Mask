@@ -18,6 +18,10 @@ namespace Semblance.Core
         public const float DuskHour = 18f;
         public const float NightHour = 21f;
         public const float CollapseHour = 27f;
+        /// <summary>Hours of tonight bought with coffee (at most two): you drop at 3 AM plus this.</summary>
+        public float NightExtension { get; private set; }
+        public float CollapseAt => CollapseHour + NightExtension;
+        public void ExtendNight(float hours) => NightExtension = Mathf.Clamp(NightExtension + hours, 0f, 2f);
 
         [SerializeField] private float secondsPerGameHour = 90f;
 
@@ -72,10 +76,10 @@ namespace Semblance.Core
             if (Mathf.FloorToInt(Hour) != previousHour)
                 HourPassed?.Invoke(Mathf.FloorToInt(Hour));
             CheckPhase();
-            if (Hour >= CollapseHour)
+            if (Hour >= CollapseAt)
             {
                 Collapsed?.Invoke();
-                if (Hour > CollapseHour) Hour = CollapseHour; // held at 3 AM until something lets the night end
+                if (Hour > CollapseAt) Hour = CollapseAt; // held at the end of the night until something lets it end
             }
         }
 
@@ -85,6 +89,7 @@ namespace Semblance.Core
             bool newDay = day != Day;
             Day = day;
             Hour = hour;
+            if (newDay) NightExtension = 0f;
             if (newDay)
                 DayStarted?.Invoke(Day);
             CheckPhase(force: true);

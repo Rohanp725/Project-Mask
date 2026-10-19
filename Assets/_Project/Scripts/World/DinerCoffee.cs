@@ -6,7 +6,11 @@ using UnityEngine;
 
 namespace Semblance.World
 {
-    /// <summary>A cup of Mae's burnt coffee. Steadies the nerves; costs a quarter hour. Once per part of the day.</summary>
+    /// <summary>
+    /// A cup of Mae's burnt coffee. Buys an hour of the night (you drop at 4 AM instead of 3, two cups at most) and
+    /// costs a quarter hour to drink. But coffee at the wrong end of the day makes a man jumpy: nerve drains faster
+    /// for the rest of the night. Once per part of the day.
+    /// </summary>
     public class DinerCoffee : Interactable
     {
         private string lastServed;
@@ -34,9 +38,19 @@ namespace Semblance.World
             lastServed = key;
             Save.SaveSystem.Flags.Add(key);
             Audio.GameAudio.Play("coffee_pour", 0.6f);
-            Nerve.Instance?.Calm(35f);
             clock?.Advance(0.25f);
-            interactor.Hud.ShowMessage($"{server.FirstName} pours you a cup without asking. It's burnt and bitter and the best thing that's happened all day.", 4.5f);
+            bool evening = clock != null && clock.Hour >= 17f;
+            if (evening)
+            {
+                clock.ExtendNight(1f);
+                if (Nerve.Instance != null) { Nerve.Instance.CoffeeDrain += 0.06f; Nerve.Instance.Shock(6f); }
+                interactor.Hud.ShowMessage($"{server.FirstName} pours you a cup without asking. Burnt and bitter. You'll be awake an hour longer than you should be tonight, and every creak will find you.", 5f);
+            }
+            else
+            {
+                Nerve.Instance?.Calm(25f);
+                interactor.Hud.ShowMessage($"{server.FirstName} pours you a cup without asking. It's burnt and bitter and the best thing that's happened all day.", 4.5f);
+            }
         }
     }
 }

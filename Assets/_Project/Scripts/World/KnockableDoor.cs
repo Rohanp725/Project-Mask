@@ -29,8 +29,52 @@ namespace Semblance.World
         private float knockedAt = -1000f;
         private bool answered;
         private readonly List<Resident> awakeInside = new List<Resident>();
+        private float invitedUntil = -1000f;
+        private readonly HashSet<Resident> insideAtEntry = new HashSet<Resident>();
+        private bool playerWasInside;
+        private float nextTrespassCheck;
+        private const float HalfWidth = 4.8f, HalfDepth = 3.8f; // a farmhouse's inside, in its own frame
 
         public bool Busy => routine != null;
+
+        /// <summary>You were let in (somebody answered); walking about inside isn't trespass for a while.</summary>
+        public bool Invited => Time.time < invitedUntil;
+
+        /// <summary>Somebody of the house is right there, awake, and hasn't let you in: the door isn't yours to open.</summary>
+        public Resident Guard(Vector3 playerPosition)
+        {
+            if (Invited || door == null || IsInside(playerPosition)) return null;
+            var clock = GameClock.Instance;
+            float hour = clock != null ? clock.Hour : 12f;
+            foreach (var r in Resident.All)
+            {
+                if (r == null || !r.isActiveAndEnabled || r.Profile == null || r.Profile.home != family + " Farm") continue;
+                if (SleepingHours(hour) && !AwakeAtNight(r)) continue;
+                if (Dialogue.DialogueUI.Instance != null && Dialogue.DialogueUI.Instance.Current == r) continue;
+                if (Vector3.Distance(r.transform.position, door.transform.position) < 4.5f && !IsInside(r.transform.position)) return r;
+            }
+            return null;
+        }
+
+        private Transform House => door != null ? door.transform.parent.parent : transform;
+
+        private bool IsInside(Vector3 worldPosition)
+        {
+            var p = House.InverseTransformPoint(worldPosition);
+            return Mathf.Abs(p.x) < HalfWidth && Mathf.Abs(p.z) < HalfDepth && p.y > -1f && p.y < 3.5f;
+        }
+
+        /// <summary>The family's own people who are outside the house but close to its door.</summary>
+        private List<Resident> OnTheStep()
+        {
+            var list = new List<Resident>();
+            foreach (var r in Resident.All)
+            {
+                if (r == null || !r.isActiveAndEnabled || r.Profile == null || r.Profile.home != family + " Farm") continue;
+                if (!IsInside(r.transform.position) && door != null && Vector3.Distance(r.transform.position, door.transform.position) < 7f) list.Add(r);
+            }
+            return list;
+        }
 
         /// <summary>A knock is the thing to do unless someone just answered or you knocked a minute ago.</summary>
         public bool WantsKnock => routine == null && Time.time - knockedAt > 45f;
@@ -108,6 +152,36 @@ namespace Semblance.World
             var clock = GameClock.Instance;
             float hour = clock != null ? clock.Hour : 12f;
             bool sleeping = SleepingHours(hour);
+
+            // Somebody's on the porch: they're not letting a stranger knock on their own door.
+            var step = OnTheStep();
+            if (step.Count > 0)
+            {
+                var who2 = step[0];
+                yield return new WaitForSeconds(0.6f);
+                var mover2 = who2.GetComponent<ResidentMover>();
+                if (mover2 != null && outsidePoint != null) mover2.WalkTo(outsidePoint.position + (outsidePoint.position - door.transform.position).normalized * 0.4f);
+                float w2 = 0f;
+                while (w2 < 6f && outsidePoint != null && Vector3.Distance(who2.transform.position, outsidePoint.position) > 1.3f) { w2 += Time.deltaTime; yield return null; }
+                who2.transform.rotation = Quaternion.LookRotation(Vector3.ProjectOnPlane(interactor.transform.position - who2.transform.position, Vector3.up));
+                string[] porch =
+                {
+                    "That's my house, Detective. Whatever you want, you can ask me out here.",
+                    "You don't knock on a man's door with him standing next to you. What is it?",
+                    "Nobody's in there but mine. Ask me.",
+                };
+                who2.DoorstepGreeting = porch[Random.Range(0, porch.Length)];
+                var dlg = Dialogue.DialogueUI.Instance;
+                if (dlg != null)
+                {
+                    dlg.Open(who2, interactor);
+                    while (dlg.Current == who2) yield return null;
+                }
+                mover2?.Release();
+                routine = null;
+                yield break;
+            }
+
             var home = Household();
 
             Resident who = null;
@@ -130,6 +204,14 @@ namespace Semblance.World
             int day = clock != null ? clock.Day : 1;
             string wokeFlag = $"woke|{who.DisplayName}|{day}";
             bool wakingThem = sleeping && !AwakeAtNight(who);
+            string thrownFlag = $"thrown|{family}|{day}";
+            if (Save.SaveSystem.Flags.Contains(thrownFlag))
+            {
+                yield return new WaitForSeconds(2f);
+                hud.ShowMessage($"The door doesn't open. From inside: \"I told you, Detective.\"", 4f);
+                routine = null;
+                yield break;
+            }
             if (wakingThem && Save.SaveSystem.Flags.Contains(wokeFlag))
             {
                 yield return new WaitForSeconds(3f);
@@ -170,6 +252,7 @@ namespace Semblance.World
             who.DoorstepGreeting = Greeting(who, hour, wakingThem);
             RecordAnswer(who, hour, wakingThem);
             answered = true;
+            invitedUntil = Time.time + (wakingThem ? 0f : 240f); // let in by day; at night they want you gone
 
             var dialogue = Dialogue.DialogueUI.Instance;
             if (dialogue != null)
@@ -179,6 +262,73 @@ namespace Semblance.World
             }
             yield return new WaitForSeconds(wakingThem ? 0.4f : 1.2f);
             door.ForceOpen(false);
+            mover?.Release();
+            routine = null;
+        }
+
+        private void Update()
+        {
+            if (routine != null || Time.time < nextTrespassCheck || door == null) return;
+            nextTrespassCheck = Time.time + 0.5f;
+            var cam = Camera.main;
+            if (cam == null) return;
+            bool inside = IsInside(cam.transform.position);
+            if (inside && !playerWasInside)
+            {
+                // Remember who was already in when you came in: it's whoever arrives after that catches you.
+                insideAtEntry.Clear();
+                foreach (var r in Resident.All)
+                    if (r != null && r.isActiveAndEnabled && IsInside(r.transform.position)) insideAtEntry.Add(r);
+            }
+            playerWasInside = inside;
+            if (!inside || Invited || InputLock.IsLocked) return;
+            var clock = GameClock.Instance;
+            float hour = clock != null ? clock.Hour : 12f;
+            foreach (var r in Resident.All)
+            {
+                if (r == null || !r.isActiveAndEnabled || r.Profile == null || r.Profile.home != family + " Farm") continue;
+                if (insideAtEntry.Contains(r) || !IsInside(r.transform.position)) continue;
+                if (SleepingHours(hour) && !AwakeAtNight(r)) continue;
+                var pi = FindFirstObjectByType<PlayerInteractor>();
+                if (pi != null) routine = StartCoroutine(CaughtRoutine(r, pi));
+                return;
+            }
+        }
+
+        /// <summary>They came home and you were in their house. They walk you to the door, and the door stays shut after.</summary>
+        private IEnumerator CaughtRoutine(Resident who, PlayerInteractor interactor)
+        {
+            var mover = who.GetComponent<ResidentMover>();
+            Events.Nerve.Instance?.Shock(8f);
+            if (CaseDirector.Instance != null && CaseDirector.Instance.Mimic == who) MimicAwareness.Instance?.Raise(8f, "caught in its house");
+            if (mover != null) mover.WalkTo(interactor.transform.position);
+            float t = 0f;
+            while (t < 6f && Vector3.Distance(who.transform.position, interactor.transform.position) > 1.8f) { t += Time.deltaTime; yield return null; }
+            who.transform.rotation = Quaternion.LookRotation(Vector3.ProjectOnPlane(interactor.transform.position - who.transform.position, Vector3.up));
+            string[] caught =
+            {
+                "What the hell are you doing in my house? ...No. Don't answer. Out. Now.",
+                "You walked in. Nobody answered, so you walked in. Is that how they do it in the city? Get out.",
+                "I ought to fetch the gun. I'm not going to, because you're leaving. Say your piece on the porch.",
+            };
+            who.DoorstepGreeting = caught[Random.Range(0, caught.Length)];
+            var dlg = Dialogue.DialogueUI.Instance;
+            if (dlg != null)
+            {
+                dlg.Open(who, interactor);
+                while (dlg.Current == who) yield return null;
+            }
+            // Walked to the door and shut out.
+            var cc = interactor.GetComponent<CharacterController>();
+            if (cc != null) cc.enabled = false;
+            if (outsidePoint != null) interactor.transform.position = outsidePoint.position + (outsidePoint.position - door.transform.position).normalized * 0.8f;
+            if (cc != null) cc.enabled = true;
+            door.ForceOpen(false);
+            int day = GameClock.Instance != null ? GameClock.Instance.Day : 1;
+            Save.SaveSystem.Flags.Add($"thrown|{family}|{day}");
+            interactor.Hud.ShowMessage($"{who.FirstName} walks you to the door and shuts it behind you. The bolt goes across.", 5f);
+            Notebook.Instance?.Record(NoteKind.Event, Notebook.CaseSubject, "Thrown out", $"{who.DisplayName} caught me in the house and put me out. I won't be welcome there again today.", null, $"thrown|{family}|{day}");
+            playerWasInside = false;
             mover?.Release();
             routine = null;
         }

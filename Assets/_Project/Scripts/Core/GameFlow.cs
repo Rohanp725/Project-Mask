@@ -101,6 +101,19 @@ namespace Semblance.Core
             return date.ToString("dddd, MMMM d, yyyy");
         }
 
+        private void Update()
+        {
+            // Two hours and one hour before you drop, your body says so.
+            var clock = GameClock.Instance;
+            if (clock == null || IsSleeping || InputLock.IsLocked) return;
+            float left = clock.CollapseAt - clock.Hour;
+            string two = "tired2|" + clock.Day, one = "tired1|" + clock.Day;
+            if (left <= 2f && left > 1f && SaveSystem.Flags.Add(two))
+                UI.PlayerHUD.Instance?.ShowMessage("Your eyes are getting heavy. Two hours, maybe, before your legs decide for you. The motel bed is Room 6.", 6f);
+            else if (left <= 1f && SaveSystem.Flags.Add(one))
+                UI.PlayerHUD.Instance?.ShowMessage("You catch yourself standing still with your eyes shut. An hour, if that. Get to the bed, or to a chair at least.", 6f);
+        }
+
         /// <summary>Black out (fear or exhaustion): lose the rest of the night and wake late.</summary>
         public void Collapse()
         {

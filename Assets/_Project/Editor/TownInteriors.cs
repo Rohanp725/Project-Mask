@@ -445,6 +445,9 @@ namespace Semblance.EditorTools
         {
             var w = Box("Wardrobe", root, localBase + new Vector3(0, 1.05f, 0), new Vector3(0.65f, 2.1f, 1.0f), "Wood");
             w.transform.localRotation = Quaternion.Euler(0, yaw + 90f, 0);
+            // The inside of the box, faces pointing inward: seen only from within, so no looking out through the sides.
+            var lining = MeshPart("Wardrobe Lining", root, boxInsideMesh, localBase + new Vector3(0, 1.05f, 0), new Vector3(0.62f, 2.06f, 0.96f), "Wood");
+            lining.transform.localRotation = Quaternion.Euler(0, yaw + 90f, 0);
             // Doors, handles and a cornice, parented to the wardrobe so they follow its rotation.
             var face = Group("Wardrobe Face", root);
             face.localPosition = localBase;

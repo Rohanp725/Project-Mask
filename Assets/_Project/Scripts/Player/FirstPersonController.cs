@@ -76,6 +76,8 @@ namespace Semblance.Player
         {
             HandleCursor();
             bool hasControl = !InputLocked && !InputLock.IsLocked && Cursor.lockState == CursorLockMode.Locked;
+            // Inside a wardrobe you can't move, but you can turn your head to the slats or the floor.
+            bool peeking = !InputLocked && InputLock.Top is Events.HidingSpot && Cursor.lockState == CursorLockMode.Locked;
 
             // Focus: squint at small details. Slows the look so you can hold steady on a face.
             IsFocusing = hasControl && GameInput.Held(GameInput.Focus);
@@ -85,7 +87,7 @@ namespace Semblance.Player
                 viewCamera.fieldOfView = Mathf.Lerp(viewCamera.fieldOfView, targetFov, 1f - Mathf.Exp(-focusSpeed * Time.deltaTime));
             }
 
-            if (hasControl)
+            if (hasControl || peeking)
                 Look(GameInput.LookDelta * (viewCamera != null ? viewCamera.fieldOfView / GameSettings.FieldOfView : 1f));
 
             Move(hasControl);

@@ -23,6 +23,8 @@ namespace Semblance.Events
         public float Distress => 1f - value / 100f;
         /// <summary>Set by events while something frightening is in view (drains per second).</summary>
         public float ExternalDrain { get; set; }
+        /// <summary>Coffee: awake longer, jumpier. Drains nerve all night, a little more per cup.</summary>
+        public float CoffeeDrain { get; set; }
 
         private readonly List<Light> lights = new List<Light>();
         private float nextLightRefresh;
@@ -41,7 +43,7 @@ namespace Semblance.Events
         {
             BuildVignette();
             Save.SaveSystem.Register(d => d.nerve = value, d => value = d.nerve > 0 ? d.nerve : 100f);
-            GameFlow.Woke += _ => value = Mathf.Max(value, 85f);
+            GameFlow.Woke += _ => { value = Mathf.Max(value, 85f); CoffeeDrain = 0f; };
         }
 
         /// <summary>When something last frightened the detective (Time.time).</summary>
@@ -93,7 +95,7 @@ namespace Semblance.Events
             else if (torch && light - 1.2f < 0.35f) rate -= 0.06f * firstNight;
             else if (light > 1.1f) rate += 1.0f;
             if (light > 1.1f && AmbientAudio.IsIndoors(cam.transform.position - Vector3.up * 1.5f)) rate += 0.8f;
-            rate -= ExternalDrain;
+            rate -= ExternalDrain + CoffeeDrain;
             // While it's hunting you, the danger is being caught, not fainting: fear bottoms out but holds.
             // Nobody faints before they've slept once: the first night teaches the dark, it doesn't punish it.
             float floor = Stalker.IsHunting ? Mathf.Min(value, 5f) : 0f;
