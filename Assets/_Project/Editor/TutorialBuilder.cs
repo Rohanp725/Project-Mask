@@ -86,7 +86,7 @@ namespace Semblance.EditorTools
             Group("Lights", null);
             foreach (var lamp in DeferredLamps) lamp();
 
-            var window = TutorialAnchor("Window", new Vector3(7.0f, 0.1f, 0.1f), Vector3.right);
+            var window = TutorialAnchor("Window", new Vector3(7.3f, 0.1f, -0.7f), Vector3.right);
             var playerCamera = BuildPlayer(window.position);
             BuildSkyAndAtmosphere(playerCamera);
 
@@ -199,19 +199,23 @@ namespace Semblance.EditorTools
         }
 
         /// <summary>A fluorescent fixture flush to the ceiling: a cool tube in a steel tray.</summary>
-        private static void Fluorescent(Transform parent, Vector3 pos, float ceiling)
+        private static void Fluorescent(Transform parent, Vector3 pos, float ceiling, bool flicker = false, bool lit = true)
         {
             var go = new GameObject("Fluorescent");
             go.transform.SetParent(parent, false);
             go.transform.localPosition = pos;
-            var light = go.AddComponent<Light>();
-            light.type = LightType.Point;
-            light.color = new Color(0.86f, 0.92f, 1f);
-            light.range = 7.5f;
-            light.intensity = 1.5f;
-            light.shadows = LightShadows.None;
+            if (lit)
+            {
+                var light = go.AddComponent<Light>();
+                light.type = LightType.Point;
+                light.color = new Color(0.86f, 0.92f, 1f);
+                light.range = 7.5f;
+                light.intensity = 1.5f;
+                light.shadows = LightShadows.None;
+                if (flicker) SetField(go.AddComponent<Rendering.FlickeringLight>(), "flickerChance", 0.12f);
+            }
             Part("Tray", go.transform, new Vector3(0, ceiling - pos.y - 0.05f, 0), new Vector3(1.3f, 0.1f, 0.3f), "Metal");
-            Part("Tube", go.transform, new Vector3(0, ceiling - pos.y - 0.12f, 0), new Vector3(1.2f, 0.06f, 0.06f), "Tube");
+            Part(lit ? "Tube" : "Dead Tube", go.transform, new Vector3(0, ceiling - pos.y - 0.12f, 0), new Vector3(1.2f, 0.06f, 0.06f), lit ? "Tube" : "SignWhite");
         }
 
         private static GameObject ExitSign(Transform parent, Vector3 pos, float yaw)
@@ -325,6 +329,21 @@ namespace Semblance.EditorTools
         }
 
         // ------------------------------------------------------------ the office
+        //
+        // The floor plan, 16 x 11 inside, walls at x = +-8, z = +-5.5 (east is the window wall):
+        //
+        //   north wall:  filing cabinets | clock | the evidence board under its light |  typing table  | ARMORY cage
+        //   north corridor (3.3 m) ------------------------------------------------- barricade -+
+        //   [cubicle][cubicle][cubicle]   <- north row, open to the north corridor               |  Klein's desk, lamp on
+        //   ========= spine =========     <- solid panel wall, x -3..3                             |  the middle window
+        //   [cubicle][cubicle][cubicle]   <- south row, open to the south corridor                |
+        //   south corridor (3.3 m) ------------------------------------------------- sheriff's office (glazed, locked)
+        //   south wall:  coat rack | LOBBY DOOR | front desk (Reyes) | waiting chairs | coffee
+        //   west passage: stairwell door under EXIT, water cooler, county map, dispatch set
+        //
+        // Two ways round the block normally; tonight the east end of the north corridor is stacked with archive
+        // cartons and chairs, so the only route is the loop: window, lamp, south corridor, front desk, west
+        // passage, north corridor, board, and back to the red EXIT sign.
 
         private static void BuildOffice(Transform office, Random rng)
         {
@@ -336,12 +355,12 @@ namespace Semblance.EditorTools
             // South: the lobby door, locked for the night.
             WallZ(office, "Wall South", -5.6f, -8.2f, -6.5f, 0, h, wall);
             WallZ(office, "Wall South", -5.6f, -5.6f, 8.2f, 0, h, wall);
-            WallZ(office, "Lintel", -5.6f, -6.5f, -5.6f, 2.1f, h, wall);
+            WallZ(office, "Lintel", -5.6f, -6.5f, -5.6f, 2.14f, h, wall);
             TutorialDoor(office, "Lobby Door", new Vector3(-6.5f, 0.1f, -5.6f), 0f, true, "Locked for the night. The lobby's dark, and the sheriff has the only key.");
             // West: the stairwell door, under the exit sign.
             WallX(office, "Wall West", -8.1f, -5.7f, 2.5f, 0, h, wall);
             WallX(office, "Wall West", -8.1f, 3.4f, 5.7f, 0, h, wall);
-            WallX(office, "Lintel", -8.1f, 2.5f, 3.4f, 2.1f, h, wall);
+            WallX(office, "Lintel", -8.1f, 2.5f, 3.4f, 2.14f, h, wall);
             TutorialDoor(office, "Stairwell Door", new Vector3(-8.1f, 0.1f, 2.5f), -90f);
             ExitSign(office, new Vector3(-7.95f, 2.42f, 2.95f), 90f);
             // East: three windows onto the rain. No glass: the room's open to the night, and the night to it.
@@ -364,6 +383,7 @@ namespace Semblance.EditorTools
                 glass.AddComponent<BoxCollider>().size = new Vector3(0.1f, 1.5f, 1.3f);
                 Box("Blind", office, new Vector3(7.92f, 2.37f, z), new Vector3(0.12f, 0.12f, 1.34f), "PlainCream", collider: false);
                 Box("Blind Cord", office, new Vector3(7.92f, 1.9f, z + 0.6f), new Vector3(0.006f, 0.9f, 0.006f), "Rope", collider: false);
+                SoundEmitter(office, new Vector3(7.9f, 1.7f, z), "rain_loop", 0.22f, 7f);
             }
             // Skirting and a picture rail: the room's been here since the thirties.
             Part("Skirting", office, new Vector3(0, 0.17f, 5.47f), new Vector3(16f, 0.14f, 0.03f), "Wood");
@@ -372,17 +392,17 @@ namespace Semblance.EditorTools
             Part("Skirting", office, new Vector3(7.97f, 0.17f, 0), new Vector3(0.03f, 0.14f, 11f), "Wood");
             Part("Picture Rail", office, new Vector3(0, 2.75f, 5.47f), new Vector3(16f, 0.05f, 0.04f), "Wood");
 
-            // Lighting: six fluorescents, and the lamps on the two desks that matter.
-            foreach (var x in new[] { -5f, 0f, 5f })
-                foreach (var z in new[] { -2.6f, 2.6f })
-                    Fluorescent(office, new Vector3(x, ceiling - 0.3f, z), ceiling);
+            // Lighting: tubes over the corridors and the block, one of them tired; the lamps make the pools you walk between.
+            foreach (var (x, z, flicker) in new[] { (-4.5f, 3.7f, false), (0f, 3.7f, false), (-4.5f, -3.7f, true), (0f, -3.7f, false), (4.5f, -3.7f, false), (-1.6f, 0f, false), (1.6f, 0f, false), (6.2f, 1.2f, false) })
+                Fluorescent(office, new Vector3(x, ceiling - 0.3f, z), ceiling, flicker);
             SoundEmitter(office, new Vector3(0, 3f, 0), "lamp_buzz_loop", 0.1f, 10f);
 
-            // Klein's desk, by the middle window, the lamp still on.
-            var klein = OfficeDesk(office, new Vector3(4.9f, 0, 1.2f), 90f, rng, working: true);
-            DeskLamp(office, new Vector3(4.55f, FloorY + 0.76f, 1.75f), "LampShade", new Color(1f, 0.78f, 0.5f), 2.4f);
+            // Klein's desk, by the middle window, the lamp still on. The first pool of light.
+            var klein = OfficeDesk(office, new Vector3(6.3f, 0, 0.6f), 90f, rng, working: true);
+            DeskLamp(office, new Vector3(6.1f, FloorY + 0.76f, 1.25f), "LampShade", new Color(1f, 0.78f, 0.5f), 2.6f);
             Round("Ashtray", klein, new Vector3(-0.1f, FloorY + 0.77f, -0.33f), 0.12f, 0.03f, "Glass");
             Round("Coffee Cup", klein, new Vector3(-0.55f, FloorY + 0.8f, -0.3f), 0.08f, 0.09f, "SignWhite");
+            Part("Case Folder", klein, new Vector3(0.1f, FloorY + 0.772f, -0.3f), new Vector3(0.3f, 0.012f, 0.24f), "Mustard");
             var envelope = Part("Envelope", klein, new Vector3(-0.15f, FloorY + 0.776f, -0.02f), new Vector3(0.24f, 0.012f, 0.13f), "Paper");
             envelope.transform.localRotation = Quaternion.Euler(0, 12f, 0);
             Part("Postmark", klein, new Vector3(-0.08f, FloorY + 0.784f, 0.01f), new Vector3(0.05f, 0.004f, 0.05f), "Writing");
@@ -390,69 +410,22 @@ namespace Semblance.EditorTools
             Inspect(envelope, "Read the letter",
                 "A plain envelope, postmarked SEMBLANCE, OCT 10. Inside, one line in pencil, pressed hard enough to tear the paper:\n\n<i>\"One of us is not one of us.\"</i>\n\nClipped to it, in the sheriff's hand: <i>Klein. Look into this.</i>",
                 new Vector3(0.5f, 0.4f, 0.5f), clue: "tut_letter");
-            TutorialAnchor("Desk", new Vector3(4.0f, 0.1f, 1.2f), Vector3.right);
+            TutorialAnchor("Desk", new Vector3(5.4f, 0.1f, 0.6f), Vector3.right);
+            Part("Klein's Hat", office, new Vector3(6.9f, FloorY + 1.84f, -1.3f), new Vector3(0.32f, 0.09f, 0.32f), "Suit");
+            Part("Klein's Hat Crown", office, new Vector3(6.9f, FloorY + 1.95f, -1.3f), new Vector3(0.18f, 0.14f, 0.18f), "Suit");
+            Part("Hat Stand", office, new Vector3(6.9f, FloorY + 0.9f, -1.3f), new Vector3(0.04f, 1.8f, 0.04f), "Wood");
+            Part("Coat", office, new Vector3(6.9f, FloorY + 1.25f, -1.2f), new Vector3(0.28f, 0.95f, 0.16f), "Suit");
 
-            // Three dark desks, and the front desk with the sergeant behind it.
-            OfficeDesk(office, new Vector3(-5.6f, 0, 0.2f), 90f, rng, working: false);
             BuildCubicles(office, rng);
             BuildSheriffsOffice(office, rng);
             BuildArmory(office, rng);
+            BuildFrontDesk(office, rng);
             BuildOfficeClutter(office, rng);
+            BuildBarricade(office, rng);
 
-            var front = Piece("Front Desk", office, new Vector3(-3.5f, 0, -3.5f), 0f, new Vector3(3.6f, 1.05f, 0.8f), FloorY);
-            Part("Counter Front", front, new Vector3(0, FloorY + 0.5f, 0.38f), new Vector3(3.6f, 1.0f, 0.04f), "Door");
-            Part("Counter Top", front, new Vector3(0, FloorY + 1.0f, 0), new Vector3(3.7f, 0.05f, 0.9f), "Wood");
-            Part("Counter Shelf", front, new Vector3(0, FloorY + 0.5f, -0.1f), new Vector3(3.4f, 0.04f, 0.5f), "Wood");
-            Part("Telephone", front, new Vector3(-1.0f, FloorY + 1.08f, -0.1f), new Vector3(0.22f, 0.11f, 0.18f), "HideBlack");
-            Part("Handset", front, new Vector3(-1.0f, FloorY + 1.16f, -0.1f), new Vector3(0.24f, 0.04f, 0.06f), "HideBlack");
-            Part("Telephone", front, new Vector3(-0.55f, FloorY + 1.08f, -0.15f), new Vector3(0.22f, 0.11f, 0.18f), "HideBlack");
-            Part("Handset", front, new Vector3(-0.55f, FloorY + 1.16f, -0.15f), new Vector3(0.24f, 0.04f, 0.06f), "HideBlack");
-            Part("Log Book", front, new Vector3(0.4f, FloorY + 1.04f, -0.05f), new Vector3(0.34f, 0.03f, 0.26f), "Leather");
-            Part("Log Page", front, new Vector3(0.4f, FloorY + 1.058f, -0.05f), new Vector3(0.3f, 0.004f, 0.22f), "Writing");
-            Part("Nameplate", front, new Vector3(1.2f, FloorY + 1.06f, 0.25f), new Vector3(0.28f, 0.06f, 0.03f), "Brass");
-            var radio = Part("Radio", front, new Vector3(1.4f, FloorY + 1.1f, -0.2f), new Vector3(0.32f, 0.17f, 0.14f), "Wood");
-            Part("Dial", front, new Vector3(1.4f, FloorY + 1.1f, -0.125f), new Vector3(0.2f, 0.08f, 0.005f), "SignWhite");
-            SoundEmitter(front, new Vector3(1.4f, FloorY + 1.1f, -0.2f), "static_loop", 0.035f, 5f);
-            DeskLamp(office, new Vector3(-4.9f, FloorY + 1.03f, -3.4f), "Sage", new Color(0.8f, 1f, 0.75f), 1.6f);
-            Inspect(radio.gameObject, "Listen to the radio", "County dispatch, turned down to a murmur. A deputy somewhere asking for a tow. Rain reported on every road north.", new Vector3(0.4f, 0.3f, 0.3f));
-
-            // Filing cabinets along the north wall; the coffee; a coat rack with one coat left on it.
-            for (int i = 0; i < 4; i++)
-            {
-                var cab = Piece("Filing Cabinet", office, new Vector3(-6.9f + i * 0.56f, 0, 5.15f), 0f, new Vector3(0.5f, 1.32f, 0.62f), FloorY);
-                Part("Body", cab, new Vector3(0, FloorY + 0.66f, 0), new Vector3(0.5f, 1.32f, 0.62f), "Galvanized");
-                for (int d = 0; d < 3; d++)
-                {
-                    Part("Drawer Line", cab, new Vector3(0, FloorY + 0.22f + d * 0.42f, -0.311f), new Vector3(0.46f, 0.01f, 0.004f), "Metal");
-                    Part("Drawer Pull", cab, new Vector3(0, FloorY + 0.4f + d * 0.42f, -0.325f), new Vector3(0.1f, 0.025f, 0.02f), "Metal");
-                    Part("Drawer Label", cab, new Vector3(0.14f, FloorY + 0.4f + d * 0.42f, -0.316f), new Vector3(0.08f, 0.04f, 0.004f), "Writing");
-                }
-            }
-            var coffee = Table("Coffee Table", office, new Vector3(6.7f, 0, -4.9f), 0f, 1.1f, 0.5f, "Wood", 0.8f);
-            Round("Percolator", coffee, new Vector3(-0.25f, FloorY + 0.95f, 0), 0.2f, 0.3f, "Chrome");
-            Round("Percolator Lid", coffee, new Vector3(-0.25f, FloorY + 1.11f, 0), 0.08f, 0.04f, "HideBlack");
-            foreach (var x in new[] { 0.15f, 0.35f })
-                Round("Cup", coffee, new Vector3(x, FloorY + 0.84f, 0.05f), 0.08f, 0.08f, "SignWhite");
-            Part("Sugar Tin", coffee, new Vector3(0.25f, FloorY + 0.87f, -0.15f), new Vector3(0.1f, 0.14f, 0.1f), "Mustard");
-            var rack = Group("Coat Rack", office);
-            rack.localPosition = new Vector3(-7.4f, 0, -4.9f);
-            Round("Pole", rack, new Vector3(0, FloorY + 0.9f, 0), 0.05f, 1.8f, "Wood");
-            Round("Foot", rack, new Vector3(0, FloorY + 0.02f, 0), 0.4f, 0.04f, "Wood");
-            foreach (var a in new[] { 0f, 90f, 180f, 270f })
-                Part("Hook", rack, Quaternion.Euler(0, a, 0) * new Vector3(0.1f, FloorY + 1.75f, 0), new Vector3(0.16f, 0.02f, 0.02f), "Brass").transform.localRotation = Quaternion.Euler(0, a, 0);
-            Part("Coat", rack, new Vector3(0.14f, FloorY + 1.25f, 0.02f), new Vector3(0.28f, 0.95f, 0.16f), "Suit");
-            Part("Hat", rack, new Vector3(-0.1f, FloorY + 1.82f, -0.1f), new Vector3(0.3f, 0.09f, 0.3f), "Suit");
-
-            // The clock, stopped at twenty to twelve as far as anyone will ever know, and the board.
-            var clock = Group("Wall Clock", office);
-            clock.localPosition = new Vector3(-1.5f, 2.6f, 5.47f);
-            Round("Clock Face", clock, Vector3.zero, 0.44f, 0.04f, "SignWhite").transform.localRotation = Quaternion.Euler(90f, 0, 0);
-            Round("Clock Rim", clock, new Vector3(0, 0, 0.005f), 0.48f, 0.03f, "HideBlack").transform.localRotation = Quaternion.Euler(90f, 0, 0);
-            Part("Hour Hand", clock, new Vector3(-0.06f, 0.07f, -0.03f), new Vector3(0.025f, 0.15f, 0.005f), "HideBlack").transform.localRotation = Quaternion.Euler(0, 0, 32f);
-            Part("Minute Hand", clock, new Vector3(-0.08f, 0.05f, -0.035f), new Vector3(0.015f, 0.2f, 0.005f), "HideBlack").transform.localRotation = Quaternion.Euler(0, 0, 60f);
-
+            // The board on the back wall, under its own light: the far pool, where the route ends.
             var board = Group("Evidence Board", office);
-            board.localPosition = new Vector3(2.6f, 1.85f, 5.47f);
+            board.localPosition = new Vector3(0f, 1.85f, 5.47f);
             var cork = Part("Cork", board, Vector3.zero, new Vector3(2.5f, 1.45f, 0.04f), "Hay");
             Part("Board Frame", board, new Vector3(0, 0.74f, 0), new Vector3(2.58f, 0.05f, 0.05f), "Wood");
             Part("Board Frame", board, new Vector3(0, -0.74f, 0), new Vector3(2.58f, 0.05f, 0.05f), "Wood");
@@ -468,7 +441,7 @@ namespace Semblance.EditorTools
                 sheet.transform.localRotation = Quaternion.Euler(0, 0, Lerp(rng, -9f, 9f));
                 Part("Pin", board, p + new Vector3(0, 0.12f, -0.006f), new Vector3(0.016f, 0.016f, 0.01f), i % 2 == 0 ? "BarnRed" : "Brass");
             }
-            var letter = Part("Pinned Letter", board, new Vector3(0.4f, 0.05f, -0.03f), new Vector3(0.22f, 0.3f, 0.004f), "Writing");
+            Part("Pinned Letter", board, new Vector3(0.4f, 0.05f, -0.03f), new Vector3(0.22f, 0.3f, 0.004f), "Writing");
             Part("Pin", board, new Vector3(0.4f, 0.19f, -0.036f), new Vector3(0.016f, 0.016f, 0.01f), "BarnRed");
             for (int i = 0; i < 4; i++)
             {
@@ -482,92 +455,219 @@ namespace Semblance.EditorTools
             Inspect(cork, "Look at the board",
                 "Three months of the county: a stolen truck, a barn fire, a man who walked into the river and didn't walk out. In the middle, pinned where the sheriff could see it from his door, the Semblance letter, with red thread run to everything and nothing.",
                 new Vector3(2.4f, 1.4f, 0.5f), clue: "tut_board");
+            Part("Picture Light", office, new Vector3(0f, 2.72f, 5.3f), new Vector3(1.2f, 0.06f, 0.14f), "Brass");
+            Part("Picture Light Bulb", office, new Vector3(0f, 2.68f, 5.32f), new Vector3(1.0f, 0.02f, 0.06f), "Bulb");
+            var boardLight = new GameObject("Board Light");
+            boardLight.transform.SetParent(office, false);
+            boardLight.transform.localPosition = new Vector3(0f, 2.55f, 5.0f);
+            var bl = boardLight.AddComponent<Light>();
+            bl.type = LightType.Point;
+            bl.color = new Color(1f, 0.85f, 0.6f);
+            bl.range = 4f;
+            bl.intensity = 1.8f;
+            bl.shadows = LightShadows.None;
 
-            // The sound of the place: rain at every window, the clock, the tubes.
-            foreach (float z in windows)
-                SoundEmitter(office, new Vector3(7.9f, 1.7f, z), "rain_loop", 0.22f, 7f);
-            SoundEmitter(office, new Vector3(-1.5f, 2.6f, 5.3f), "clock_tick_loop", 0.2f, 9f);
+            // The clock, stopped at twenty to twelve as far as anyone will ever know.
+            var clock = Group("Wall Clock", office);
+            clock.localPosition = new Vector3(-3.4f, 2.6f, 5.47f);
+            Round("Clock Face", clock, Vector3.zero, 0.44f, 0.04f, "SignWhite").transform.localRotation = Quaternion.Euler(90f, 0, 0);
+            Round("Clock Rim", clock, new Vector3(0, 0, 0.005f), 0.48f, 0.03f, "HideBlack").transform.localRotation = Quaternion.Euler(90f, 0, 0);
+            Part("Hour Hand", clock, new Vector3(-0.06f, 0.07f, -0.03f), new Vector3(0.025f, 0.15f, 0.005f), "HideBlack").transform.localRotation = Quaternion.Euler(0, 0, 32f);
+            Part("Minute Hand", clock, new Vector3(-0.08f, 0.05f, -0.035f), new Vector3(0.015f, 0.2f, 0.005f), "HideBlack").transform.localRotation = Quaternion.Euler(0, 0, 60f);
+            SoundEmitter(office, new Vector3(-3.4f, 2.6f, 5.3f), "clock_tick_loop", 0.2f, 9f);
+
             AddMarker(office, "the Investigations floor", 11f, 2);
             Zone(office, "Office Floor", new Vector3(0, 0, 0), new Vector3(16f, 1f, 11f), Audio.Surface.Wood, 1);
         }
 
-        /// <summary>Four cubicles in the middle of the floor: head-high fabric panels that cut the room in two.</summary>
+        /// <summary>
+        /// Six cubicles in two rows of three, back to back along a solid spine (x -3..3, z -2.2..2.2). Each one is
+        /// 2 m wide and 2.2 deep, walled on three sides, with a 1.1 m opening onto its corridor. Everything pinned
+        /// to a panel is placed on that panel's face.
+        /// </summary>
         private static void BuildCubicles(Transform office, Random rng)
         {
-            const float h = 1.55f;
-            void Panel(Vector3 center, Vector3 size)
+            const float h = 1.55f, t = 0.07f;
+            void Panel(string name, Vector3 center, float length, bool alongX)
             {
-                Box("Cubicle Panel", office, center + Vector3.up * (FloorY + h * 0.5f), new Vector3(size.x > size.z ? size.x : 0.07f, h, size.z > size.x ? size.z : 0.07f), "PlainSage");
-                Box("Panel Trim", office, center + Vector3.up * (FloorY + h + 0.02f), new Vector3(size.x > size.z ? size.x : 0.09f, 0.04f, size.z > size.x ? size.z : 0.09f), "Metal", collider: false);
-                Box("Panel Foot", office, center + Vector3.up * (FloorY + 0.03f), new Vector3(size.x > size.z ? size.x : 0.09f, 0.06f, size.z > size.x ? size.z : 0.09f), "Metal", collider: false);
+                var size = alongX ? new Vector3(length, h, t) : new Vector3(t, h, length);
+                Box(name, office, center + Vector3.up * (FloorY + h * 0.5f), size, "PlainSage");
+                Box("Panel Trim", office, center + Vector3.up * (FloorY + h + 0.02f), alongX ? new Vector3(length, 0.04f, t + 0.03f) : new Vector3(t + 0.03f, 0.04f, length), "HideBlack", collider: false);
+                Box("Panel Foot", office, center + Vector3.up * (FloorY + 0.03f), alongX ? new Vector3(length, 0.06f, t + 0.03f) : new Vector3(t + 0.03f, 0.06f, length), "HideBlack", collider: false);
             }
-            // Outer long walls and the two crosses; the short ends stay open so you can walk through.
-            Panel(new Vector3(-2.6f, 0, 0f), new Vector3(0, 0, 5.2f));
-            Panel(new Vector3(2.6f, 0, 0f), new Vector3(0, 0, 5.2f));
-            Panel(new Vector3(0f, 0, 0f), new Vector3(5.2f, 0, 0));
-            Panel(new Vector3(0f, 0, 0.9f), new Vector3(0, 0, 3.4f));
-            Panel(new Vector3(0f, 0, -1.9f), new Vector3(0, 0, 1.4f));
-            foreach (var (x, z, yaw) in new[] { (-1.3f, 1.4f, 0f), (1.3f, 1.4f, 0f), (-1.3f, -1.4f, 180f), (1.3f, -1.4f, 180f) })
+            Panel("Spine", new Vector3(0, 0, 0), 6f + t, true);
+            foreach (float x in new[] { -3f, -1f, 1f, 3f })
             {
-                OfficeDesk(office, new Vector3(x, 0, z), yaw, rng, working: false);
-                // Something of whoever sits here: a tray, a mug, a photo, a calendar on the panel.
-                var tray = Part("In Tray", office, new Vector3(x + 0.6f, FloorY + 0.8f, z + (yaw == 0 ? 0.25f : -0.25f)), new Vector3(0.3f, 0.06f, 0.24f), "HideBlack");
-                Part("Tray Papers", office, new Vector3(x + 0.6f, FloorY + 0.84f, z + (yaw == 0 ? 0.25f : -0.25f)), new Vector3(0.26f, 0.03f, 0.2f), "Paper");
-                Round("Mug", office, new Vector3(x - 0.55f, FloorY + 0.8f, z + (yaw == 0 ? -0.2f : 0.2f)), 0.08f, 0.09f, rng.NextDouble() < 0.5 ? "SignWhite" : "Mustard");
-                float wallZ = yaw == 0 ? 2.55f : -2.55f;
-                Part("Calendar", office, new Vector3(x + Lerp(rng, -0.6f, 0.6f), FloorY + 1.25f, wallZ * 0.995f), new Vector3(0.22f, 0.3f, 0.01f), "Writing");
-                Part("Pinned Photo", office, new Vector3(x + Lerp(rng, -0.6f, 0.6f), FloorY + 1.0f, wallZ * 0.995f), new Vector3(0.14f, 0.1f, 0.01f), "Photo");
+                Panel("Side Panel", new Vector3(x, 0, 1.1f), 2.2f, false);
+                Panel("Side Panel", new Vector3(x, 0, -1.1f), 2.2f, false);
             }
-            Part("Wastebasket", office, new Vector3(-2.3f, FloorY + 0.15f, 2.2f), new Vector3(0.26f, 0.3f, 0.26f), "Galvanized");
-            Part("Wastebasket", office, new Vector3(2.3f, FloorY + 0.15f, -2.2f), new Vector3(0.26f, 0.3f, 0.26f), "Galvanized");
+            int index = 0;
+            foreach (float row in new[] { 1f, -1f })          // north row opens north, south row opens south
+                foreach (float cx in new[] { -2f, 0f, 2f })   // cubicle centres
+                {
+                    float front = row * 2.2f;
+                    // Front panel on the left 0.9 m, the opening on the right (mirrored for the south row so openings alternate).
+                    float panelX = row > 0 ? cx - 1f + 0.45f : cx + 1f - 0.45f;
+                    Panel("Front Panel", new Vector3(panelX, 0, front), 0.9f, true);
+                    // Desk against the spine, chair facing it.
+                    var desk = OfficeDesk(office, new Vector3(cx, 0, row * 0.45f), row > 0 ? 0f : 180f, rng, working: index == 1);
+                    float backZ = row * (t * 0.5f + 0.006f);         // the spine's face
+                    float sideX = cx - 1f + t * 0.5f + 0.006f;       // the left panel's inner face
+                    CubicleStory(office, desk, index, cx, row, backZ, sideX, rng);
+                    index++;
+                }
+            Part("Wastebasket", office, new Vector3(-3.3f, FloorY + 0.15f, 2.5f), new Vector3(0.26f, 0.3f, 0.26f), "Galvanized");
+            Part("Wastebasket", office, new Vector3(3.3f, FloorY + 0.15f, -2.5f), new Vector3(0.26f, 0.3f, 0.26f), "Galvanized");
         }
 
-        /// <summary>The sheriff's office in the corner: a glazed partition, blinds down, his light off, the door locked.</summary>
+        /// <summary>What each cubicle says about whoever sits there.</summary>
+        private static void CubicleStory(Transform office, Transform desk, int index, float cx, float row, float backZ, float sideX, Random rng)
+        {
+            float top = FloorY + 0.76f;
+            // Something on the spine, something on the side panel: always on a face, never in the air.
+            Part("Calendar", office, new Vector3(cx + Lerp(rng, -0.5f, 0.5f), FloorY + 1.2f, backZ), new Vector3(0.22f, 0.3f, 0.008f), "Writing");
+            Part("Pinned Photo", office, new Vector3(sideX, FloorY + 1.1f, row * Lerp(rng, 0.5f, 1.4f)), new Vector3(0.008f, 0.1f, 0.14f), "Photo");
+            switch (index)
+            {
+                case 0: // A coat left over the chair, a cup gone cold: somebody meant to come back.
+                    Part("Coat", office, new Vector3(cx, FloorY + 0.75f, row * 1.3f), new Vector3(0.44f, 0.5f, 0.2f), "Suit");
+                    Round("Cold Cup", desk, new Vector3(-0.4f, top + 0.045f, -0.2f), 0.08f, 0.09f, "SignWhite");
+                    break;
+                case 1: // The typewriter mid-sentence; an ashtray that needed emptying yesterday.
+                    Round("Ashtray", desk, new Vector3(-0.5f, top + 0.015f, -0.25f), 0.12f, 0.03f, "Glass");
+                    for (int i = 0; i < 5; i++) Part("Butt", desk, new Vector3(-0.5f + Lerp(rng, -0.04f, 0.04f), top + 0.035f, -0.25f + Lerp(rng, -0.04f, 0.04f)), new Vector3(0.03f, 0.006f, 0.006f), "SignWhite").transform.localRotation = Quaternion.Euler(0, Lerp(rng, 0, 180f), 0);
+                    break;
+                case 2: // A child's drawing pinned up, and a lunchbox never opened.
+                    Part("Drawing", office, new Vector3(cx + 0.55f, FloorY + 1.0f, backZ), new Vector3(0.24f, 0.18f, 0.008f), "Paper");
+                    foreach (var (dx, dy, mat) in new[] { (-0.06f, 0f, "PlainBarnRed"), (0.02f, 0.02f, "PlainBlue"), (0.07f, -0.03f, "Mustard") })
+                        Part("Crayon", office, new Vector3(cx + 0.55f + dx, FloorY + 1.0f + dy, backZ - row * 0.005f), new Vector3(0.05f, 0.06f, 0.004f), mat);
+                    Part("Lunchbox", desk, new Vector3(0.45f, top + 0.08f, -0.2f), new Vector3(0.26f, 0.16f, 0.14f), "PlainBlue");
+                    Part("Lunchbox Latch", desk, new Vector3(0.45f, top + 0.08f, -0.275f), new Vector3(0.06f, 0.03f, 0.01f), "Brass");
+                    break;
+                case 3: // Cleared out: a carton packed on the desk, the nameplate face down.
+                    Part("Packed Carton", desk, new Vector3(0, top + 0.14f, 0), new Vector3(0.4f, 0.28f, 0.32f), "Paper");
+                    Part("Carton Flap", desk, new Vector3(0, top + 0.29f, 0.17f), new Vector3(0.4f, 0.01f, 0.1f), "Paper").transform.localRotation = Quaternion.Euler(-25f, 0, 0);
+                    Part("Nameplate", desk, new Vector3(-0.5f, top + 0.015f, -0.25f), new Vector3(0.28f, 0.03f, 0.06f), "Brass");
+                    break;
+                case 4: // Yesterday's paper, folded to the back page, and a transistor radio.
+                    Part("Newspaper", desk, new Vector3(-0.1f, top + 0.006f, -0.1f), new Vector3(0.42f, 0.012f, 0.3f), "Paper").transform.localRotation = Quaternion.Euler(0, -14f, 0);
+                    Part("Headline", desk, new Vector3(-0.1f, top + 0.014f, -0.1f), new Vector3(0.36f, 0.004f, 0.24f), "Writing").transform.localRotation = Quaternion.Euler(0, -14f, 0);
+                    Part("Transistor", desk, new Vector3(0.5f, top + 0.06f, -0.2f), new Vector3(0.18f, 0.12f, 0.06f), "HideBlack");
+                    Part("Aerial", desk, new Vector3(0.56f, top + 0.3f, -0.2f), new Vector3(0.006f, 0.4f, 0.006f), "Metal").transform.localRotation = Quaternion.Euler(0, 0, -20f);
+                    break;
+                default: // Files to the ceiling and half a sandwich on its wax paper.
+                    for (int i = 0; i < 3; i++) Part("File Stack", desk, new Vector3(0.45f, top + 0.05f + i * 0.1f, -0.1f + i * 0.02f), new Vector3(0.3f, 0.09f, 0.24f), i == 1 ? "Mustard" : "Paper").transform.localRotation = Quaternion.Euler(0, Lerp(rng, -6f, 6f), 0);
+                    Part("Wax Paper", desk, new Vector3(-0.45f, top + 0.004f, -0.25f), new Vector3(0.22f, 0.004f, 0.2f), "Cream");
+                    Part("Sandwich", desk, new Vector3(-0.42f, top + 0.03f, -0.25f), new Vector3(0.12f, 0.05f, 0.1f), "PlainCream");
+                    Part("Filling", desk, new Vector3(-0.42f, top + 0.03f, -0.25f), new Vector3(0.13f, 0.012f, 0.11f), "Mustard");
+                    break;
+            }
+        }
+
+        /// <summary>The front desk along the south wall, the sergeant behind it, the lobby door at her elbow.</summary>
+        private static void BuildFrontDesk(Transform office, Random rng)
+        {
+            var front = Piece("Front Desk", office, new Vector3(-2.75f, 0, -4.4f), 0f, new Vector3(3.6f, 1.05f, 0.8f), FloorY);
+            Part("Counter Front", front, new Vector3(0, FloorY + 0.5f, 0.38f), new Vector3(3.6f, 1.0f, 0.04f), "Door");
+            Part("Counter Top", front, new Vector3(0, FloorY + 1.0f, 0), new Vector3(3.7f, 0.05f, 0.9f), "Wood");
+            Part("Counter Shelf", front, new Vector3(0, FloorY + 0.5f, -0.1f), new Vector3(3.4f, 0.04f, 0.5f), "Wood");
+            Part("Counter Edge", front, new Vector3(0, FloorY + 0.975f, 0.44f), new Vector3(3.7f, 0.05f, 0.03f), "Brass");
+            Part("Telephone", front, new Vector3(-1.0f, FloorY + 1.08f, -0.1f), new Vector3(0.22f, 0.11f, 0.18f), "HideBlack");
+            Part("Handset", front, new Vector3(-1.0f, FloorY + 1.16f, -0.1f), new Vector3(0.24f, 0.04f, 0.06f), "HideBlack");
+            Part("Telephone", front, new Vector3(-0.55f, FloorY + 1.08f, -0.15f), new Vector3(0.22f, 0.11f, 0.18f), "HideBlack");
+            Part("Handset", front, new Vector3(-0.55f, FloorY + 1.16f, -0.15f), new Vector3(0.24f, 0.04f, 0.06f), "HideBlack");
+            Part("Log Book", front, new Vector3(0.4f, FloorY + 1.04f, -0.05f), new Vector3(0.34f, 0.03f, 0.26f), "Leather");
+            Part("Log Page", front, new Vector3(0.4f, FloorY + 1.058f, -0.05f), new Vector3(0.3f, 0.004f, 0.22f), "Writing");
+            Part("Nameplate", front, new Vector3(1.2f, FloorY + 1.06f, 0.25f), new Vector3(0.28f, 0.06f, 0.03f), "Brass");
+            Part("Bell", front, new Vector3(-1.5f, FloorY + 1.06f, 0.25f), new Vector3(0.09f, 0.06f, 0.09f), "Chrome");
+            var radio = Part("Radio", front, new Vector3(1.4f, FloorY + 1.1f, -0.2f), new Vector3(0.32f, 0.17f, 0.14f), "Wood");
+            Part("Dial", front, new Vector3(1.4f, FloorY + 1.1f, -0.125f), new Vector3(0.2f, 0.08f, 0.005f), "SignWhite");
+            SoundEmitter(front, new Vector3(1.4f, FloorY + 1.1f, -0.2f), "static_loop", 0.035f, 5f);
+            Inspect(radio.gameObject, "Listen to the radio", "County dispatch, turned down to a murmur. A deputy somewhere asking for a tow. Rain reported on every road north.", new Vector3(0.4f, 0.3f, 0.3f));
+            DeskLamp(office, new Vector3(-4.2f, FloorY + 1.03f, -4.5f), "Sage", new Color(0.8f, 1f, 0.75f), 1.8f);
+            Chair(office, new Vector3(-2.3f, 0, -5.05f), 0f, "Leather");
+            // The duty roster beside her, where she'd see the swap if it were on it.
+            var roster = Group("Duty Roster", office);
+            roster.localPosition = new Vector3(-5.0f, 1.9f, -5.465f);
+            Part("Roster Board", roster, Vector3.zero, new Vector3(0.9f, 0.7f, 0.03f), "Hay");
+            Part("Roster Sheet", roster, new Vector3(0, 0.05f, -0.02f), new Vector3(0.5f, 0.5f, 0.004f), "Writing");
+            Part("Notice", roster, new Vector3(0.32f, 0.15f, -0.02f), new Vector3(0.16f, 0.22f, 0.004f), "Paper");
+            Part("Notice", roster, new Vector3(-0.33f, -0.15f, -0.02f), new Vector3(0.16f, 0.2f, 0.004f), "Paper");
+            Inspect(roster.GetChild(0).gameObject, "Read the roster",
+                "DUTY ROSTER, WEEK OF OCT 10. Nights: REYES. Custodial: T. BAPTISTE, M-W-F. Thursday is blank. Somebody has pencilled a question mark in it and rubbed most of it out again.",
+                new Vector3(1f, 0.8f, 0.5f), clue: "tut_roster");
+            // The waiting chairs and the wanted sheets over them, the coffee at the far end.
+            foreach (var x in new[] { 0.3f, 1.0f, 1.7f })
+                Chair(office, new Vector3(x, 0, -5.15f), 0f, "Vinyl");
+            foreach (var (x, y) in new[] { (0.0f, 2.05f), (0.45f, 1.75f), (0.95f, 2.05f), (1.45f, 1.75f), (1.95f, 2.0f) })
+            {
+                Part("Wanted Sheet", office, new Vector3(x, y, -5.465f), new Vector3(0.24f, 0.32f, 0.006f), "Paper").transform.localRotation = Quaternion.Euler(0, 0, Lerp(rng, -5f, 5f));
+                Part("Wanted Face", office, new Vector3(x, y + 0.04f, -5.455f), new Vector3(0.12f, 0.14f, 0.004f), "Photo");
+                Part("Wanted Text", office, new Vector3(x, y - 0.1f, -5.455f), new Vector3(0.2f, 0.08f, 0.004f), "Writing");
+            }
+            var coffee = Table("Coffee Table", office, new Vector3(3.3f, 0, -4.95f), 0f, 1.1f, 0.5f, "Wood", 0.8f);
+            Round("Percolator", coffee, new Vector3(-0.25f, FloorY + 0.95f, 0), 0.2f, 0.3f, "Chrome");
+            Round("Percolator Lid", coffee, new Vector3(-0.25f, FloorY + 1.11f, 0), 0.08f, 0.04f, "HideBlack");
+            foreach (var x in new[] { 0.15f, 0.35f })
+                Round("Cup", coffee, new Vector3(x, FloorY + 0.84f, 0.05f), 0.08f, 0.08f, "SignWhite");
+            Part("Sugar Tin", coffee, new Vector3(0.25f, FloorY + 0.87f, -0.15f), new Vector3(0.1f, 0.14f, 0.1f), "Mustard");
+            Part("Coffee Notice", office, new Vector3(3.3f, 1.6f, -5.465f), new Vector3(0.2f, 0.14f, 0.006f), "Writing");
+            // A runner down the south corridor: a line on the floor that goes where you're going.
+            Part("Runner", office, new Vector3(0f, FloorY + 0.006f, -3.3f), new Vector3(10f, 0.012f, 1.1f), "Rug");
+        }
+
+        /// <summary>The sheriff's office in the south-east corner: a glazed partition, blinds down, his light off, the door locked. No gaps.</summary>
         private static void BuildSheriffsOffice(Transform office, Random rng)
         {
-            const float h = 3.3f;
-            // Partition: solid to waist height, glass above, framed in wood.
-            void Glazed(Vector3 a, Vector3 b)
+            const float h = 3.3f, t = 0.12f;
+            // A partition segment: wood to 1.1, glass to 2.3, plaster to the ceiling, the glass the exact length of the segment.
+            void Segment(Vector3 a, Vector3 b, bool blindsSideNegX)
             {
+                bool alongX = Mathf.Abs(b.x - a.x) > Mathf.Abs(b.z - a.z);
+                float length = alongX ? Mathf.Abs(b.x - a.x) : Mathf.Abs(b.z - a.z);
                 var c = (a + b) * 0.5f;
-                var size = new Vector3(Mathf.Max(Mathf.Abs(b.x - a.x), 0.12f), 0, Mathf.Max(Mathf.Abs(b.z - a.z), 0.12f));
-                Box("Partition Low", office, new Vector3(c.x, 0.6f, c.z), new Vector3(size.x, 1.2f, size.z), "Wood");
-                Box("Partition Glass", office, new Vector3(c.x, 1.8f, c.z), new Vector3(size.x * 0.9f + 0.02f, 1.2f, size.z * 0.9f + 0.02f), "Glass");
-                Box("Partition High", office, new Vector3(c.x, 2.85f, c.z), new Vector3(size.x, h - 2.4f, size.z), "StoreWall");
-                Box("Partition Rail", office, new Vector3(c.x, 1.2f, c.z), new Vector3(size.x + 0.02f, 0.06f, size.z + 0.02f), "Wood", collider: false);
-                Box("Partition Rail", office, new Vector3(c.x, 2.4f, c.z), new Vector3(size.x + 0.02f, 0.06f, size.z + 0.02f), "Wood", collider: false);
-                // Blinds, drawn, on the inside.
-                Box("Blind", office, new Vector3(c.x + (size.x > size.z ? 0 : 0.08f), 1.8f, c.z + (size.x > size.z ? -0.08f : 0)), new Vector3(size.x > size.z ? size.x * 0.9f : 0.02f, 1.16f, size.z > size.x ? size.z * 0.9f : 0.02f), "PlainCream", collider: false);
+                Vector3 S(float len, float thick) => alongX ? new Vector3(len, 1f, thick) : new Vector3(thick, 1f, len);
+                Box("Partition Low", office, new Vector3(c.x, 0.55f, c.z), Vector3.Scale(S(length, t), new Vector3(1, 1.1f, 1)), "Wood");
+                Box("Partition Glass", office, new Vector3(c.x, 1.7f, c.z), Vector3.Scale(S(length, t * 0.4f), new Vector3(1, 1.2f, 1)), "Glass");
+                Box("Partition High", office, new Vector3(c.x, 2.8f, c.z), Vector3.Scale(S(length, t), new Vector3(1, h - 2.3f, 1)), "StoreWall");
+                foreach (var y in new[] { 1.1f, 2.3f })
+                    Box("Partition Rail", office, new Vector3(c.x, y, c.z), Vector3.Scale(S(length + 0.02f, t + 0.02f), new Vector3(1, 0.06f, 1)), "Wood", collider: false);
+                // Blinds inside, drawn, the full length.
+                var off = alongX ? new Vector3(0, 0, blindsSideNegX ? -0.08f : 0.08f) : new Vector3(blindsSideNegX ? -0.08f : 0.08f, 0, 0);
+                Box("Blind", office, new Vector3(c.x, 1.7f, c.z) + off, Vector3.Scale(S(length - 0.02f, 0.02f), new Vector3(1, 1.16f, 1)), "PlainCream", collider: false);
             }
-            Glazed(new Vector3(4.2f, 0, -5.5f), new Vector3(4.2f, 0, -3.4f));
-            Glazed(new Vector3(4.2f, 0, -2.5f), new Vector3(4.2f, 0, -2.2f));
-            Glazed(new Vector3(4.2f, 0, -2.2f), new Vector3(8.0f, 0, -2.2f));
-            Box("Partition Lintel", office, new Vector3(4.2f, 2.7f, -2.95f), new Vector3(0.12f, 1.2f, 0.9f), "StoreWall");
-            TutorialDoor(office, "Sheriff's Door", new Vector3(4.2f, 0.1f, -3.4f), -90f, true, "The sheriff's office. Locked, and his light's off. He went home at six like a man with a home.");
-            Part("Door Plate", office, new Vector3(4.12f, 1.7f, -2.95f), new Vector3(0.01f, 0.1f, 0.3f), "Brass");
-            // Inside: the big desk, the flag, the cabinet, the hat on the stand.
-            var desk = Table("Sheriff's Desk", office, new Vector3(6.4f, 0, -4.2f), 0f, 2.0f, 0.9f, "Wood", 0.78f);
+            // West wall of the office with the door in it; north wall full length.
+            Segment(new Vector3(4.4f, 0, -5.5f), new Vector3(4.4f, 0, -3.4f), false);
+            Box("Door Post", office, new Vector3(4.4f, 1.65f, -2.45f), new Vector3(t, h, 0.1f), "StoreWall");
+            Box("Door Lintel", office, new Vector3(4.4f, 2.72f, -2.95f), new Vector3(t, h - 2.14f, 1.0f), "StoreWall");
+            Segment(new Vector3(4.4f, 0, -2.4f), new Vector3(8.0f, 0, -2.4f), false);
+            Box("Corner Post", office, new Vector3(4.4f, 1.65f, -2.4f), new Vector3(t + 0.02f, h, t + 0.02f), "Wood");
+            TutorialDoor(office, "Sheriff's Door", new Vector3(4.4f, 0.1f, -3.4f), -90f, true, "The sheriff's office. Locked, and his light's off. He went home at six like a man with a home.");
+            Part("Door Plate", office, new Vector3(4.355f, 1.7f, -2.95f), new Vector3(0.006f, 0.08f, 0.26f), "Brass");
+            // Inside: the big desk, the flag, the cabinet, the hat on the stand, his tube off.
+            var desk = Table("Sheriff's Desk", office, new Vector3(6.4f, 0, -4.3f), 0f, 2.0f, 0.9f, "Wood", 0.78f);
             Part("Modesty Panel", desk, new Vector3(0, FloorY + 0.4f, 0.4f), new Vector3(1.9f, 0.74f, 0.03f), "Wood");
             Part("Blotter", desk, new Vector3(0, FloorY + 0.786f, 0), new Vector3(0.7f, 0.012f, 0.5f), "Leather");
             Part("Telephone", desk, new Vector3(0.7f, FloorY + 0.84f, -0.2f), new Vector3(0.22f, 0.11f, 0.18f), "HideBlack");
             Part("Handset", desk, new Vector3(0.7f, FloorY + 0.92f, -0.2f), new Vector3(0.24f, 0.04f, 0.06f), "HideBlack");
-            DeskLamp(office, new Vector3(5.7f, FloorY + 0.78f, -4.5f), "Sage", new Color(0.8f, 1f, 0.75f), 0f);
-            Chair(office, new Vector3(6.4f, 0, -4.95f), 0f, "Leather");
+            DeskLamp(office, new Vector3(5.7f, FloorY + 0.78f, -4.6f), "Sage", new Color(0.8f, 1f, 0.75f), 0f);
+            Chair(office, new Vector3(6.4f, 0, -5.05f), 0f, "Leather");
+            Fluorescent(office, new Vector3(6.2f, 2.9f, -3.9f), 3.2f, false, lit: false);
             var flag = Group("Flag", office);
             flag.localPosition = new Vector3(7.6f, 0, -5.1f);
             Round("Flag Pole", flag, new Vector3(0, FloorY + 1.1f, 0), 0.04f, 2.2f, "Brass");
             Round("Flag Base", flag, new Vector3(0, FloorY + 0.02f, 0), 0.36f, 0.04f, "Brass");
             Part("Flag Cloth", flag, new Vector3(0.12f, FloorY + 1.6f, 0), new Vector3(0.24f, 1.0f, 0.05f), "PlainBlue");
             Part("Flag Stripe", flag, new Vector3(0.12f, FloorY + 1.35f, 0.028f), new Vector3(0.24f, 0.4f, 0.006f), "PlainBarnRed");
-            var cab = Piece("Filing Cabinet", office, new Vector3(7.6f, 0, -2.6f), 0f, new Vector3(0.5f, 1.32f, 0.62f), FloorY);
+            var cab = Piece("Filing Cabinet", office, new Vector3(7.6f, 0, -2.8f), 0f, new Vector3(0.5f, 1.32f, 0.62f), FloorY);
             Part("Body", cab, new Vector3(0, FloorY + 0.66f, 0), new Vector3(0.5f, 1.32f, 0.62f), "Galvanized");
-            Part("Hat Stand", office, new Vector3(4.7f, FloorY + 0.9f, -5.1f), new Vector3(0.04f, 1.8f, 0.04f), "Wood");
-            Part("Hat", office, new Vector3(4.7f, FloorY + 1.84f, -5.1f), new Vector3(0.34f, 0.1f, 0.34f), "Suit");
-            Part("Hat Crown", office, new Vector3(4.7f, FloorY + 1.95f, -5.1f), new Vector3(0.18f, 0.14f, 0.18f), "Suit");
+            Part("Hat Stand", office, new Vector3(4.9f, FloorY + 0.9f, -5.1f), new Vector3(0.04f, 1.8f, 0.04f), "Wood");
+            Part("Hat", office, new Vector3(4.9f, FloorY + 1.84f, -5.1f), new Vector3(0.34f, 0.1f, 0.34f), "Suit");
+            Part("Hat Crown", office, new Vector3(4.9f, FloorY + 1.95f, -5.1f), new Vector3(0.18f, 0.14f, 0.18f), "Suit");
             Picture(office, new Vector3(6.4f, 2.0f, -5.47f), 0f, new Vector2(0.5f, 0.38f));
         }
 
-        /// <summary>The armory: a cage in the corner, rifles racked behind the mesh, the gate padlocked.</summary>
+        /// <summary>The armory: a cage in the north-east corner, rifles racked behind the mesh, the gate padlocked.</summary>
         private static void BuildArmory(Transform office, Random rng)
         {
             const float h = 2.4f;
@@ -577,7 +677,6 @@ namespace Semblance.EditorTools
                 bool alongX = Mathf.Abs(b.x - a.x) > Mathf.Abs(b.z - a.z);
                 float length = alongX ? b.x - a.x : b.z - a.z;
                 var c = (a + b) * 0.5f;
-                // Posts, top and bottom rails, then the wire: thin verticals every ten centimetres, horizontals every thirty.
                 foreach (var e in new[] { a, b })
                     Box("Cage Post", office, new Vector3(e.x, FloorY + h * 0.5f, e.z), new Vector3(0.06f, h, 0.06f), "Metal");
                 Box("Cage Rail", office, new Vector3(c.x, FloorY + h, c.z), new Vector3(alongX ? length : 0.05f, 0.05f, alongX ? 0.05f : length), "Metal", collider: false);
@@ -598,48 +697,41 @@ namespace Semblance.EditorTools
                     else
                         Box("Wire", office, new Vector3(c.x, FloorY + y, c.z), new Vector3(alongX ? length : 0.012f, 0.012f, alongX ? 0.012f : length), "Galvanized", collider: false);
                 }
-                // An invisible wall so the wire holds you back without needing a hundred colliders.
-                var block = new GameObject("Cage Collider");
-                block.transform.SetParent(office, false);
-                block.transform.localPosition = new Vector3(c.x, FloorY + h * 0.5f, c.z);
-                var col = block.AddComponent<BoxCollider>();
-                col.size = new Vector3(alongX ? length : 0.06f, h, alongX ? 0.06f : length);
-                if (gapTo > gapFrom)
+                // One invisible slab per run holds you back, so the wire doesn't need a hundred colliders.
+                void Slab(float from, float to)
                 {
-                    // Split around the gate.
-                    col.size = new Vector3(alongX ? gapFrom : 0.06f, h, alongX ? 0.06f : gapFrom);
-                    block.transform.localPosition = alongX ? new Vector3(a.x + gapFrom * 0.5f, FloorY + h * 0.5f, a.z) : new Vector3(a.x, FloorY + h * 0.5f, a.z + gapFrom * 0.5f);
-                    var block2 = new GameObject("Cage Collider");
-                    block2.transform.SetParent(office, false);
-                    block2.transform.localPosition = alongX ? new Vector3(a.x + (gapTo + length) * 0.5f, FloorY + h * 0.5f, a.z) : new Vector3(a.x, FloorY + h * 0.5f, a.z + (gapTo + length) * 0.5f);
-                    block2.AddComponent<BoxCollider>().size = new Vector3(alongX ? length - gapTo : 0.06f, h, alongX ? 0.06f : length - gapTo);
+                    var block = new GameObject("Cage Collider");
+                    block.transform.SetParent(office, false);
+                    var mid = a + (alongX ? new Vector3((from + to) * 0.5f, 0, 0) : new Vector3(0, 0, (from + to) * 0.5f));
+                    block.transform.localPosition = new Vector3(mid.x, FloorY + h * 0.5f, mid.z);
+                    block.AddComponent<BoxCollider>().size = new Vector3(alongX ? to - from : 0.06f, h, alongX ? 0.06f : to - from);
                 }
+                if (gapTo > gapFrom) { Slab(0f, gapFrom); Slab(gapTo, length); }
+                else Slab(0f, length);
             }
             Mesh(new Vector3(x0, 0, z0), new Vector3(x1, 0, z0), 0.3f, 1.2f); // front, with the gate
             Mesh(new Vector3(x0, 0, z0), new Vector3(x0, 0, z1));
-            // The gate: a mesh door on a hinge, padlocked.
             var hinge = Group("Armory Gate Hinge", office);
             hinge.localPosition = new Vector3(x0 + 1.2f, FloorY, z0);
             hinge.localRotation = Quaternion.Euler(0, 180f, 0);
             var gate = Box("Armory Gate", hinge, new Vector3(0.45f, h * 0.5f, 0), new Vector3(0.9f, h, 0.04f), "Galvanized");
             gate.GetComponent<Renderer>().enabled = false;
-            Box("Gate Frame", hinge, new Vector3(0.45f, h * 0.5f, 0), new Vector3(0.9f, 0.05f, 0.05f), "Metal", collider: false);
-            Box("Gate Frame", hinge, new Vector3(0.45f, h - 0.03f, 0), new Vector3(0.9f, 0.05f, 0.05f), "Metal", collider: false);
-            Box("Gate Frame", hinge, new Vector3(0.45f, 0.03f, 0), new Vector3(0.9f, 0.05f, 0.05f), "Metal", collider: false);
-            for (float d = 0.08f; d < 0.9f; d += 0.1f)
+            foreach (var y in new[] { 0.03f, h * 0.5f, h - 0.03f })
+                Box("Gate Frame", hinge, new Vector3(0.45f, y, 0), new Vector3(0.9f, 0.05f, 0.05f), "Metal", collider: false);
+            foreach (var x in new[] { 0.025f, 0.875f })
+                Box("Gate Frame", hinge, new Vector3(x, h * 0.5f, 0), new Vector3(0.05f, h, 0.05f), "Metal", collider: false);
+            for (float d = 0.12f; d < 0.86f; d += 0.1f)
                 Box("Wire", hinge, new Vector3(d, h * 0.5f, 0), new Vector3(0.012f, h, 0.012f), "Galvanized", collider: false);
             for (float y = 0.3f; y < h; y += 0.3f)
-                Box("Wire", hinge, new Vector3(0.45f, y, 0), new Vector3(0.9f, 0.012f, 0.012f), "Galvanized", collider: false);
+                Box("Wire", hinge, new Vector3(0.45f, y, 0), new Vector3(0.86f, 0.012f, 0.012f), "Galvanized", collider: false);
             Box("Padlock", hinge, new Vector3(0.84f, 1.05f, 0.03f), new Vector3(0.06f, 0.08f, 0.03f), "Brass", collider: false);
             Box("Chain", hinge, new Vector3(0.88f, 1.05f, 0), new Vector3(0.12f, 0.025f, 0.025f), "Metal", collider: false);
             var door = gate.AddComponent<World.Door>();
             SetField(door, "hinge", hinge);
             SetField(door, "locked", true);
-            SetField(door, "lockedMessage", "The armory. Chained and padlocked; the sheriff keeps the key on him. Five rifles, two shotguns, a box of flares. None of it any use against what's in the archive.");
-            // The sign over the gate.
+            SetField(door, "lockedMessage", "The armory. Chained and padlocked; the sheriff keeps the key on him. Five rifles, two shotguns, a box of flares. None of it any use for what's wrong tonight.");
             Part("Armory Sign", office, new Vector3(x0 + 0.75f, FloorY + h + 0.22f, z0 - 0.02f), new Vector3(0.9f, 0.22f, 0.03f), "SignWhite");
             Part("Sign Stripe", office, new Vector3(x0 + 0.75f, FloorY + h + 0.22f, z0 - 0.04f), new Vector3(0.9f, 0.04f, 0.005f), "PlainBarnRed");
-            // Racks inside: rifles standing in a row, shotguns, crates of ammunition, a vest on a hook.
             var rack = Piece("Gun Rack", office, new Vector3(6.6f, 0, 5.2f), 0f, new Vector3(2.4f, 1.9f, 0.4f), FloorY);
             Part("Rack Back", rack, new Vector3(0, FloorY + 0.95f, 0.15f), new Vector3(2.4f, 1.9f, 0.04f), "Wood");
             Part("Rack Shelf", rack, new Vector3(0, FloorY + 0.25f, 0), new Vector3(2.4f, 0.04f, 0.36f), "Wood");
@@ -653,10 +745,10 @@ namespace Semblance.EditorTools
                 Part("Receiver", rack, new Vector3(x, FloorY + 0.88f, 0), new Vector3(0.05f, 0.14f, 0.07f), "Metal");
                 Part("Rack Clip", rack, new Vector3(x, FloorY + 1.3f, -0.05f), new Vector3(0.08f, 0.03f, 0.08f), "Brass");
             }
-            foreach (var (x, z, mat) in new[] { (5.7f, 3.4f, "Mustard"), (5.7f, 3.9f, "Mustard"), (6.3f, 3.5f, "Sage"), (5.7f, 3.65f, "Mustard") })
+            foreach (var (x, z, y, mat) in new[] { (5.7f, 3.4f, 0f, "Mustard"), (5.7f, 3.9f, 0f, "Mustard"), (6.3f, 3.5f, 0f, "Sage"), (5.7f, 3.65f, 0.3f, "Mustard") })
             {
-                var crate = Part("Ammo Crate", office, new Vector3(x, FloorY + 0.14f + (z == 3.65f ? 0.3f : 0f), z), new Vector3(0.42f, 0.28f, 0.3f), mat);
-                Part("Crate Label", office, new Vector3(x, FloorY + 0.16f + (z == 3.65f ? 0.3f : 0f), z - 0.152f), new Vector3(0.2f, 0.08f, 0.004f), "Writing");
+                Part("Ammo Crate", office, new Vector3(x, FloorY + 0.14f + y, z), new Vector3(0.42f, 0.28f, 0.3f), mat);
+                Part("Crate Label", office, new Vector3(x, FloorY + 0.16f + y, z - 0.152f), new Vector3(0.2f, 0.08f, 0.004f), "Writing");
             }
             Part("Vest", office, new Vector3(7.8f, FloorY + 1.3f, 4.2f), new Vector3(0.06f, 0.6f, 0.5f), "Suit");
             Part("Vest Hook", office, new Vector3(7.9f, FloorY + 1.65f, 4.2f), new Vector3(0.08f, 0.04f, 0.04f), "Brass");
@@ -664,18 +756,16 @@ namespace Semblance.EditorTools
             CagedBulb(office, new Vector3(6.6f, 2.9f, 4.1f), 4.5f, 0.9f);
         }
 
-        /// <summary>The rest of a working floor: a water cooler, the county map, wanted sheets, a dispatch set, boxes, a plant, an extinguisher.</summary>
+        /// <summary>The west passage and the north corridor: cooler, map, dispatch, cabinets, typing table, plant, extinguisher.</summary>
         private static void BuildOfficeClutter(Transform office, Random rng)
         {
-            // Water cooler by the stairwell door.
             var cooler = Group("Water Cooler", office);
-            cooler.localPosition = new Vector3(-7.5f, 0, 1.2f);
+            cooler.localPosition = new Vector3(-7.5f, 0, 1.3f);
             Part("Cabinet", cooler, new Vector3(0, FloorY + 0.5f, 0), new Vector3(0.36f, 1.0f, 0.36f), "PlainCream");
             Round("Bottle", cooler, new Vector3(0, FloorY + 1.26f, 0), 0.3f, 0.52f, "Glass");
-            Part("Tap", cooler, new Vector3(0, FloorY + 0.85f, -0.2f), new Vector3(0.04f, 0.06f, 0.06f), "PlainBlue");
-            Part("Cup Sleeve", cooler, new Vector3(0.22f, FloorY + 0.95f, -0.05f), new Vector3(0.07f, 0.28f, 0.07f), "SignWhite");
+            Part("Tap", cooler, new Vector3(0.2f, FloorY + 0.85f, 0), new Vector3(0.06f, 0.06f, 0.04f), "PlainBlue");
+            Part("Cup Sleeve", cooler, new Vector3(0.05f, FloorY + 0.95f, -0.22f), new Vector3(0.07f, 0.28f, 0.07f), "SignWhite");
             Inspect(cooler.GetChild(0).gameObject, "Look at the cooler", "The bottle's a third full. Somebody has written DO NOT DRINK on a strip of tape, and somebody else has written WHY NOT under it.", new Vector3(0.5f, 1.2f, 0.5f));
-            // The county map on the west wall, with pins in it, and the wanted sheets beside the lobby door.
             var map = Group("County Map", office);
             map.localPosition = new Vector3(-7.96f, 1.9f, -1.4f);
             map.localRotation = Quaternion.Euler(0, 90f, 0);
@@ -686,14 +776,8 @@ namespace Semblance.EditorTools
                 Part("Map Pin", map, new Vector3(Lerp(rng, -0.75f, 0.75f), Lerp(rng, -0.5f, 0.5f), -0.01f), new Vector3(0.02f, 0.02f, 0.015f), i == 4 ? "PlainBarnRed" : "Brass");
             Part("Map Road", map, new Vector3(0.1f, 0.05f, -0.006f), new Vector3(0.02f, 1.1f, 0.002f), "Rust").transform.localRotation = Quaternion.Euler(0, 0, 12f);
             Inspect(map.GetChild(0).gameObject, "Look at the map", "Barlow County. Pins in every town but one. Somebody has drawn a circle round Semblance in pencil, two hours north, and written the mileage beside it: 94.", new Vector3(1.8f, 1.3f, 0.5f), clue: "tut_map");
-            foreach (var (x, y) in new[] { (-3.6f, 2.1f), (-3.3f, 1.75f), (-2.95f, 2.05f), (-2.6f, 1.7f) })
-            {
-                Part("Wanted Sheet", office, new Vector3(x, y, -5.465f), new Vector3(0.24f, 0.32f, 0.006f), "Paper").transform.localRotation = Quaternion.Euler(0, 0, Lerp(rng, -5f, 5f));
-                Part("Wanted Face", office, new Vector3(x, y + 0.04f, -5.455f), new Vector3(0.12f, 0.14f, 0.004f), "Photo");
-                Part("Wanted Text", office, new Vector3(x, y - 0.1f, -5.455f), new Vector3(0.2f, 0.08f, 0.004f), "Writing");
-            }
-            // Dispatch: a radio set on its own stand, a microphone, a speaker, a log.
-            var dispatch = Table("Dispatch", office, new Vector3(-6.6f, 0, -3.0f), 0f, 1.1f, 0.6f, "Wood", 0.8f);
+            // Dispatch against the west wall, facing into the room.
+            var dispatch = Table("Dispatch", office, new Vector3(-7.6f, 0, -3.1f), -90f, 1.1f, 0.6f, "Wood", 0.8f);
             Part("Transceiver", dispatch, new Vector3(0, FloorY + 0.97f, 0.05f), new Vector3(0.6f, 0.3f, 0.36f), "Metal");
             Part("Dial Panel", dispatch, new Vector3(0, FloorY + 0.97f, -0.135f), new Vector3(0.5f, 0.2f, 0.005f), "Galvanized");
             foreach (var x in new[] { -0.18f, -0.06f, 0.06f, 0.18f })
@@ -701,43 +785,81 @@ namespace Semblance.EditorTools
             Part("Meter", dispatch, new Vector3(0.1f, FloorY + 1.04f, -0.14f), new Vector3(0.14f, 0.06f, 0.004f), "Bulb");
             Part("Mic Stand", dispatch, new Vector3(-0.42f, FloorY + 0.9f, -0.1f), new Vector3(0.02f, 0.2f, 0.02f), "Metal");
             Part("Microphone", dispatch, new Vector3(-0.42f, FloorY + 1.02f, -0.1f), new Vector3(0.07f, 0.08f, 0.05f), "HideBlack");
-            Part("Speaker", office, new Vector3(-7.95f, 2.3f, -3.0f), new Vector3(0.1f, 0.3f, 0.4f), "Wood");
-            Part("Speaker Cloth", office, new Vector3(-7.9f, 2.3f, -3.0f), new Vector3(0.004f, 0.24f, 0.32f), "Fabric");
+            Part("Speaker", office, new Vector3(-7.95f, 2.3f, -3.1f), new Vector3(0.1f, 0.3f, 0.4f), "Wood");
+            Part("Speaker Cloth", office, new Vector3(-7.89f, 2.3f, -3.1f), new Vector3(0.004f, 0.24f, 0.32f), "Fabric");
             SoundEmitter(dispatch, new Vector3(0, 1f, 0), "static_loop", 0.05f, 6f);
-            Chair(office, new Vector3(-6.6f, 0, -2.3f), 180f, "Leather");
-            // File boxes by the stairwell door, a plant that's seen better years, the extinguisher, a typing table.
-            foreach (var (x, z, y) in new[] { (-7.4f, 4.6f, 0.135f), (-7.4f, 4.6f, 0.405f), (-6.9f, 4.7f, 0.135f) })
-                Part("Carton", office, new Vector3(x, FloorY + y, z), new Vector3(0.38f, 0.27f, 0.3f), "Paper").transform.localRotation = Quaternion.Euler(0, Lerp(rng, -8f, 8f), 0);
+            Chair(office, new Vector3(-6.75f, 0, -3.1f), -90f, "Leather");
+            Part("Extinguisher Bracket", office, new Vector3(-7.95f, 1.1f, 0.2f), new Vector3(0.06f, 0.2f, 0.16f), "Metal");
+            Round("Extinguisher", office, new Vector3(-7.84f, 0.95f, 0.2f), 0.14f, 0.5f, "BarnRed");
+            Part("Extinguisher Hose", office, new Vector3(-7.78f, 1.1f, 0.12f), new Vector3(0.03f, 0.2f, 0.03f), "HideBlack");
+            // The coat rack by the lobby door, with the one coat nobody came back for.
+            var rack = Group("Coat Rack", office);
+            rack.localPosition = new Vector3(-7.4f, 0, -4.9f);
+            Round("Pole", rack, new Vector3(0, FloorY + 0.9f, 0), 0.05f, 1.8f, "Wood");
+            Round("Foot", rack, new Vector3(0, FloorY + 0.02f, 0), 0.4f, 0.04f, "Wood");
+            foreach (var a in new[] { 0f, 90f, 180f, 270f })
+                Part("Hook", rack, Quaternion.Euler(0, a, 0) * new Vector3(0.1f, FloorY + 1.75f, 0), new Vector3(0.16f, 0.02f, 0.02f), "Brass").transform.localRotation = Quaternion.Euler(0, a, 0);
+            Part("Coat", rack, new Vector3(0.14f, FloorY + 1.25f, 0.02f), new Vector3(0.28f, 0.95f, 0.16f), "Suit");
+            Part("Umbrella", rack, new Vector3(-0.15f, FloorY + 0.45f, 0.1f), new Vector3(0.05f, 0.9f, 0.05f), "HideBlack").transform.localRotation = Quaternion.Euler(0, 0, 12f);
+            // North corridor: the cabinets, a plant that's seen better years, the typing table at the dead end.
+            for (int i = 0; i < 4; i++)
+            {
+                var cab = Piece("Filing Cabinet", office, new Vector3(-6.9f + i * 0.56f, 0, 5.15f), 0f, new Vector3(0.5f, 1.32f, 0.62f), FloorY);
+                Part("Body", cab, new Vector3(0, FloorY + 0.66f, 0), new Vector3(0.5f, 1.32f, 0.62f), "Galvanized");
+                for (int d = 0; d < 3; d++)
+                {
+                    Part("Drawer Line", cab, new Vector3(0, FloorY + 0.22f + d * 0.42f, -0.311f), new Vector3(0.46f, 0.01f, 0.004f), "Metal");
+                    Part("Drawer Pull", cab, new Vector3(0, FloorY + 0.4f + d * 0.42f, -0.325f), new Vector3(0.1f, 0.025f, 0.02f), "Metal");
+                    Part("Drawer Label", cab, new Vector3(0.14f, FloorY + 0.4f + d * 0.42f, -0.316f), new Vector3(0.08f, 0.04f, 0.004f), "Writing");
+                }
+            }
+            Part("Cabinet Top Clutter", office, new Vector3(-6.3f, FloorY + 1.4f, 5.15f), new Vector3(0.5f, 0.14f, 0.3f), "Paper");
             var plant = Group("Plant", office);
-            plant.localPosition = new Vector3(7.5f, 0, -1.6f);
+            plant.localPosition = new Vector3(-7.5f, 0, 5.0f);
             Round("Pot", plant, new Vector3(0, FloorY + 0.18f, 0), 0.36f, 0.36f, "Rust");
             Round("Trunk", plant, new Vector3(0, FloorY + 0.7f, 0), 0.05f, 0.7f, "Bark");
             foreach (var (dx, dz, yaw) in new[] { (0.15f, 0.05f, 20f), (-0.12f, 0.1f, 140f), (0.02f, -0.16f, 260f), (0.1f, -0.1f, 330f) })
-            {
-                var leaf = Part("Leaf", plant, new Vector3(dx, FloorY + 1.05f, dz), new Vector3(0.1f, 0.02f, 0.4f), "Sage");
-                leaf.transform.localRotation = Quaternion.Euler(-30f, yaw, 0);
-            }
-            Part("Extinguisher Bracket", office, new Vector3(-7.95f, 1.1f, -2.0f), new Vector3(0.06f, 0.2f, 0.16f), "Metal");
-            Round("Extinguisher", office, new Vector3(-7.84f, 0.95f, -2.0f), 0.14f, 0.5f, "BarnRed");
-            Part("Extinguisher Hose", office, new Vector3(-7.78f, 1.1f, -2.08f), new Vector3(0.03f, 0.2f, 0.03f), "HideBlack");
-            var typing = Table("Typing Table", office, new Vector3(2.0f, 0, 4.8f), 0f, 0.9f, 0.5f, "Wood", 0.7f);
+                Part("Leaf", plant, new Vector3(dx, FloorY + 1.05f, dz), new Vector3(0.1f, 0.02f, 0.4f), "Sage").transform.localRotation = Quaternion.Euler(-30f, yaw, 0);
+            var typing = Table("Typing Table", office, new Vector3(3.9f, 0, 4.9f), 0f, 0.9f, 0.5f, "Wood", 0.7f);
             Part("Typewriter", typing, new Vector3(0, FloorY + 0.78f, 0), new Vector3(0.4f, 0.16f, 0.34f), "Metal");
-            Part("Keys", typing, new Vector3(0, FloorY + 0.82f, -0.12f), new Vector3(0.34f, 0.03f, 0.12f), "Galvanized");
             Part("Dust Cover", typing, new Vector3(0, FloorY + 0.88f, 0), new Vector3(0.44f, 0.04f, 0.38f), "Fabric");
-            Chair(office, new Vector3(2.0f, 0, 4.2f), 0f, "Wood");
-            // A second bulletin board by the lobby door: notices, a duty roster with the swap not on it.
-            var roster = Group("Duty Roster", office);
-            roster.localPosition = new Vector3(-7.0f, 1.9f, -5.465f);
-            Part("Roster Board", roster, Vector3.zero, new Vector3(0.9f, 0.7f, 0.03f), "Hay");
-            Part("Roster Sheet", roster, new Vector3(0, 0.05f, -0.02f), new Vector3(0.5f, 0.5f, 0.004f), "Writing");
-            Part("Notice", roster, new Vector3(0.32f, 0.15f, -0.02f), new Vector3(0.16f, 0.22f, 0.004f), "Paper");
-            Part("Notice", roster, new Vector3(-0.33f, -0.15f, -0.02f), new Vector3(0.16f, 0.2f, 0.004f), "Paper");
-            Inspect(roster.GetChild(0).gameObject, "Read the roster",
-                "DUTY ROSTER, WEEK OF OCT 10. Nights: REYES. Custodial: T. BAPTISTE, M-W-F. Thursday is blank. Somebody has pencilled a question mark in it and rubbed most of it out again.",
-                new Vector3(1f, 0.8f, 0.5f), clue: "tut_roster");
+            Picture(office, new Vector3(-5.0f, 2.2f, 5.47f), 0f, new Vector2(0.6f, 0.45f));
+        }
+
+        /// <summary>
+        /// Tonight's block on the east end of the north corridor: a year of archive cartons stacked where somebody
+        /// meant to carry them down, and two chairs on top so nobody tries. It closes the loop into one route.
+        /// </summary>
+        private static void BuildBarricade(Transform office, Random rng)
+        {
+            float z = 2.45f;
+            var wall = new GameObject("Barricade Collider");
+            wall.transform.SetParent(office, false);
+            wall.transform.localPosition = new Vector3(4.1f, FloorY + 0.9f, z);
+            wall.AddComponent<BoxCollider>().size = new Vector3(2.2f, 1.8f, 0.7f);
+            int n = 0;
+            foreach (var x in new[] { 3.25f, 3.7f, 4.15f, 4.6f, 5.0f })
+            {
+                int height = x == 4.15f ? 4 : 3;
+                for (int i = 0; i < height; i++)
+                {
+                    var carton = Part("Archive Carton", office, new Vector3(x + Lerp(rng, -0.03f, 0.03f), FloorY + 0.135f + i * 0.275f, z + Lerp(rng, -0.04f, 0.04f)), new Vector3(0.4f, 0.27f, 0.32f), n++ % 3 == 1 ? "Cream" : "Paper");
+                    carton.transform.localRotation = Quaternion.Euler(0, Lerp(rng, -6f, 6f), 0);
+                    Part("Carton Label", office, new Vector3(x, FloorY + 0.17f + i * 0.275f, z - 0.165f), new Vector3(0.16f, 0.06f, 0.004f), "Writing");
+                }
+            }
+            // One chair up on the cartons, another tipped against the stack with its legs in the aisle.
+            Chair(office, new Vector3(3.7f, 0.82f, z), 90f, "Wood");
+            var tipped = Chair(office, new Vector3(5.0f, 0.2f, z - 0.55f), 0f, "Wood");
+            tipped.localRotation = Quaternion.Euler(-62f, 0, 0);
+            Part("Wet Floor Sign", office, new Vector3(3.6f, FloorY + 0.3f, 1.9f), new Vector3(0.3f, 0.6f, 0.04f), "Mustard").transform.localRotation = Quaternion.Euler(-12f, 0, 0);
+            Part("Wet Floor Text", office, new Vector3(3.6f, FloorY + 0.3f, 1.87f), new Vector3(0.22f, 0.3f, 0.004f), "Writing").transform.localRotation = Quaternion.Euler(-12f, 0, 0);
+            Inspect(wall, "Look at the boxes", "Archive cartons, a year of them, stacked across the corridor where somebody meant to carry them down to the basement. The chairs on top say nobody meant it very hard. You'd have to go round.", null);
         }
 
         // ------------------------------------------------------------ the stairwell
+
+
 
         private static void BuildStairwell(Transform stairwell)
         {
