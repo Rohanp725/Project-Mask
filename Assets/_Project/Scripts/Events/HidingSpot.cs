@@ -16,6 +16,8 @@ namespace Semblance.Events
         public static Vector3 EnteredAt { get; private set; }
         /// <summary>When the detective climbed in (Time.time).</summary>
         public static float EnteredTime { get; private set; } = -999f;
+        /// <summary>The frame the detective last climbed out: the same E press mustn't climb straight back in.</summary>
+        public static int LastLeftFrame { get; private set; } = -100;
 
         private Transform player;
         private Vector3 returnPosition;
@@ -31,7 +33,7 @@ namespace Semblance.Events
 
         public override void Interact(PlayerInteractor interactor)
         {
-            if (Occupied != null) return;
+            if (Occupied != null || Time.frameCount <= LastLeftFrame + 2) return;
             player = interactor.transform;
             returnPosition = player.position;
             returnRotation = player.rotation;
@@ -69,6 +71,7 @@ namespace Semblance.Events
             var cc = player.GetComponent<CharacterController>();
             if (cc) cc.enabled = true;
             Occupied = null;
+            LastLeftFrame = Time.frameCount;
             InputLock.Pop(this);
             ShowSlats(false);
             UI.PlayerHUD.Instance?.SetHint(null);

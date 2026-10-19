@@ -149,6 +149,7 @@ namespace Semblance.EditorTools
                 TextureSynth.GenerateAll();
             MenuBuilder.EnsureFontAsset();
             DefineMaterials();
+            EnsureWritingMaterial();
 
             EnsureLayer("NoReflection");
             EnsureLayer("MirrorGhost");
@@ -1018,7 +1019,7 @@ namespace Semblance.EditorTools
                     }
                 Evidence(shoes,
                     "calder_shoes", "Women's shoes", "Three pairs of women's shoes, brand new, lined up neatly beside the bed. Size 6. The tags are still on.", "Amos Calder");
-                Evidence(EvidenceProp(calder, "Certificate", new Vector3(-2.6f, 0.89f, -1.4f), new Vector3(0.3f, 0.02f, 0.4f), "SignWhite"),
+                Evidence(EvidenceProp(calder, "Certificate", new Vector3(-2.6f, 0.89f, -1.4f), new Vector3(0.3f, 0.02f, 0.4f), "Writing"),
                     "calder_certificate", "Unfiled death certificate", "Filled out in Doc Pruitt's handwriting: Ruth Ann Calder, died August 9th, 1983, heart failure. Never filed. Never signed.", "Ruth Calder", null, 6f);
             }
 
@@ -1066,7 +1067,7 @@ namespace Semblance.EditorTools
             if (Anchors.TryGetValue("Barn:Kessler", out var kBarn))
             {
                 Crate(kBarn, new Vector3(0.6f, 0, 3f), 15f);
-                var report = EvidenceProp(kBarn, "Vet Report", new Vector3(0.6f, FloorY + 0.615f, 3f), new Vector3(0.22f, 0.012f, 0.3f), "Paper");
+                var report = EvidenceProp(kBarn, "Vet Report", new Vector3(0.6f, FloorY + 0.615f, 3f), new Vector3(0.22f, 0.012f, 0.3f), "Writing");
                 report.transform.localRotation = Quaternion.Euler(0, -10f, 0);
                 Evidence(report,
                     "kessler_vet_report", "Vet's report", "Barlow County Veterinary: 'Exsanguination, total. Cause undetermined. Strongly recommend children are kept away from the herd.' Someone has underlined 'total' twice.", "Greta Kessler");
@@ -1092,7 +1093,7 @@ namespace Semblance.EditorTools
             if (rack != null)
                 Evidence(rack, "store_rack", "Empty mirror rack", "A rack of empty hooks. A price tag still hangs from one: MIRROR, HAND, $2.49. Every one of them sold the same night.", null, "Inspect rack");
             if (Anchors.TryGetValue("Store", out var store))
-                Evidence(EvidenceProp(store, "Receipt Book", new Vector3(2.95f, 1.025f, -1.45f), new Vector3(0.22f, 0.03f, 0.3f), "Paper"),
+                Evidence(EvidenceProp(store, "Receipt Book", new Vector3(2.95f, 1.025f, -1.45f), new Vector3(0.22f, 0.03f, 0.3f), "Writing"),
                     "store_receipt", "Receipt book", "In Otis's careful capitals: '14 HAND MIRRORS, 2 WALL MIRRORS, 1 QT. RED ENAMEL. 3 BRASS PADLOCKS. PAID CASH, EXACT CHANGE. LEFT ON COUNTER OVERNIGHT.' No name. The coins were cold, he's written. In August.", "Otis Pruitt");
 
             // The window
@@ -1391,6 +1392,8 @@ namespace Semblance.EditorTools
                 if (gapStart - cursor > 0.01f)
                     Box("Wall Front", root, new Vector3((cursor + gapStart) * 0.5f, height * 0.5f, frontWallZ), new Vector3(gapStart - cursor, height, t), def.Material);
                 Box("Lintel", root, new Vector3(doorX, doorSize.y + (height - doorSize.y) * 0.5f, frontWallZ), new Vector3(doorSize.x, height - doorSize.y, t), def.Material);
+                // The floor runs out under the doorway: a threshold board fills the wall's thickness.
+                Box("Threshold", root, new Vector3(doorX, 0.05f, frontWallZ), new Vector3(doorSize.x + 0.1f, 0.1f, t + 0.14f), "Floor");
                 cursor = gapEnd;
             }
             if (width * 0.5f - cursor > 0.01f)
@@ -1467,7 +1470,7 @@ namespace Semblance.EditorTools
             if (!string.IsNullOrEmpty(def.DoorDescription))
             {
                 float plaqueX = doorXs[doorXs.Count - 1] + doorSize.x * 0.5f + 0.45f;
-                var plaque = Box("Notice", root, new Vector3(plaqueX, 1.5f, front + 0.02f), new Vector3(0.45f, 0.55f, 0.04f), "SignWhite");
+                var plaque = Box("Notice", root, new Vector3(plaqueX, 1.5f, front + 0.02f), new Vector3(0.45f, 0.55f, 0.04f), "Writing");
                 AddInspectable(plaque, def.DoorPrompt, def.DoorDescription, def.DoorClue);
             }
 
@@ -1499,7 +1502,7 @@ namespace Semblance.EditorTools
                 float boardWidth = Mathf.Min(width - 1f, 8f);
                 Box("Sign", root, new Vector3(0, height - 0.7f, front + 0.1f), new Vector3(boardWidth, 0.9f, 0.12f), def.SignMaterial ?? "SignBoard", collider: false);
                 AddText(root, def.Sign, new Vector3(0, height - 0.7f, front + 0.17f), new Vector2(boardWidth - 0.3f, 0.75f), new Color(0.9f, 0.85f, 0.7f),
-                    glow: def.SignMaterial == "SignNeon", wear: def.SignMaterial == "SignNeon" ? 0.08f : 0.2f);
+                    glow: def.SignMaterial == "SignNeon", wear: def.SignMaterial == "SignNeon" ? 0.04f : 0.1f);
             }
 
             Furnish(root, def, doorXs, ceiling, anyLit, rng);
@@ -1680,7 +1683,7 @@ namespace Semblance.EditorTools
             Mat("Ceiling", 0.32f, 0.3f, 0.27f);
             Mat("Counter", 0.7f, 0.68f, 0.6f);
             Mat("Fabric", 0.32f, 0.17f, 0.14f);
-            Mat("Rug", 0.36f, 0.11f, 0.1f);
+            Mat("Rug", 0.36f, 0.11f, 0.1f, depthOffset: -1f);
             Mat("Hay", 0.55f, 0.45f, 0.2f);
             Mat("CarPaint", 0.22f, 0.26f, 0.3f);
             Mat("Wallpaper", 0.4f, 0.38f, 0.3f);

@@ -39,7 +39,8 @@ namespace Semblance.Interaction
             if (Current == null || Cursor.lockState != CursorLockMode.Locked)
                 return;
 
-            if (Core.GameInput.Pressed(Core.GameInput.Interact))
+            // The E that climbs out of a wardrobe is spent; it doesn't also open whatever's now in front of you.
+            if (Core.GameInput.Pressed(Core.GameInput.Interact) && Time.frameCount > Events.HidingSpot.LastLeftFrame + 2)
                 Current.Interact(this);
         }
 

@@ -34,8 +34,8 @@ Material:
     - _AlphaClip: 0
     - _Cull: 2
     - _FogPierce: 0
-    - _OffsetFactor: 0
-    - _OffsetUnits: 0
+    - _OffsetFactor: -1
+    - _OffsetUnits: -2
     - _SnapResolution: 160
     - _WorldScale: 1.5
     - _WorldUV: 1

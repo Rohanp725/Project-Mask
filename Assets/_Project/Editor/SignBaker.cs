@@ -21,9 +21,58 @@ namespace Semblance.EditorTools
     public static partial class TownBuilder
     {
         private const string SignDir = RootDir + "/Generated/Signs";
-        private const int SignPixelsPerMetre = 64;
+        private const int SignPixelsPerMetre = 96;
         private static int signIndex;
         private static readonly HashSet<string> signKeys = new HashSet<string>();
+
+        /// <summary>
+        /// A sheet of handwriting for notices, cards and papers: rows of ink squiggles on cream, a heavier first
+        /// line, gaps where words end. Too small to read, enough to say "there's writing on this".
+        /// </summary>
+        private static void EnsureWritingMaterial()
+        {
+            const int w = 48, h = 64;
+            var tex = new Texture2D(w, h, TextureFormat.RGBA32, false) { name = "writing", filterMode = FilterMode.Point, wrapMode = TextureWrapMode.Clamp };
+            var rng = new Random(1983);
+            var px = new Color32[w * h];
+            var cream = new Color32(222, 214, 192, 255);
+            var ink = new Color32(62, 52, 42, 255);
+            for (int i = 0; i < px.Length; i++) px[i] = cream;
+            int rows = 7;
+            for (int r = 0; r < rows; r++)
+            {
+                int baseY = h - 9 - r * 8; // top row first (texture rows go up)
+                int x = 5 + (r == 0 ? 0 : rng.Next(0, 4));
+                int end = r == rows - 1 ? 22 + rng.Next(14) : w - 5 - rng.Next(0, 6);
+                bool heavy = r == 0;
+                while (x < end)
+                {
+                    int word = 3 + rng.Next(6);
+                    for (int k = 0; k < word && x < end; k++, x++)
+                    {
+                        int y = baseY + (int)Mathf.Round(Mathf.Sin(x * 1.7f + r) * 1.2f) + rng.Next(-1, 2);
+                        if (y >= 0 && y < h) px[y * w + x] = ink;
+                        if (heavy && y + 1 < h) px[(y + 1) * w + x] = ink;
+                        if (rng.NextDouble() < 0.2 && y - 1 >= 0) px[(y - 1) * w + x] = ink; // a descender
+                    }
+                    x += 2 + rng.Next(2);
+                }
+            }
+            tex.SetPixels32(px);
+            tex.Apply(false, false);
+            string texPath = $"{SignDir}/writing.asset";
+            AssetDatabase.DeleteAsset(texPath);
+            AssetDatabase.CreateAsset(tex, texPath);
+            var material = new Material(litShader) { name = "Writing" };
+            material.SetTexture("_BaseMap", tex);
+            material.SetColor("_BaseColor", Color.white);
+            material.SetFloat("_WorldUV", 0f);
+            material.SetFloat("_AffineStrength", 0f);
+            string matPath = $"{SignDir}/Writing.mat";
+            AssetDatabase.DeleteAsset(matPath);
+            AssetDatabase.CreateAsset(material, matPath);
+            Materials["Writing"] = material;
+        }
 
         /// <summary>Called once per build: old bakes go, so renamed or removed signs don't pile up.</summary>
         private static void ResetSignBakes()
@@ -44,7 +93,7 @@ namespace Semblance.EditorTools
         /// </summary>
         /// <param name="localRotation">Defaults to facing local +Z.</param>
         private static WorldText AddText(Transform parent, string text, Vector3 localPos, Vector2 size, Color color,
-            Quaternion? localRotation = null, bool italic = false, string[] variants = null, bool glow = false, float wear = 0.18f)
+            Quaternion? localRotation = null, bool italic = false, string[] variants = null, bool glow = false, float wear = 0.08f)
         {
             var go = new GameObject("Text");
             go.transform.SetParent(parent, false);
@@ -212,13 +261,13 @@ namespace Semblance.EditorTools
             for (int i = 0; i < src.Length; i++) cover[i] = Mathf.Sqrt(src[i].a / 255f);
 
             var outPixels = new Color32[w * h];
-            int sx = Mathf.Max(1, Mathf.RoundToInt(h * 0.035f)), sy = sx; // shadow offset, down and to the right
+            int sx = Mathf.Max(1, Mathf.RoundToInt(h * 0.025f)), sy = sx; // shadow offset, down and to the right
             for (int y = 0; y < h; y++)
             for (int x = 0; x < w; x++)
             {
                 int i = y * w + x;
                 float flake = Mathf.PerlinNoise(ox + x * 0.16f, oy + y * 0.16f) * 0.65f + Mathf.PerlinNoise(ox + x * 0.5f, oy + y * 0.5f) * 0.35f;
-                float a = cover[i] * Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(wear - 0.12f, wear + 0.12f, flake)) * fade;
+                float a = cover[i] * Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(wear - 0.07f, wear + 0.07f, flake)) * fade;
 
                 float s = 0f;
                 if (dropShadow && x - sx >= 0 && y - sy >= 0)
@@ -233,7 +282,7 @@ namespace Semblance.EditorTools
                 Color rgb = outA > 0.001f ? (ink * a + shade * s * (1f - a)) / outA : ink;
 
                 // Grime: rare dark specks on the board itself (the quad covers the lettering area and its margin).
-                if (grime && outA < 0.5f && rng.NextDouble() < 0.0015)
+                if (grime && outA < 0.5f && rng.NextDouble() < 0.0006)
                 {
                     rgb = new Color(0.3f, 0.27f, 0.23f);
                     outA = Mathf.Max(outA, 0.6f);

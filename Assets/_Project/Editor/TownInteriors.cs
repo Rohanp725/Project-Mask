@@ -810,8 +810,9 @@ namespace Semblance.EditorTools
 
             // Sitting room (back right): couch, rug, side table with a radio, a lamp.
             Couch(root, new Vector3(2.4f, 0, -inZ + 0.6f), 0f);
-            Part("Rug", root, new Vector3(2.4f, FloorY + 0.01f, -0.6f), new Vector3(2.6f, 0.02f, 1.8f), "Rug");
-            Part("Rug Border", root, new Vector3(2.4f, FloorY + 0.005f, -0.6f), new Vector3(2.8f, 0.01f, 2.0f), "Cream");
+            // Rugs sit a clear centimetre above the boards (coplanar faces flicker through each other).
+            Part("Rug", root, new Vector3(2.4f, FloorY + 0.024f, -0.6f), new Vector3(2.6f, 0.02f, 1.8f), "Rug");
+            Part("Rug Border", root, new Vector3(2.4f, FloorY + 0.012f, -0.6f), new Vector3(2.8f, 0.012f, 2.0f), "PlainCream");
             var side = Table("Side Table", root, new Vector3(4.0f, 0, -inZ + 0.5f), 0f, 0.5f, 0.45f, height: 0.6f);
             Part("Radio", side, new Vector3(0, FloorY + 0.7f, 0), new Vector3(0.36f, 0.2f, 0.18f), "Wood");
             Part("Radio Dial", side, new Vector3(0, FloorY + 0.7f, 0.095f), new Vector3(0.2f, 0.07f, 0.01f), "Mustard");
@@ -829,7 +830,7 @@ namespace Semblance.EditorTools
             var rack = Piece("Coat Rack", root, new Vector3(-1.2f, 0, inZ - 0.35f), 0f, new Vector3(0.3f, 1.8f, 0.3f), FloorY);
             Round("Stand", rack, new Vector3(0, FloorY + 0.85f, 0), 0.06f, 1.7f, "Wood");
             Part("Coat", rack, new Vector3(0, FloorY + 1.3f, 0.08f), new Vector3(0.38f, 0.7f, 0.14f), rng.NextDouble() < 0.5 ? "Fabric" : "Blue");
-            Part("Mat", root, new Vector3(0, FloorY + 0.005f, inZ - 0.6f), new Vector3(1.2f, 0.01f, 0.6f), "Hay");
+            Part("Mat", root, new Vector3(0, FloorY + 0.012f, inZ - 0.6f), new Vector3(1.2f, 0.012f, 0.6f), "Hay");
 
             if (family != "Marsh" && family != "Thorne")
                 Picture(root, new Vector3(2.4f, 1.75f, -inZ + 0.04f), 0f, new Vector2(0.5f, 0.4f));
@@ -916,7 +917,7 @@ namespace Semblance.EditorTools
                 }
                 case "Kessler":
                 {
-                    var bills = Part("Bills", root, new Vector3(-2.3f, FloorY + 0.79f, -1.5f), new Vector3(0.3f, 0.02f, 0.22f), "SignWhite");
+                    var bills = Part("Bills", root, new Vector3(-2.3f, FloorY + 0.79f, -1.5f), new Vector3(0.3f, 0.02f, 0.22f), "Writing");
                     Inspect(bills, "Read the bills", "Vet bills, feed bills, a letter from the bank. Greta has added the losses up in the margin: fourteen head. Underneath, smaller: 'Never at the new moon. Always when the bell rings.'", new Vector3(0.4f, 0.3f, 0.4f), clue: "bills");
                     // A bolt-action rifle laid across two nails: wooden stock (notched), steel barrel and bolt.
                     foreach (var nz in new[] { -0.95f, -0.25f })
@@ -946,7 +947,7 @@ namespace Semblance.EditorTools
                     Evidence(EvidenceInspect(photo, new Vector3(0.8f, 0.7f, 0.3f)), "thorne_photo", "The Thorne photograph", "The Thorne family, 1979, in front of the barn. Bev, the two boys, Silas. Silas is a smear from the shoulders up, like he turned his head too fast. Everyone else is pin-sharp. 1979: years before anything came to Semblance.", Semblance.Case.CastNames.Silas, "Look at the photo");
                     // The family album on the side table, one corner-mount empty.
                     var album = Part("Album", root, new Vector3(4.0f, FloorY + 0.62f, -inZ + 0.62f), new Vector3(0.3f, 0.035f, 0.24f), "Leather");
-                    Part("Album Page", root, new Vector3(4.0f, FloorY + 0.642f, -inZ + 0.62f), new Vector3(0.27f, 0.004f, 0.21f), "Paper");
+                    Part("Album Page", root, new Vector3(4.0f, FloorY + 0.642f, -inZ + 0.62f), new Vector3(0.27f, 0.004f, 0.21f), "Writing");
                     Evidence(EvidenceInspect(album, new Vector3(0.4f, 0.3f, 0.4f)), "thorne_album", "The family album", "The Thorne album, open on the side table. A page of 1979, and one set of corner-mounts empty where a photograph was taken out. On the facing page, in Bev's hand, fresh pencil: 'Show him this one.'", Semblance.Case.CastNames.Bev, "Look at the album");
                     var engine = Piece("Engine Parts", root, new Vector3(1.8f, 0, 1.8f), 0f, new Vector3(1.0f, 0.75f, 0.6f), FloorY);
                     Part("Bench", engine, new Vector3(0, FloorY + 0.7f, 0), new Vector3(1f, 0.05f, 0.6f), "Wood");
@@ -970,7 +971,7 @@ namespace Semblance.EditorTools
                     var empty = MothCase(root, new Vector3(inX - 0.03f, 1.6f, 0.9f), -90f, rng, 0);
                     Evidence(EvidenceInspect(empty, new Vector3(0.3f, 0.6f, 0.7f)), "vance_case", "The empty case", "A display case, empty except for one pin and a label in Irene's spidery hand: 'Sept. 22nd. Large. Grey. It would not hold still, and it would not die.'", Semblance.Case.CastNames.Irene, "Look at the case");
                     // A funeral card, soft at the folds, propped against the radio.
-                    var card = Part("Funeral Card", root, new Vector3(4.0f, FloorY + 0.66f, -inZ + 0.6f), new Vector3(0.09f, 0.13f, 0.004f), "Paper");
+                    var card = Part("Funeral Card", root, new Vector3(4.0f, FloorY + 0.66f, -inZ + 0.6f), new Vector3(0.09f, 0.13f, 0.004f), "Writing");
                     card.transform.localRotation = Quaternion.Euler(-12f, 0, 0);
                     Evidence(EvidenceInspect(card, new Vector3(0.3f, 0.3f, 0.3f)), "vance_card", "A funeral card", "CARL JAMES VANCE. 1931-1979. 'Gone before us.' The card has been folded and unfolded so many times the crease has gone soft as cloth. On the back, in pencil: 'porch light'.", Semblance.Case.CastNames.Irene, "Read the card");
                     break;
@@ -982,7 +983,7 @@ namespace Semblance.EditorTools
                     // A stack of pie tins and the recipe card beside them.
                     for (int t = 0; t < 3; t++)
                         Round("Pie Tin", root, new Vector3(-2.3f + t * 0.01f, FloorY + 0.79f + t * 0.025f, -1.6f), 0.26f, 0.025f, "Galvanized");
-                    var tins = Part("Recipe Card", root, new Vector3(-2.0f, FloorY + 0.783f, -1.45f), new Vector3(0.13f, 0.004f, 0.08f), "Paper");
+                    var tins = Part("Recipe Card", root, new Vector3(-2.0f, FloorY + 0.783f, -1.45f), new Vector3(0.13f, 0.004f, 0.08f), "Writing");
                     tins.transform.localRotation = Quaternion.Euler(0, 20f, 0);
                     Part("Card Line", root, new Vector3(-2.0f, FloorY + 0.786f, -1.45f), new Vector3(0.1f, 0.002f, 0.006f), "BarnRed").transform.localRotation = Quaternion.Euler(0, 20f, 0);
                     Evidence(EvidenceInspect(tins, new Vector3(0.4f, 0.3f, 0.4f)), "whitlock_recipe", "Mae's recipe card", "A recipe card in Mae's handwriting: 'Cherry. Earl's mother's.' Somebody has written underneath, in pencil, very carefully: 'cherry cherry cherry cherry'. The pencil is the one from the pad by the telephone, where Mae writes her lists at three in the morning.", Semblance.Case.CastNames.Mae, "Look at the recipe");
@@ -1099,9 +1100,11 @@ namespace Semblance.EditorTools
                 Dresser(root, new Vector3(roomX - 1.38f, 0, 0.2f), 90f, 1.0f);
                 var screen = Television(root, new Vector3(roomX - 1.38f, 0, 0.2f), FloorY + 0.82f, on: roomNumber == 4);
                 screen.transform.parent.localRotation = Quaternion.Euler(0, 90f, 0);
-                Wardrobe(root, new Vector3(roomX + 1.15f, 0f, -0.3f), -90f);
+                // Against the partition (or the end wall for the last room), not floating a hand's width off it.
+                float backWall = i < doorXs.Count - 1 ? (doorXs[i] + doorXs[i + 1]) * 0.5f - WallThickness * 0.5f : inX;
+                Wardrobe(root, new Vector3(backWall - 0.345f, 0f, -0.3f), -90f);
                 Chair(root, new Vector3(roomX + 1.1f, 0, inZ - 0.9f), 200f, "Fabric");
-                Part("Carpet", root, new Vector3(roomX, FloorY + 0.006f, 0), new Vector3(3.1f, 0.012f, 2 * inZ - 0.2f), roomNumber % 2 == 0 ? "Rug" : "Fabric");
+                Part("Carpet", root, new Vector3(roomX, FloorY + 0.012f, 0), new Vector3(3.1f, 0.012f, 2 * inZ - 0.2f), roomNumber % 2 == 0 ? "Rug" : "Fabric");
 
                 if (yours)
                 {
@@ -1150,7 +1153,7 @@ namespace Semblance.EditorTools
                         // Room 2: made up and never used. A stack of towels nobody has unfolded, the chair turned to the wall.
                         for (int t = 0; t < 4; t++)
                             Part("Towel", root, new Vector3(roomX - 1.38f, FloorY + 0.86f + t * 0.05f, 0.2f), new Vector3(0.34f, 0.045f, 0.24f), "PlainWhite");
-                        var card = Part("Card", root, new Vector3(roomX + 0.7f, FloorY + 0.6f, -inZ + 0.33f), new Vector3(0.12f, 0.004f, 0.08f), "Paper");
+                        var card = Part("Card", root, new Vector3(roomX + 0.7f, FloorY + 0.6f, -inZ + 0.33f), new Vector3(0.12f, 0.004f, 0.08f), "Writing");
                         Inspect(card, "Read the card", "A card on the nightstand in the motel's handwriting: WELCOME TO THE PALE MOON. The date line has been filled in and crossed out eleven times. Every date is a Sunday.", new Vector3(0.3f, 0.3f, 0.3f));
                         break;
                     }
@@ -1160,7 +1163,7 @@ namespace Semblance.EditorTools
                         // Left open: red cover, two pages fanned up from the spine.
                         var bible = Part("Bible", root, new Vector3(roomX + 0.6f, FloorY + 0.596f, -inZ + 0.3f), new Vector3(0.26f, 0.012f, 0.18f), "BarnRed");
                         foreach (var side in new[] { -1f, 1f })
-                            Part("Pages", root, new Vector3(roomX + 0.6f + side * 0.062f, FloorY + 0.608f, -inZ + 0.3f), new Vector3(0.12f, 0.012f, 0.17f), "Paper").transform.localRotation = Quaternion.Euler(0, 0, side * -5f);
+                            Part("Pages", root, new Vector3(roomX + 0.6f + side * 0.062f, FloorY + 0.608f, -inZ + 0.3f), new Vector3(0.12f, 0.012f, 0.17f), "Writing").transform.localRotation = Quaternion.Euler(0, 0, side * -5f);
                         Inspect(bible, "Read the Bible", "A Gideon Bible left open at Matthew 13: 'Let both grow together until the harvest.' Somebody has written in the margin in pencil, very small: which is which", new Vector3(0.35f, 0.3f, 0.4f), clue: "bible");
                         var ashtray = Round("Ashtray", root, new Vector3(roomX + 0.84f, FloorY + 0.605f, -inZ + 0.44f), 0.15f, 0.03f, "Glass");
                         Round("Ash", root, new Vector3(roomX + 0.84f, FloorY + 0.618f, -inZ + 0.44f), 0.08f, 0.006f, "Ash");
@@ -1208,7 +1211,7 @@ namespace Semblance.EditorTools
             AddText(root, "VACANCY", new Vector3(winX - 0.4f, 1.1f, inZ - 0.14f), new Vector2(0.65f, 0.2f), new Color(0.95f, 0.9f, 0.8f), Quaternion.Euler(0, 180f, 0), glow: true, wear: 0.03f);
             var desk = Table("Front Desk", root, new Vector3(roomX, 0, 0.3f), 0f, 1.8f, 0.7f, "Wood", 1.0f);
             Part("Desk Front", desk, new Vector3(0, FloorY + 0.5f, 0.33f), new Vector3(1.8f, 0.95f, 0.04f), "Door");
-            var register = Part("Guest Register", root, new Vector3(roomX - 0.3f, FloorY + 1.016f, 0.3f), new Vector3(0.45f, 0.03f, 0.32f), "SignWhite");
+            var register = Part("Guest Register", root, new Vector3(roomX - 0.3f, FloorY + 1.016f, 0.3f), new Vector3(0.45f, 0.03f, 0.32f), "Writing");
             Evidence(EvidenceInspect(register, new Vector3(0.6f, 0.4f, 0.5f)), "motel_register", "The motel register",
                 "Pale Moon Motel guest register. June 2nd: H. Semple, Rm 3, 'brushes & notions'. No check-out. Then nothing for four months. October 15th: Rm 6, PAID IN ADVANCE, CASH, EXACT CHANGE. No name. That entry isn't in the same handwriting as the others. It's in yours.", null, "Read the register", 6f);
             // A chrome service bell.
@@ -1229,7 +1232,7 @@ namespace Semblance.EditorTools
                     Part("Key Fob", root, new Vector3(kx, 1.64f, -inZ + 0.075f), new Vector3(0.05f, 0.08f, 0.01f), "BarnRed");
                 }
                 else if (k == 1)
-                    Part("Tag", root, new Vector3(kx, 1.69f, -inZ + 0.072f), new Vector3(0.09f, 0.11f, 0.004f), "Paper");
+                    Part("Tag", root, new Vector3(kx, 1.69f, -inZ + 0.072f), new Vector3(0.09f, 0.11f, 0.004f), "Writing");
             }
             Inspect(keys, "Look at the key board", "Hooks for Rooms 2 to 6. Every key is hanging up except yours and Room 3's. Under Room 3's empty hook, a paper tag: DO NOT DISTURB. HE IS STILL LISTENING.", new Vector3(1f, 0.7f, 0.3f), clue: "keyboard");
             Chair(root, new Vector3(roomX, 0, -0.6f), 0f);
@@ -1238,7 +1241,7 @@ namespace Semblance.EditorTools
             Part("Brochure Rack", root, new Vector3(inX - 0.2f, 1.2f, 0.4f), new Vector3(0.05f, 0.5f, 0.5f), "Wood");
             for (int b = 0; b < 3; b++)
                 Part("Brochure", root, new Vector3(inX - 0.24f, 1.03f + b * 0.17f, 0.25f + (b % 2) * 0.25f), new Vector3(0.012f, 0.14f, 0.1f), b == 1 ? "PlainBlue" : "PlainMustard");
-            var calendar = Part("Calendar", root, new Vector3(1.4f, 1.75f, -inZ + 0.05f), new Vector3(0.3f, 0.42f, 0.01f), "Paper");
+            var calendar = Part("Calendar", root, new Vector3(1.4f, 1.75f, -inZ + 0.05f), new Vector3(0.3f, 0.42f, 0.01f), "Writing");
             Inspect(calendar, "Look at the calendar", "A feed-store calendar, still on June. The 2nd is circled. Nothing's been written on it since.", new Vector3(0.4f, 0.5f, 0.3f), clue: "calendar");
             Round("Coffee Ring", root, new Vector3(roomX + 0.6f, FloorY + 1.012f, 0.15f), 0.09f, 0.002f, "Coffee");
             InteriorLight(root, new Vector3(roomX, ceiling - 0.6f, 0), 6f, 2.2f, flicker: true, ceiling: ceiling, pendant: true);
