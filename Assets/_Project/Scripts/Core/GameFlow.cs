@@ -76,8 +76,8 @@ namespace Semblance.Core
                 {
                     EndingDirector.MissingPersonFound = SaveSystem.Flags.Contains("found:missing");
                     PlacePlayerAtWakeSpot();
-            World.Door.CloseAll();                     // the town shut its doors overnight
-            World.DetectiveCar.Instance?.ReturnHome(); // and the car is in the lot, however you got back
+                    World.Door.CloseAll();
+                    World.DetectiveCar.Instance?.ReturnHome();
                     GameResumed?.Invoke();
                     var clock = GameClock.Instance;
                     if (ScreenFader.Instance != null)
@@ -165,6 +165,8 @@ namespace Semblance.Core
             clock.SetTime(next, collapsed ? 10f : 6.5f);
             if (collapsed) SaveSystem.Flags.Add("collapsed:" + next); // the notebook counts the hours up from when you woke
             PlacePlayerAtWakeSpot();
+            World.Door.CloseAll();                     // the town shut its doors overnight
+            World.DetectiveCar.Instance?.ReturnHome(); // and the car is in the lot, however you got back
 
             if (fader != null)
             {
