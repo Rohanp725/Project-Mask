@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using Semblance.Core;
 using Semblance.Player;
 using Semblance.UI;
@@ -45,11 +46,14 @@ namespace Semblance.Interaction
         }
 
         /// <summary>
-        /// A paper on a desk sits inside the desk's crude box, a jar behind a counter's edge: the first thing a ray
-        /// hits is often the furniture, not the thing on it. So the nearest interactable wins as long as nothing
-        /// solid stands more than a furniture-edge's worth in front of it.
+        /// A paper on a desk sits inside the desk's crude box, a radio on a counter behind its edge: the first thing
+        /// a ray hits is often the furniture, not the thing on it. So the ray may pass a piece of furniture when the
+        /// thing it's aimed at lies within that piece's own bounds. Walls, partitions and cages are too tall to count
+        /// as furniture, so nothing is reached through them.
         /// </summary>
-        private const float SeeThrough = 0.6f;
+        private const float FurnitureHeight = 2.3f;
+        private const float FurnitureMargin = 0.15f;
+        private const float SlabThickness = 0.3f; // anything thinner is a wall, a panel or a pane, not a piece of furniture
 
         private Interactable FindTarget()
         {
@@ -60,17 +64,29 @@ namespace Semblance.Interaction
             return Pick(Physics.SphereCastAll(ray, aimAssistRadius, range, layers, QueryTriggerInteraction.Collide));
         }
 
+        private readonly List<Collider> occluders = new List<Collider>();
+
         private Interactable Pick(RaycastHit[] hits)
         {
             System.Array.Sort(hits, (a, b) => a.distance.CompareTo(b.distance));
-            float blockedAt = float.PositiveInfinity;
+            occluders.Clear();
             foreach (var hit in hits)
             {
                 if (hit.collider.transform.root == transform) continue; // our own capsule
                 if (TryGetInteractable(hit, out var interactable))
-                    return hit.distance <= blockedAt + SeeThrough ? interactable : null;
-                if (!hit.collider.isTrigger && hit.distance < blockedAt) blockedAt = hit.distance;
-                if (hit.distance > blockedAt + SeeThrough) return null;
+                {
+                    foreach (var o in occluders)
+                    {
+                        var b = o.bounds;
+                        b.Expand(FurnitureMargin * 2f);
+                        if (!b.Contains(hit.point)) return null; // something in the way that it isn't sitting on
+                    }
+                    return interactable;
+                }
+                if (hit.collider.isTrigger) continue;
+                var size = hit.collider.bounds.size;
+                if (size.y > FurnitureHeight || Mathf.Min(size.x, size.z) < SlabThickness) return null; // a wall, a partition, a panel
+                occluders.Add(hit.collider);
             }
             return null;
         }

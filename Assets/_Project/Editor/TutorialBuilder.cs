@@ -601,7 +601,6 @@ namespace Semblance.EditorTools
             TutorialDoor(office, "Klein's Door", new Vector3(4.4f, 0.1f, 0.2f), -90f);
             Part("Door Plate", office, new Vector3(4.355f, 1.7f, 0.65f), new Vector3(0.006f, 0.08f, 0.26f), "Brass");
             // The room: visitor's chair across the desk, cabinet in the corner, the hat and coat by the door, a bookcase.
-            Chair(office, new Vector3(5.25f, 0, 0.6f), 90f, "Leather"); // the visitor's, across the desk from him
             var cab = Piece("Filing Cabinet", office, new Vector3(7.6f, 0, -1.9f), 0f, new Vector3(0.5f, 1.32f, 0.62f), FloorY);
             Part("Body", cab, new Vector3(0, FloorY + 0.66f, 0), new Vector3(0.5f, 1.32f, 0.62f), "Galvanized");
             for (int d = 0; d < 3; d++)
@@ -944,8 +943,8 @@ namespace Semblance.EditorTools
             float z = 2.45f;
             var wall = new GameObject("Barricade Collider");
             wall.transform.SetParent(office, false);
-            wall.transform.localPosition = new Vector3(3.7f, FloorY + 0.9f, z);
-            wall.AddComponent<BoxCollider>().size = new Vector3(1.3f, 1.8f, 0.6f);
+            wall.transform.localPosition = new Vector3(3.65f, FloorY + 0.9f, z);
+            wall.AddComponent<BoxCollider>().size = new Vector3(1.0f, 1.8f, 0.6f);
             int n = 0;
             foreach (var x in new[] { 3.3f, 3.72f, 4.14f })
             {
