@@ -1805,17 +1805,17 @@ namespace Semblance.EditorTools
             main.startSpeed = 0f;
             main.startSize = 0.03f;
             main.startColor = new Color(0.75f, 0.8f, 0.9f, 0.4f);
-            main.maxParticles = 5000;
+            main.maxParticles = 12000;
             main.gravityModifier = 2.4f;
             main.simulationSpace = ParticleSystemSimulationSpace.World;
             main.loop = true;
             main.playOnAwake = true;
             main.prewarm = true;
             var emission = ps.emission;
-            emission.rateOverTime = 1800f;
+            emission.rateOverTime = 4200f;
             var shape = ps.shape;
             shape.shapeType = ParticleSystemShapeType.Box;
-            shape.scale = new Vector3(24f, 0.2f, 22f);
+            shape.scale = new Vector3(24f, 0.2f, 64f); // the whole visible street, not just the station's front
             var renderer = rainGO.GetComponent<ParticleSystemRenderer>();
             renderer.renderMode = ParticleSystemRenderMode.Stretch;
             renderer.velocityScale = 0f;
@@ -1823,9 +1823,101 @@ namespace Semblance.EditorTools
             renderer.cameraVelocityScale = 0f;
             renderer.material = RainMaterial();
 
+            BuildNeighbours(exterior, rng);
             TutorialAnchor("CamStart", new Vector3(25f, 2.7f, 1.6f), Vector3.left);
             TutorialAnchor("CamEnd", new Vector3(9.8f, 1.9f, 0.6f), Vector3.left);
             TutorialAnchor("WindowLook", new Vector3(7.3f, 1.45f, 0.05f), Vector3.left);
+        }
+
+        /// <summary>
+        /// The rest of the street, for the opening shot: neighbours either side along the station's frontage, a darker
+        /// skyline behind, the road and pavement running on, street lamps, poles and wires, a couple of parked cars.
+        /// Shapes only: nothing here is visited, it just stops the station standing alone in a void.
+        /// </summary>
+        private static void BuildNeighbours(Transform exterior, Random rng)
+        {
+            var street = Group("Street", exterior);
+            Box("Road", street, new Vector3(25f, -0.06f, 0f), new Vector3(34f, 0.1f, 100f), "Asphalt", collider: false);
+            Box("Pavement", street, new Vector3(9.0f, 0.05f, 0f), new Vector3(1.6f, 0.12f, 100f), "Sidewalk", collider: false);
+            Box("Far Pavement", street, new Vector3(32f, 0.05f, 0f), new Vector3(2f, 0.12f, 100f), "Sidewalk", collider: false);
+            for (float z = -48f; z < 48f; z += 6f)
+                Box("Lane Dash", street, new Vector3(20.5f, 0.0f, z), new Vector3(0.14f, 0.012f, 3f), "RoadLine", collider: false);
+            string[] faces = { "Brick", "PlainCream", "Stone", "StoreWall", "Brick", "PlainSage" };
+            foreach (int side in new[] { -1, 1 })
+            {
+                float z = side * 6.4f;
+                int k = 0;
+                while (Mathf.Abs(z) < 48f)
+                {
+                    float w = Lerp(rng, 5.5f, 10f), h = Lerp(rng, 4.2f, 9.5f), d = Lerp(rng, 8f, 14f);
+                    float zc = z + side * w * 0.5f;
+                    var b = Group("Neighbour", street); b.localPosition = new Vector3(8.3f - d * 0.5f, 0f, zc);
+                    string face = faces[(k + (side > 0 ? 0 : 3)) % faces.Length];
+                    Part("Body", b, new Vector3(0, h * 0.5f, 0), new Vector3(d, h, w - 0.15f), face);
+                    Part("Cornice", b, new Vector3(d * 0.5f + 0.05f, h + 0.06f, 0), new Vector3(0.3f, 0.14f, w - 0.1f), "Stone");
+                    Part("Roof", b, new Vector3(0, h + 0.02f, 0), new Vector3(d, 0.06f, w - 0.15f), "Roof");
+                    bool shop = rng.NextDouble() < 0.5;
+                    if (shop)
+                    {
+                        Part("Shop Window", b, new Vector3(d * 0.5f + 0.02f, 1.35f, 0), new Vector3(0.04f, 1.7f, w * 0.6f), rng.NextDouble() < 0.25 ? "WindowLit" : "WindowDark");
+                        Part("Awning", b, new Vector3(d * 0.5f + 0.55f, 2.55f, 0), new Vector3(1.1f, 0.06f, w * 0.7f), k % 2 == 0 ? "PlainBarnRed" : "PlainSage").transform.localRotation = Quaternion.Euler(0, 0, -12f);
+                        Part("Sign Board", b, new Vector3(d * 0.5f + 0.04f, 3.0f, 0), new Vector3(0.05f, 0.45f, w * 0.55f), "PlainCream");
+                        Part("Shop Door", b, new Vector3(d * 0.5f + 0.02f, 1.05f, w * 0.38f - 0.5f), new Vector3(0.04f, 2.1f, 0.9f), "Door");
+                    }
+                    // Upper floors: a window grid, nearly all dark at a quarter to midnight.
+                    for (float y = shop ? 4.2f : 1.8f; y < h - 0.9f; y += 2.6f)
+                        for (float wz = -w * 0.5f + 1.2f; wz < w * 0.5f - 0.8f; wz += 1.8f)
+                            Part("Window", b, new Vector3(d * 0.5f + 0.02f, y, wz), new Vector3(0.04f, 1.1f, 0.8f), rng.NextDouble() < 0.12 ? "WindowLit" : "WindowDark");
+                    z += side * w; k++;
+                }
+            }
+            // Behind and above: the taller blocks of the town centre, mostly dark.
+            for (int i = 0; i < 9; i++)
+            {
+                float zc = -40f + i * 10f, h = Lerp(rng, 9f, 16f);
+                var blk = Group("Skyline Block", street); blk.localPosition = new Vector3(Lerp(rng, -26f, -16f), 0f, zc + Lerp(rng, -2f, 2f));
+                Part("Body", blk, new Vector3(0, h * 0.5f, 0), new Vector3(10f, h, 8.5f), "ConcreteDark");
+                for (int wdw = 0; wdw < 3; wdw++)
+                    if (rng.NextDouble() < 0.5) Part("Lit Window", blk, new Vector3(5.02f, Lerp(rng, 3f, h - 2f), Lerp(rng, -3f, 3f)), new Vector3(0.04f, 1f, 0.8f), "WindowLit");
+            }
+            // Street lamps along the kerb (two lit near the station, the rest just shapes in the rain).
+            foreach (var z in new[] { -40f, -26f, -13f, 13f, 26f, 40f })
+            {
+                var l = Group("Street Lamp", street); l.localPosition = new Vector3(10.2f, 0f, z);
+                Round("Pole", l, new Vector3(0, 2.6f, 0), 0.14f, 5.2f, "Metal");
+                Part("Arm", l, new Vector3(0.6f, 5.1f, 0), new Vector3(1.2f, 0.12f, 0.12f), "Metal");
+                Part("Head", l, new Vector3(1.1f, 5.0f, 0), new Vector3(0.5f, 0.18f, 0.3f), "Metal");
+                bool lit = Mathf.Abs(z) < 20f;
+                Part("Lamp", l, new Vector3(1.1f, 4.9f, 0), new Vector3(0.42f, 0.04f, 0.24f), lit ? "Bulb" : "Metal");
+                if (lit)
+                {
+                    var go = new GameObject("Lamp Light"); go.transform.SetParent(l, false); go.transform.localPosition = new Vector3(1.1f, 4.6f, 0);
+                    var li = go.AddComponent<Light>(); li.type = LightType.Point; li.color = new Color(1f, 0.8f, 0.55f); li.range = 14f; li.intensity = 3.5f; li.shadows = LightShadows.None;
+                }
+            }
+            // Telephone poles on the far side, wires sagging between them.
+            float prev = float.NaN;
+            for (float z = -46f; z <= 46f; z += 23f)
+            {
+                var pole = Group("Telephone Pole", street); pole.localPosition = new Vector3(31.5f, 0f, z);
+                Round("Pole", pole, new Vector3(0, 4f, 0), 0.24f, 8f, "Wood");
+                Part("Crossarm", pole, new Vector3(0, 7.4f, 0), new Vector3(0.12f, 0.12f, 1.8f), "Wood");
+                if (!float.IsNaN(prev))
+                    foreach (var o in new[] { -0.7f, 0.7f })
+                        Part("Wire", street, new Vector3(31.5f + o * 0.0f, 7.15f, (z + prev) * 0.5f), new Vector3(0.02f, 0.02f, 23f), "HideBlack");
+                prev = z;
+            }
+            // A couple of cars parked along the kerb, nobody in them.
+            foreach (var (z, mat) in new[] { (-17f, "PlainBlue"), (22f, "PlainBarnRed"), (34f, "PlainCream") })
+            {
+                var car = Group("Parked Car", street); car.localPosition = new Vector3(11.2f, 0f, z); car.localRotation = Quaternion.Euler(0, Lerp(rng, -3f, 3f), 0);
+                Part("Body", car, new Vector3(0, 0.55f, 0), new Vector3(1.8f, 0.6f, 4.4f), mat);
+                Part("Cabin", car, new Vector3(0, 1.02f, -0.2f), new Vector3(1.6f, 0.5f, 2.2f), mat);
+                Part("Windows", car, new Vector3(0, 1.05f, -0.2f), new Vector3(1.62f, 0.4f, 2.1f), "WindowDark");
+                foreach (var x in new[] { -0.8f, 0.8f })
+                    foreach (var wz in new[] { -1.4f, 1.4f })
+                        Round("Wheel", car, new Vector3(x, 0.3f, wz), 0.6f, 0.24f, "HideBlack").transform.localRotation = Quaternion.Euler(0, 0, 90f);
+            }
         }
 
         private static Material RainMaterial()
