@@ -12,6 +12,8 @@ namespace Semblance.World
         [SerializeField] private float swingSpeed = 200f;
         [SerializeField] private bool locked;
         [SerializeField, TextArea(1, 3)] private string lockedMessage = "It's locked.";
+        [Tooltip("Optional: a different sound for this door opening and closing (the tutorial's steel fire doors).")]
+        [SerializeField] private string openSound, closeSound;
 
         private Quaternion closedRotation;
         private float currentAngle;
@@ -78,13 +80,14 @@ namespace Semblance.World
             }
             if (locked)
             {
+                Audio.GameAudio.PlayAt("door_locked", transform.position, 0.6f, Random.Range(0.95f, 1.05f), 12f);
                 interactor.Hud.ShowMessage(lockedMessage, 4f);
                 return;
             }
             // A shop after hours: locked unless whoever runs it is still inside (or you are).
             if (!isOpen && hours != null && hours.ClosedTo(interactor.transform.position))
             {
-                Audio.GameAudio.Play("door_close", 0.3f, 1.5f); // a rattle against the lock
+                Audio.GameAudio.PlayAt("door_locked", transform.position, 0.5f, 1f, 12f); // a rattle against the lock
                 interactor.Hud.ShowMessage(hours.ClosedMessage, 4.5f);
                 return;
             }
@@ -119,8 +122,9 @@ namespace Semblance.World
 
         private void PlaySwing(bool opening)
         {
-            if (opening) Audio.GameAudio.PlayAt(Random.value < 0.5f ? "door_creak_1" : "door_creak_2", transform.position, 0.6f, Random.Range(0.9f, 1.1f), 18f);
-            else Audio.GameAudio.PlayAt("door_close", transform.position, 0.5f, Random.Range(0.9f, 1.1f), 18f);
+            string clip = opening ? (string.IsNullOrEmpty(openSound) ? (Random.value < 0.5f ? "door_creak_1" : "door_creak_2") : openSound)
+                                  : (string.IsNullOrEmpty(closeSound) ? "door_close" : closeSound);
+            Audio.GameAudio.PlayAt(clip, transform.position, opening ? 0.6f : 0.5f, Random.Range(0.94f, 1.06f), 18f);
         }
 
         public void SetLocked(bool value) => locked = value;

@@ -124,6 +124,14 @@ namespace Semblance.Audio
             return clip != null ? clip : Clip(name);
         }
 
+        /// <summary>The chase music alternates between its two tracks, one hunt to the next (the abrupt one first).</summary>
+        public static string NextChase()
+        {
+            int n = PlayerPrefs.GetInt("semblance.chase", 0);
+            PlayerPrefs.SetInt("semblance.chase", n + 1);
+            return n % 2 == 0 ? "chase_loop_1" : "chase_loop_2";
+        }
+
         /// <summary>Which bus a clip belongs on, from its name.</summary>
         public static AudioBus BusFor(string clipName)
         {
@@ -139,7 +147,7 @@ namespace Semblance.Audio
                 return AudioBus.UI;
             if (n.StartsWith("music") || n.StartsWith("chase") || n.StartsWith("jukebox")) return AudioBus.Music;
             if (n.StartsWith("wind") || n.StartsWith("crickets") || n.StartsWith("room_tone") || n.StartsWith("drone")
-                || n.StartsWith("lamp_buzz") || n.StartsWith("static"))
+                || n.StartsWith("lamp_buzz") || n.StartsWith("static") || n.StartsWith("thunder") || n.StartsWith("radio_chatter"))
                 return AudioBus.Ambience;
             return AudioBus.World;
         }

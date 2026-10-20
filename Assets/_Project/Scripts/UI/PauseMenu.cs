@@ -1,3 +1,4 @@
+using Semblance.Audio;
 using Semblance.Core;
 using Semblance.Notes;
 using TMPro;
@@ -26,6 +27,7 @@ namespace Semblance.UI
         public void Open()
         {
             if (root.activeSelf) return;
+            GameAudio.Play("ui_page", 0.6f);
             root.SetActive(true);
             main.SetActive(true);
             settings.SetActive(false);
@@ -52,6 +54,7 @@ namespace Semblance.UI
 
         public void Close()
         {
+            if (root.activeSelf) GameAudio.Play("ui_page", 0.5f, 0.95f);
             root.SetActive(false);
             InputLock.Pop(this);
             Time.timeScale = 1f;
@@ -78,7 +81,7 @@ namespace Semblance.UI
             float y = 60;
             void Item(string label, System.Action action)
             {
-                var b = UIFactory.Button(label, main.transform, label, 22, UIFactory.Light, new Color(1, 1, 1, 0.08f), () => action());
+                var b = UIFactory.Button(label, main.transform, label, 22, UIFactory.Light, new Color(1, 1, 1, 0.08f), () => { GameAudio.Play("ui_click", 0.7f); action(); });
                 UIFactory.Place((RectTransform)b.transform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0, y), new Vector2(320, 46));
                 y -= 56;
             }

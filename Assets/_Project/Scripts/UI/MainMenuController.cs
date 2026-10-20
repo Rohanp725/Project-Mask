@@ -56,7 +56,7 @@ namespace Semblance.UI
             for (int i = 0; i <= text.Length; i++)
             {
                 title.text = text.Substring(0, i);
-                if (i > 0) GameAudio.Play("typewriter_key", 0.5f, Random.Range(0.9f, 1.1f));
+                if (i > 0) GameAudio.Play(GameAudio.Variant("typewriter_key", 8), 0.5f, Random.Range(0.95f, 1.05f));
                 yield return new WaitForSeconds(0.16f);
             }
         }
@@ -102,7 +102,7 @@ namespace Semblance.UI
             float y = 10;
             void Item(Transform parent, string label, System.Action action, ref float yy)
             {
-                var b = UIFactory.Button(label, parent, label, 24, UIFactory.Light, new Color(0, 0, 0, 0.45f), () => { GameAudio.Play("typewriter_key", 0.6f); action(); });
+                var b = UIFactory.Button(label, parent, label, 24, UIFactory.Light, new Color(0, 0, 0, 0.45f), () => { GameAudio.Play("ui_click", 0.7f); action(); });
                 UIFactory.Place((RectTransform)b.transform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0, yy), new Vector2(360, 50));
                 yy -= 60;
             }

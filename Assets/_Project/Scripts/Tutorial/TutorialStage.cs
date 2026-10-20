@@ -196,7 +196,7 @@ namespace Semblance.Tutorial
                 }
                 foreach (var l in roomLights) l.enabled = true;
                 SetBulbs(roomBulbs, true);
-                if (roomLights.Count > 0) GameAudio.PlayAt("flashlight_click", roomLights[0].transform.position, 0.5f, 0.6f, 30f);
+                if (roomLights.Count > 0) GameAudio.PlayAt("tube_on", roomLights[0].transform.position, 0.7f, UnityEngine.Random.Range(0.95f, 1.05f), 30f);
                 yield return new WaitForSeconds(0.45f);
             }
             foreach (var h in hums) if (h != null) h.gameObject.SetActive(true);
@@ -233,7 +233,7 @@ namespace Semblance.Tutorial
             for (int i = 1; i <= line.Length; i++)
             {
                 text.text = line.Substring(0, i);
-                if (line[i - 1] != ' ') GameAudio.Play("typewriter_key", 0.45f, UnityEngine.Random.Range(0.92f, 1.08f));
+                if (line[i - 1] != ' ') GameAudio.Play(GameAudio.Variant("typewriter_key", 8), 0.45f, UnityEngine.Random.Range(0.96f, 1.04f));
                 yield return new WaitForSecondsRealtime(line[i - 1] == '.' ? 0.42f : 0.055f);
             }
             yield return new WaitForSecondsRealtime(1.5f);
@@ -253,6 +253,18 @@ namespace Semblance.Tutorial
                 cinematic.transform.position = pos;
                 cinematic.transform.rotation = Quaternion.LookRotation(look - pos);
                 yield return null;
+            }
+        }
+
+        /// <summary>Distant thunder now and then while you're above ground: never close, never on a cue.</summary>
+        private IEnumerator Thunder()
+        {
+            yield return new WaitForSeconds(UnityEngine.Random.Range(14f, 22f));
+            while (!finished)
+            {
+                if (player != null && player.position.y > -1f && !HidingSpot.PlayerHidden)
+                    GameAudio.Play(UnityEngine.Random.value < 0.5f ? "thunder_1" : "thunder_2", UnityEngine.Random.Range(0.35f, 0.55f), UnityEngine.Random.Range(0.9f, 1.05f), AudioBus.Ambience);
+                yield return new WaitForSeconds(UnityEngine.Random.Range(35f, 70f));
             }
         }
 
@@ -390,6 +402,7 @@ namespace Semblance.Tutorial
             yield return null;
 
             rain = GameAudio.Loop("rain_loop", null, 0f, bus: AudioBus.Ambience);
+            StartCoroutine(Thunder());
             yield return TypedLine("Thursday night. The office. Two days before Semblance.");
 
             // Outside, in the rain, closing on the one lit window.
@@ -522,7 +535,7 @@ namespace Semblance.Tutorial
                 dog.Appear(A("ChaseFrom").position, Vector3.forward);
                 dog.Follow(4.5f);
                 GameAudio.Play("stinger_2", 0.9f, 0.85f);
-                chase = GameAudio.Loop("chase_loop", null, 0.8f, bus: AudioBus.Cue);
+                chase = GameAudio.Loop(GameAudio.NextChase(), null, 0.8f, bus: AudioBus.Cue);
                 if (heart == null) heart = GameAudio.Loop("heartbeat", null, 0f, bus: AudioBus.Cue);
                 StartCoroutine(FadeAudio(heart, 0.9f, 1.2f));
                 StartCoroutine(OnYourHeels(() => breakerPulled));

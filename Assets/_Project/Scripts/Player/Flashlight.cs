@@ -66,7 +66,7 @@ namespace Semblance.Player
             if (GameInput.Pressed(GameInput.Flashlight) && (!InputLock.IsLocked || InputLock.Top is Events.HidingSpot))
             {
                 IsOn = !IsOn && battery > 0f;
-                Audio.GameAudio.Play("flashlight_click", 0.6f, battery > 0f ? 1f : 0.7f);
+                Audio.GameAudio.Play(IsOn || battery <= 0f ? "flashlight_click" : "flashlight_click_off", 0.6f, battery > 0f ? 1f : 0.7f);
                 if (battery <= 0f) PlayerHUD.Instance?.Toast("The flashlight's dead. Otis sells batteries at the general store.");
             }
 

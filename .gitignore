@@ -56,3 +56,9 @@ Thumbs.db
 # Reference sounds from other games/films: compared against, never committed
 /AudioReference/*
 !/AudioReference/README.md
+
+# The audio review's working sets (rebuildable from review/audio/work): only the installed finals in Resources/Audio are committed
+/Assets/_Project/Audio/Final/
+/Assets/_Project/Audio/Final.meta
+/Assets/_Project/Audio/Audition/
+/Assets/_Project/Audio/Audition.meta

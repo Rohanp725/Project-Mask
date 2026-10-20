@@ -418,7 +418,7 @@ namespace Semblance.Dialogue
             {
                 float pitch = 0.75f + Mathf.Abs(resident.DisplayName.GetHashCode() % 50) / 100f;
                 bool whisper = (resident.Avatar.GetSpeechFlags() & SpeechFlags.Whisper) != 0;
-                Audio.GameAudio.Play(Audio.GameAudio.Variant("voice_blip", 5), whisper ? 0.08f : 0.22f, pitch * Random.Range(0.95f, 1.05f));
+                Audio.GameAudio.Play(Audio.GameAudio.Variant("voice_blip", 8), whisper ? 0.08f : 0.22f, pitch * Random.Range(0.95f, 1.05f));
             }
 
             // Mouths move while a spoken line is still being typed out; looking them over or a handshake is you, not them.

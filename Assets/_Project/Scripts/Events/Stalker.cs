@@ -114,7 +114,7 @@ namespace Semblance.Events
             agent.stoppingDistance = 0.4f;
             agent.Warp(spawn);
 
-            music = GameAudio.Loop("chase_loop", null, 0f);
+            music = GameAudio.Loop(GameAudio.NextChase(), null, 0f);
             breath = GameAudio.Loop("breathing", transform, 0.8f, 14f, AudioBus.Cue);
             AmbientAudio.Hush = 1f;
             GameAudio.Play("stinger_2", 0.7f);
@@ -310,7 +310,7 @@ namespace Semblance.Events
             }
             if (placed) agent.Warp(hit.position);
             lastKnown = player.position;
-            GameAudio.PlayAt("creature_shriek", hit.position, 0.6f, 0.8f, 80f);
+            GameAudio.PlayAt("creature_shriek_distant", hit.position, 0.7f, 0.9f, 80f);
         }
 
         public void End()

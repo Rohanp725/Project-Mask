@@ -31,10 +31,14 @@ namespace Semblance.Events
         [SerializeField] private string hidePrompt = "Hide in the wardrobe";
         public override string Prompt => hidePrompt;
 
-        public void Configure(Transform insidePoint, string promptText = null)
+        [SerializeField] private string enterSound = "door_creak_2", exitSound = "door_creak_1";
+
+        public void Configure(Transform insidePoint, string promptText = null, string enter = null, string exit = null)
         {
             inside = insidePoint;
             if (promptText != null) hidePrompt = promptText;
+            if (enter != null) enterSound = enter;
+            if (exit != null) exitSound = exit;
         }
 
         public override void Interact(PlayerInteractor interactor)
@@ -50,7 +54,7 @@ namespace Semblance.Events
             EnteredAt = inside.position;
             EnteredTime = Time.time;
             InputLock.Push(this, Leave);
-            Audio.GameAudio.PlayAt("door_creak_2", transform.position, 0.5f, 1.3f, 15f);
+            Audio.GameAudio.PlayAt(enterSound, transform.position, 0.5f, enterSound == "door_creak_2" ? 1.3f : 1f, 15f);
             UI.PlayerHUD.Instance?.SetHint("Hiding. Hold your breath.", 4f);
             enteredFrame = Time.frameCount;
         }
@@ -80,7 +84,7 @@ namespace Semblance.Events
             InputLock.Pop(this);
             UI.PlayerHUD.Instance?.RestoreHint();
             UI.PlayerHUD.Instance?.SetPrompt(null);
-            Audio.GameAudio.PlayAt("door_creak_1", transform.position, 0.5f, 1.2f, 15f);
+            Audio.GameAudio.PlayAt(exitSound, transform.position, 0.5f, exitSound == "door_creak_1" ? 1.2f : 1f, 15f);
         }
 
     }

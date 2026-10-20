@@ -49,9 +49,20 @@ namespace Semblance.World
             Dead = true;
             stalledUntil = float.PositiveInfinity;
             SetLights(false);
-            Audio.GameAudio.Play("lamp_die", 0.7f, 0.6f);
             if (engine) Destroy(engine.gameObject);
+            Audio.GameAudio.PlayAt("car_stall", transform.position, 0.9f, 1f, 30f);
             if (IsDriving) StartCoroutine(DieAndGetOut());
+        }
+
+        private static IEnumerator EngineIn(AudioSource source)
+        {
+            yield return new WaitForSeconds(1.6f);
+            for (float t = 0; t < 1.2f && source != null; t += Time.deltaTime)
+            {
+                Audio.GameAudio.SetVolume(source, Mathf.Lerp(0f, 0.35f, t / 1.2f));
+                yield return null;
+            }
+            if (source != null) Audio.GameAudio.SetVolume(source, 0.35f);
         }
 
         private IEnumerator DieAndGetOut()
@@ -116,7 +127,10 @@ namespace Semblance.World
             enteredFrame = Time.frameCount;
             lookYaw = lookPitch = 0f;
             Audio.GameAudio.Play("car_door", 0.7f);
-            engine = Audio.GameAudio.Loop("engine_loop", transform, 0.35f, 30f);
+            // The starter and the first revs, then the idle takes over as the start fades.
+            Audio.GameAudio.PlayAt("car_start", transform.position, 0.7f, 1f, 30f);
+            engine = Audio.GameAudio.Loop("engine_loop", transform, 0f, 30f);
+            StartCoroutine(EngineIn(engine));
             SetLights(true);
             SetCabinVisible(false);
             PlayerHUD.Instance?.SetHint("{move} drive and steer   {brake} brake   {interact} get out", 5f);

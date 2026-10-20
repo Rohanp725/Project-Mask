@@ -275,6 +275,11 @@ namespace Semblance.EditorTools
             }
             var door = panel.AddComponent<World.Door>();
             SetField(door, "hinge", hinge);
+            if (style == DoorStyle.Fire)
+            {
+                SetField(door, "openSound", "door_metal_open");
+                SetField(door, "closeSound", "door_metal_close");
+            }
             if (locked)
             {
                 SetField(door, "locked", true);
@@ -355,7 +360,7 @@ namespace Semblance.EditorTools
             var inside = Group("Inside", root);
             inside.localPosition = localBase + new Vector3(0, 0.1f, 0);
             inside.localRotation = Quaternion.Euler(0, yaw, 0);
-            w.gameObject.AddComponent<Events.HidingSpot>().Configure(inside, "Hide in the locker");
+            w.gameObject.AddComponent<Events.HidingSpot>().Configure(inside, "Hide in the locker", "locker_open", "locker_close");
         }
 
         /// <summary>
@@ -1011,7 +1016,7 @@ namespace Semblance.EditorTools
             Part("Microphone", dispatch, new Vector3(-0.42f, FloorY + 1.02f, -0.1f), new Vector3(0.07f, 0.08f, 0.05f), "HideBlack");
             Part("Speaker", office, new Vector3(-7.95f, 2.3f, -3.1f), new Vector3(0.1f, 0.3f, 0.4f), "Wood");
             Part("Speaker Cloth", office, new Vector3(-7.89f, 2.3f, -3.1f), new Vector3(0.004f, 0.24f, 0.32f), "Fabric");
-            SoundEmitter(dispatch, new Vector3(0, 1f, 0), "static_loop", 0.05f, 6f);
+            SoundEmitter(dispatch, new Vector3(0, 1f, 0), "radio_chatter_loop", 0.09f, 7f);
             Chair(office, new Vector3(-6.55f, 0, -3.1f), -90f, "Leather");
             Part("Extinguisher Bracket", office, new Vector3(-7.95f, 1.1f, 0.2f), new Vector3(0.06f, 0.2f, 0.16f), "Metal");
             Round("Extinguisher", office, new Vector3(-7.84f, 0.95f, 0.2f), 0.14f, 0.5f, "BarnRed");

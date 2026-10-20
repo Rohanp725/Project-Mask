@@ -104,7 +104,7 @@ namespace Semblance.Core
                 int before = (int)shown;
                 shown += Time.deltaTime * 32f;
                 text.maxVisibleCharacters = (int)shown;
-                if ((int)shown != before && (int)shown % 2 == 0) GameAudio.Play("typewriter_key", 0.35f, Random.Range(0.9f, 1.1f));
+                if ((int)shown != before && (int)shown % 2 == 0) GameAudio.Play(GameAudio.Variant("typewriter_key", 8), 0.35f, Random.Range(0.95f, 1.05f));
                 if (GameInput.Pressed(GameInput.Advance) || skipLine) { shown = total; skipLine = false; }
                 yield return null;
                 total = text.textInfo.characterCount;

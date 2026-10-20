@@ -175,7 +175,7 @@ namespace Semblance.Events
                     huntCued = true;
                     AmbientAudio.Hush = 1f;
                     Vector3 far = player.position + Quaternion.Euler(0, Random.Range(0f, 360f), 0) * Vector3.forward * 60f;
-                    GameAudio.PlayAt("creature_shriek", far, 0.5f, 0.8f, 120f);
+                    GameAudio.PlayAt("creature_shriek_distant", far, 0.6f, 0.9f, 120f);
                     PlayerHUD.Instance?.Toast("<i>The crickets have stopped. Something out there answered the quiet.</i>");
                     Nerve.Instance?.Shock(4f);
                 }

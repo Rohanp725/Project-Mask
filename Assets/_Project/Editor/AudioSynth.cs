@@ -1127,9 +1127,13 @@ namespace Semblance.EditorTools
 
         // ------------------------------------------------------------ WAV output
 
+        /// <summary>Sounds replaced by recordings (the audio review's finals): Generate Audio leaves them alone.</summary>
+        private static bool Recorded(string path) => AssetImporter.GetAtPath(path.Replace('\\', '/')) is AssetImporter imp && imp.userData == "recorded";
+
         private static void Write(string name, float[] samples)
         {
             string path = Path.Combine(OutDir, name + ".wav");
+            if (Recorded(path)) return;
             using var stream = new FileStream(path, FileMode.Create);
             using var w = new BinaryWriter(stream);
             int dataSize = samples.Length * 2;

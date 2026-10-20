@@ -158,14 +158,7 @@ namespace Semblance.Residents
             if (walked < 0.72f) return;
             walked = 0f;
             var surface = Audio.FootstepAudio.Detect(transform.position);
-            AudioClip clip = surface switch
-            {
-                Audio.Surface.Wood => Audio.GameAudio.Variant("footstep_wood", 4),
-                Audio.Surface.Asphalt => Audio.GameAudio.Variant("footstep_asphalt", 4),
-                Audio.Surface.Dirt => Audio.GameAudio.Variant("footstep_dirt", 4),
-                Audio.Surface.Corn => Audio.GameAudio.Variant("footstep_corn", 3),
-                _ => Audio.GameAudio.Variant("footstep_grass", 4),
-            };
+            AudioClip clip = Audio.FootstepAudio.StepClip(surface);
             Audio.GameAudio.PlayAt(clip, transform.position + Vector3.up * 0.1f, 0.16f, Random.Range(0.88f, 1.0f), 14f, Audio.AudioBus.World);
         }
 
