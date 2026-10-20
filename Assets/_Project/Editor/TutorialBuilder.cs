@@ -57,6 +57,7 @@ namespace Semblance.EditorTools
             Mat("Concrete", 0.36f, 0.36f, 0.34f);
             Mat("ConcreteDark", 0.26f, 0.26f, 0.25f);
             Mat("Tube", 0.9f, 0.93f, 0.95f, new Color(0.85f, 0.92f, 1f) * 1.1f);
+            Mat("SteelFrame", 0.2f, 0.22f, 0.22f);
             Mat("Carton", 0.58f, 0.54f, 0.45f);     // archive boxes: matt board, nothing that glows in the dark
             Mat("CartonDark", 0.44f, 0.4f, 0.32f);
             EnsureLayer("NoReflection");
@@ -164,6 +165,20 @@ namespace Semblance.EditorTools
         private static void WallZ(Transform parent, string name, float z, float xA, float xB, float yA, float yB, string material)
             => Box(name, parent, new Vector3((xA + xB) * 0.5f, (yA + yB) * 0.5f, z), new Vector3(xB - xA, yB - yA, 0.2f), material);
 
+        /// <summary>
+        /// A wall-hung thing's inspect trigger, moved wholly onto the room side of it (toward <paramref name="room"/>):
+        /// 25 cm deep, starting at its face. A trigger that reaches back into the wall can be hit from the next room.
+        /// </summary>
+        private static void TriggerInFront(GameObject go, Vector3 room)
+        {
+            var box = go.GetComponent<BoxCollider>();
+            if (box == null) return;
+            float sign = Mathf.Sign(go.transform.InverseTransformPoint(room).z);
+            float sz = Mathf.Max(go.transform.lossyScale.z, 1e-3f);
+            box.size = new Vector3(box.size.x, box.size.y, 0.25f / sz);
+            box.center = new Vector3(box.center.x, box.center.y, sign * (0.5f + 0.125f / sz));
+        }
+
         private enum DoorStyle { Office, Fire, Plank }
 
         /// <summary>
@@ -173,35 +188,42 @@ namespace Semblance.EditorTools
         /// wired-glass vision panel, a closer and a push bar on the way out. Plank: a ledged and braced cupboard door.
         /// </summary>
         private static World.Door TutorialDoor(Transform parent, string name, Vector3 hingePos, float yaw, bool locked = false, string lockedMessage = null,
-            bool plate = false, DoorStyle style = DoorStyle.Office, bool lettering = false)
+            bool plate = false, DoorStyle style = DoorStyle.Office, bool lettering = false, float wall = 0.2f)
         {
-            const float opening = 0.9f, height = 2.14f, pw = 0.81f;
-            string jamb = style == DoorStyle.Fire ? "Galvanized" : "Wood";
+            // The clear opening is 0.9 x 2.1 (every lintel in the building sits at floor + 2.1). The frame lines it:
+            // jambs and head exactly as deep as the wall, so their faces are flush with the plaster; architrave laid
+            // flat on each wall face, lapping the jamb so no seam shows; stops on the closing side that lap the panel.
+            const float opening = 0.9f, height = 2.1f, pw = 0.81f, jw = 0.04f;
+            string jamb = style == DoorStyle.Fire ? "SteelFrame" : "Wood"; // fire doors: a painted pressed-steel frame
+            float wallFace = wall * 0.5f;
             var frame = Group(name + " Frame", parent);
             frame.localPosition = hingePos;
             frame.localRotation = Quaternion.Euler(0, yaw, 0);
-            foreach (var x in new[] { 0.02f, opening - 0.02f })
-                Box("Jamb", frame, new Vector3(x, height * 0.5f, 0), new Vector3(0.04f, height, 0.3f), jamb, collider: false);
-            Box("Head", frame, new Vector3(opening * 0.5f, height - 0.02f, 0), new Vector3(opening, 0.04f, 0.3f), jamb, collider: false);
-            foreach (var z in new[] { -0.16f, 0.16f })
+            foreach (var x in new[] { jw * 0.5f, opening - jw * 0.5f })
+                Box("Jamb", frame, new Vector3(x, height * 0.5f, 0), new Vector3(jw, height, wall), jamb, collider: false);
+            Box("Head", frame, new Vector3(opening * 0.5f, height - jw * 0.5f, 0), new Vector3(opening, jw, wall), jamb, collider: false);
+            const float aw = 0.07f, at = 0.018f;
+            foreach (var side in new[] { -1f, 1f })
             {
-                foreach (var x in new[] { -0.04f, opening + 0.04f })
-                    Box("Architrave", frame, new Vector3(x, height * 0.5f + 0.02f, z), new Vector3(0.08f, height + 0.08f, 0.02f), jamb, collider: false);
-                Box("Architrave", frame, new Vector3(opening * 0.5f, height + 0.02f, z), new Vector3(opening + 0.16f, 0.08f, 0.02f), jamb, collider: false);
+                float z = side * (wallFace + at * 0.5f);
+                foreach (var x in new[] { -aw * 0.5f + 0.01f, opening + aw * 0.5f - 0.01f })
+                    Box("Architrave", frame, new Vector3(x, (height + aw - 0.01f) * 0.5f, z), new Vector3(aw, height + aw - 0.01f, at), jamb, collider: false);
+                Box("Architrave Head", frame, new Vector3(opening * 0.5f, height + aw * 0.5f - 0.01f, z), new Vector3(opening + aw * 2f - 0.02f, aw, at), jamb, collider: false);
             }
-            Box("Threshold", frame, new Vector3(opening * 0.5f, 0.01f, 0), new Vector3(opening, 0.02f, 0.32f), style == DoorStyle.Fire ? "Metal" : "Wood", collider: false);
-            // The door shuts against stops on the +z side and swings away to -z; the stops lap the panel's edges.
-            foreach (var x in new[] { 0.058f, opening - 0.058f })
-                Box("Stop", frame, new Vector3(x, (height - 0.04f) * 0.5f, 0.0375f), new Vector3(0.04f, height - 0.04f, 0.025f), jamb, collider: false);
-            Box("Stop", frame, new Vector3(opening * 0.5f, height - 0.055f, 0.0375f), new Vector3(opening - 0.04f, 0.04f, 0.025f), jamb, collider: false);
+            Box("Threshold", frame, new Vector3(opening * 0.5f, 0.005f, 0), new Vector3(opening - jw * 2f, 0.01f, wall), style == DoorStyle.Fire ? "Metal" : "Wood", collider: false);
+            // Stops on the +z side (the door shuts against them and swings to -z), lapping the panel's edges and top.
+            const float sw = 0.025f, sd = 0.022f, sz = 0.025f + sd * 0.5f;
+            foreach (var x in new[] { jw + sw * 0.5f, opening - jw - sw * 0.5f })
+                Box("Stop", frame, new Vector3(x, (height - jw) * 0.5f, sz), new Vector3(sw, height - jw, sd), jamb, collider: false);
+            Box("Stop", frame, new Vector3(opening * 0.5f, height - jw - sw * 0.5f, sz), new Vector3(opening - jw * 2f, sw, sd), jamb, collider: false);
 
-            // The hinge knuckle sits on the swing face at the hinge jamb; the panel hangs off it.
+            // The hinge knuckles sit on the swing face at the hinge jamb; the panel hangs off them.
             var hinge = Group(name + " Hinge", frame);
             hinge.localPosition = new Vector3(0.045f, 0, -0.03f);
-            foreach (var y in new[] { 0.3f, 1.05f, 1.8f })
+            foreach (var y in new[] { 0.3f, 1.02f, 1.75f })
                 Box("Hinge Knuckle", hinge, new Vector3(0, y, 0), new Vector3(0.02f, 0.1f, 0.02f), "Brass", collider: false);
             string skin = style == DoorStyle.Fire ? "PlainSage" : "Door";
-            var panel = Box(name, hinge, new Vector3(pw * 0.5f, 1.04f, 0.03f), new Vector3(pw, 2.06f, 0.05f), skin);
+            var panel = Box(name, hinge, new Vector3(pw * 0.5f, 1.025f, 0.03f), new Vector3(pw, 2.03f, 0.05f), skin); // 1 cm off the floor, 2 cm under the head
             float cx = pw * 0.5f, front = 0.03f + 0.025f, back = 0.03f - 0.025f;
             if (style == DoorStyle.Office)
             {
@@ -440,19 +462,21 @@ namespace Semblance.EditorTools
             // South: the lobby door, locked for the night.
             WallZ(office, "Wall South", -5.6f, -8.2f, -6.5f, 0, h, wall);
             WallZ(office, "Wall South", -5.6f, -5.6f, 8.2f, 0, h, wall);
-            WallZ(office, "Lintel", -5.6f, -6.5f, -5.6f, 2.14f, h, wall);
+            WallZ(office, "Lintel", -5.6f, -6.5f, -5.6f, 2.2f, h, wall);
             TutorialDoor(office, "Lobby Door", new Vector3(-6.5f, 0.1f, -5.6f), 0f, true, "Locked for the night. The lobby's dark, and the sheriff has the only key.", lettering: true);
             // West: the stairwell door, under the exit sign.
             WallX(office, "Wall West", -8.1f, -5.7f, 2.5f, 0, h, wall);
             WallX(office, "Wall West", -8.1f, 3.4f, 5.7f, 0, h, wall);
-            WallX(office, "Lintel", -8.1f, 2.5f, 3.4f, 2.14f, h, wall);
+            WallX(office, "Lintel", -8.1f, 2.5f, 3.4f, 2.2f, h, wall);
             TutorialDoor(office, "Stairwell Door", new Vector3(-8.1f, 0.1f, 2.5f), -90f, style: DoorStyle.Fire);
             ExitSign(office, new Vector3(-7.95f, 2.42f, 2.95f), 90f);
             // East: three windows onto the rain. No glass: the room's open to the night, and the night to it.
-            float[] windows = { -3.2f, 0f, 3.2f };
+            // One window per room: the sheriff's (z -5.5..-2.4), Klein's (-2.4..2.7) and the armory's (2.7..5.5),
+            // each well clear of the walls between them.
+            float[] windows = { -3.95f, 0f, 4.1f };
             WallX(office, "Wall East Low", 8.1f, -5.7f, 5.7f, 0, 0.95f, wall);
             WallX(office, "Wall East High", 8.1f, -5.7f, 5.7f, 2.45f, h, wall);
-            float[][] piers = { new[] { -5.7f, -3.85f }, new[] { -2.55f, -0.65f }, new[] { 0.65f, 2.55f }, new[] { 3.85f, 5.7f } };
+            float[][] piers = { new[] { -5.7f, -4.6f }, new[] { -3.3f, -0.65f }, new[] { 0.65f, 3.45f }, new[] { 4.75f, 5.7f } };
             foreach (var p in piers) WallX(office, "Wall East Pier", 8.1f, p[0], p[1], 0.95f, 2.45f, wall);
             foreach (float z in windows)
             {
@@ -472,8 +496,11 @@ namespace Semblance.EditorTools
             }
             // Skirting and a picture rail: the room's been here since the thirties.
             Part("Skirting", office, new Vector3(0, 0.17f, 5.47f), new Vector3(16f, 0.14f, 0.03f), "Wood");
-            Part("Skirting", office, new Vector3(0, 0.17f, -5.47f), new Vector3(16f, 0.14f, 0.03f), "Wood");
-            Part("Skirting", office, new Vector3(-7.97f, 0.17f, 0), new Vector3(0.03f, 0.14f, 11f), "Wood");
+            // (stopping at the lobby and stairwell doors' architraves)
+            Part("Skirting", office, new Vector3((-8f + -6.56f) * 0.5f, 0.17f, -5.47f), new Vector3(-6.56f + 8f, 0.14f, 0.03f), "Wood");
+            Part("Skirting", office, new Vector3((-5.54f + 8f) * 0.5f, 0.17f, -5.47f), new Vector3(8f + 5.54f, 0.14f, 0.03f), "Wood");
+            Part("Skirting", office, new Vector3(-7.97f, 0.17f, (-5.5f + 2.44f) * 0.5f), new Vector3(0.03f, 0.14f, 2.44f + 5.5f), "Wood");
+            Part("Skirting", office, new Vector3(-7.97f, 0.17f, (3.46f + 5.5f) * 0.5f), new Vector3(0.03f, 0.14f, 5.5f - 3.46f), "Wood");
             Part("Skirting", office, new Vector3(7.97f, 0.17f, 0), new Vector3(0.03f, 0.14f, 11f), "Wood");
             Part("Picture Rail", office, new Vector3(0, 2.75f, 5.47f), new Vector3(16f, 0.05f, 0.04f), "Wood");
 
@@ -538,6 +565,7 @@ namespace Semblance.EditorTools
             Inspect(cork, "Look at the board",
                 "Three months of the county: a stolen truck, a barn fire, a man who walked into the river and didn't walk out. In the middle, pinned where the sheriff could see it from his door, the Semblance letter, with red thread run to everything and nothing.",
                 new Vector3(2.4f, 1.4f, 0.5f), clue: "tut_board");
+            TriggerInFront(cork, new Vector3(0, 1.5f, 0));
             Part("Picture Light", office, new Vector3(0f, 2.72f, 5.3f), new Vector3(1.2f, 0.06f, 0.14f), "Brass");
             Part("Picture Light Bulb", office, new Vector3(0f, 2.68f, 5.32f), new Vector3(1.0f, 0.02f, 0.06f), "Bulb");
             var boardLight = new GameObject("Board Light");
@@ -670,18 +698,18 @@ namespace Semblance.EditorTools
                 foreach (var y in new[] { 1.1f, 2.3f })
                     Box("Partition Rail", office, new Vector3(c.x, y, c.z), Vector3.Scale(S(length + 0.02f, t + 0.02f), new Vector3(1, 0.06f, 1)), "Wood", collider: false);
                 var off = alongX ? new Vector3(0, 0, blindsPositive ? 0.08f : -0.08f) : new Vector3(blindsPositive ? 0.08f : -0.08f, 0, 0);
-                Box("Blind", office, new Vector3(c.x, 1.7f, c.z) + off, Vector3.Scale(S(length - 0.02f, 0.02f), new Vector3(1, 1.16f, 1)), "PlainCream", collider: false);
+                Box("Blind", office, new Vector3(c.x, 1.7f, c.z) + off, Vector3.Scale(S(length - 0.13f, 0.02f), new Vector3(1, 1.16f, 1)), "PlainCream", collider: false);
             }
             // West partition with the door in it (door z 0.2..1.1); north partition up to the armory's cage.
             Segment(new Vector3(4.4f, 0, -2.4f), new Vector3(4.4f, 0, 0.2f), true);
             Segment(new Vector3(4.4f, 0, 1.1f), new Vector3(4.4f, 0, 2.7f), true);
-            Box("Door Lintel", office, new Vector3(4.4f, 2.72f, 0.65f), new Vector3(t, h - 2.14f, 1.0f), "StoreWall");
+            Box("Door Lintel", office, new Vector3(4.4f, (2.2f + h) * 0.5f, 0.65f), new Vector3(t, h - 2.2f, 0.9f), "StoreWall");
             Box("Office Wall", office, new Vector3(6.2f, 1.65f, 2.7f), new Vector3(3.6f + t, h, t), "StoreWall");
             Part("Office Skirting", office, new Vector3(6.2f, 0.17f, 2.62f), new Vector3(3.6f, 0.14f, 0.03f), "Wood");
             Part("Office Skirting", office, new Vector3(6.2f, 0.17f, 2.78f), new Vector3(3.6f, 0.14f, 0.03f), "Wood");
             Box("Corner Post", office, new Vector3(4.4f, 1.65f, 2.7f), new Vector3(t + 0.02f, h, t + 0.02f), "Wood");
             Box("Corner Post", office, new Vector3(4.4f, 1.65f, -2.4f), new Vector3(t + 0.02f, h, t + 0.02f), "Wood");
-            TutorialDoor(office, "Klein's Door", new Vector3(4.4f, 0.1f, 0.2f), -90f, plate: true, lettering: true);
+            TutorialDoor(office, "Klein's Door", new Vector3(4.4f, 0.1f, 0.2f), -90f, plate: true, lettering: true, wall: t);
             // The room: visitor's chair across the desk, cabinet in the corner, the hat and coat by the door, a bookcase.
             var cab = Piece("Filing Cabinet", office, new Vector3(7.6f, 0, -1.9f), 0f, new Vector3(0.5f, 1.32f, 0.62f), FloorY);
             Part("Body", cab, new Vector3(0, FloorY + 0.66f, 0), new Vector3(0.5f, 1.32f, 0.62f), "Galvanized");
@@ -749,6 +777,7 @@ namespace Semblance.EditorTools
             Inspect(roster.GetChild(0).gameObject, "Read the roster",
                 "DUTY ROSTER, WEEK OF OCT 10. Nights: REYES. Custodial: T. BAPTISTE, M-W-F. Thursday is blank. Somebody has pencilled a question mark in it and rubbed most of it out again.",
                 new Vector3(1f, 0.8f, 0.5f), clue: "tut_roster");
+            TriggerInFront(roster.GetChild(0).gameObject, new Vector3(0, 1.5f, 0));
             // The waiting chairs and the wanted sheets over them, the coffee at the far end.
             foreach (var x in new[] { 0.3f, 1.0f, 1.7f })
                 Chair(office, new Vector3(x, 0, -5.15f), 0f, "Vinyl");
@@ -787,15 +816,15 @@ namespace Semblance.EditorTools
                     Box("Partition Rail", office, new Vector3(c.x, y, c.z), Vector3.Scale(S(length + 0.02f, t + 0.02f), new Vector3(1, 0.06f, 1)), "Wood", collider: false);
                 // Blinds inside, drawn, the full length.
                 var off = alongX ? new Vector3(0, 0, blindsSideNegX ? -0.08f : 0.08f) : new Vector3(blindsSideNegX ? -0.08f : 0.08f, 0, 0);
-                Box("Blind", office, new Vector3(c.x, 1.7f, c.z) + off, Vector3.Scale(S(length - 0.02f, 0.02f), new Vector3(1, 1.16f, 1)), "PlainCream", collider: false);
+                Box("Blind", office, new Vector3(c.x, 1.7f, c.z) + off, Vector3.Scale(S(length - 0.13f, 0.02f), new Vector3(1, 1.16f, 1)), "PlainCream", collider: false);
             }
             // West wall of the office with the door in it; north wall full length.
             Segment(new Vector3(4.4f, 0, -5.5f), new Vector3(4.4f, 0, -3.4f), false);
             Box("Door Post", office, new Vector3(4.4f, 1.65f, -2.45f), new Vector3(t, h, 0.1f), "StoreWall");
-            Box("Door Lintel", office, new Vector3(4.4f, 2.72f, -2.95f), new Vector3(t, h - 2.14f, 1.0f), "StoreWall");
+            Box("Door Lintel", office, new Vector3(4.4f, (2.2f + h) * 0.5f, -2.95f), new Vector3(t, h - 2.2f, 0.9f), "StoreWall");
             Segment(new Vector3(4.4f, 0, -2.4f), new Vector3(8.0f, 0, -2.4f), false);
             Box("Corner Post", office, new Vector3(4.4f, 1.65f, -2.4f), new Vector3(t + 0.02f, h, t + 0.02f), "Wood");
-            TutorialDoor(office, "Sheriff's Door", new Vector3(4.4f, 0.1f, -3.4f), -90f, true, "The sheriff's office. Locked, and his light's off. He went home at six. He has somebody to go home to.", plate: true, lettering: true);
+            TutorialDoor(office, "Sheriff's Door", new Vector3(4.4f, 0.1f, -3.4f), -90f, true, "The sheriff's office. Locked, and his light's off. He went home at six. He has somebody to go home to.", plate: true, lettering: true, wall: t);
             // Inside: the big desk, the flag, the cabinet, the hat on the stand, his tube off.
             var desk = Table("Sheriff's Desk", office, new Vector3(6.4f, 0, -4.3f), 0f, 2.0f, 0.9f, "Wood", 0.78f);
             Part("Modesty Panel", desk, new Vector3(0, FloorY + 0.4f, 0.4f), new Vector3(1.9f, 0.74f, 0.03f), "Wood");
@@ -904,8 +933,8 @@ namespace Semblance.EditorTools
                 Part("Ammo Crate", office, new Vector3(x, FloorY + 0.14f + y, z), new Vector3(0.42f, 0.28f, 0.3f), mat);
                 Part("Crate Label", office, new Vector3(x, FloorY + 0.16f + y, z - 0.152f), new Vector3(0.2f, 0.08f, 0.004f), "Writing");
             }
-            Part("Vest", office, new Vector3(7.8f, FloorY + 1.3f, 4.2f), new Vector3(0.06f, 0.6f, 0.5f), "Suit");
-            Part("Vest Hook", office, new Vector3(7.9f, FloorY + 1.65f, 4.2f), new Vector3(0.08f, 0.04f, 0.04f), "Brass");
+            Part("Vest", office, new Vector3(7.9f, FloorY + 1.3f, 3.1f), new Vector3(0.06f, 0.6f, 0.46f), "Suit");
+            Part("Vest Hook", office, new Vector3(7.96f, FloorY + 1.65f, 3.1f), new Vector3(0.08f, 0.04f, 0.04f), "Brass");
             Part("Flare Box", office, new Vector3(7.5f, FloorY + 0.12f, 4.9f), new Vector3(0.5f, 0.24f, 0.26f), "BarnRed");
             CagedBulb(office, new Vector3(6.6f, 2.9f, 4.1f), 4.5f, 0.9f);
         }
@@ -964,7 +993,8 @@ namespace Semblance.EditorTools
             }
             Part("Mileage", map, new Vector3(0.36f, 0.5f, 0.009f), new Vector3(0.06f, 0.02f, 0.002f), "Ash");
             Part("Map Legend", map, new Vector3(-0.65f, -0.5f, 0.008f), new Vector3(0.3f, 0.12f, 0.002f), "Writing");
-            Inspect(map.GetChild(0).gameObject, "Look at the map", "Barlow County. Pins in every town but one. Somebody has drawn a circle round Semblance in pencil, two hours north, and written the mileage beside it: 94.", new Vector3(1.8f, 1.3f, 0.5f), clue: "tut_map");
+            Inspect(map.GetChild(0).gameObject, "Look at the map", "Barlow County. Pins in every town but one. Somebody has drawn a circle round Semblance in pencil, two hours north, and written the mileage beside it: 94.", new Vector3(1.8f, 1.3f, 0.25f), clue: "tut_map");
+            TriggerInFront(map.GetChild(0).gameObject, new Vector3(0, 1.5f, 0));
             // Dispatch against the west wall, facing into the room.
             var dispatch = Table("Dispatch", office, new Vector3(-7.6f, 0, -3.1f), -90f, 1.1f, 0.6f, "Wood", 0.8f);
             Part("Transceiver", dispatch, new Vector3(0, FloorY + 0.97f, 0.05f), new Vector3(0.6f, 0.3f, 0.36f), "Metal");
@@ -1080,7 +1110,7 @@ namespace Semblance.EditorTools
             WallX(stairwell, "Wall East", -8.1f, -5.0f, 4.6f, bottom, 0f, wall);
             WallX(stairwell, "Lintel", -8.1f, -5.9f, -5.0f, -1.4f, 0f, wall);
             WallX(stairwell, "Wall East Upper", -8.1f, -6.3f, -5.5f, 0f, top, wall);
-            TutorialDoor(stairwell, "Archive Door", new Vector3(-8.1f, -3.5f, -5.9f), 90f, style: DoorStyle.Fire);
+            TutorialDoor(stairwell, "Archive Door", new Vector3(-8.1f, -3.5f, -5.9f), -90f, style: DoorStyle.Fire); // spans z -5.9..-5.0, swings into the archive
             // Handrail down the open side.
             var rail = Box("Handrail", stairwell, new Vector3(-8.35f, -0.8f, -1.5f), new Vector3(0.05f, 0.05f, 7.0f), "Metal", collider: false);
             rail.transform.localRotation = Quaternion.Euler(-31f, 0, 0);
@@ -1640,7 +1670,7 @@ namespace Semblance.EditorTools
             Box("Facade Upper", exterior, new Vector3(8.26f, 4.5f, 0f), new Vector3(0.12f, 2.4f, 11.8f), "Brick", collider: false);
             Box("Cornice", exterior, new Vector3(8.4f, 5.75f, 0f), new Vector3(0.4f, 0.14f, 12f), "Stone", collider: false);
             Box("Band", exterior, new Vector3(8.33f, 3.35f, 0f), new Vector3(0.14f, 0.12f, 12f), "Stone", collider: false);
-            foreach (var z in new[] { -3.2f, 0f, 3.2f })
+            foreach (var z in new[] { -3.95f, 0f, 4.1f })
             {
                 Box("Upper Window", exterior, new Vector3(8.3f, 4.5f, z), new Vector3(0.04f, 1.3f, 1.1f), "WindowDark", collider: false);
                 Box("Upper Sill", exterior, new Vector3(8.36f, 3.82f, z), new Vector3(0.2f, 0.07f, 1.3f), "Stone", collider: false);
@@ -1648,7 +1678,7 @@ namespace Semblance.EditorTools
             // The brick face, built as strips so the three windows are open through it.
             Box("Facade Low", exterior, new Vector3(8.26f, 0.475f, 0f), new Vector3(0.08f, 0.95f, 11.8f), "Brick", collider: false);
             Box("Facade High", exterior, new Vector3(8.26f, 2.875f, 0f), new Vector3(0.08f, 0.85f, 11.8f), "Brick", collider: false);
-            foreach (var p in new[] { (-5.9f, -3.85f), (-2.55f, -0.65f), (0.65f, 2.55f), (3.85f, 5.9f) })
+            foreach (var p in new[] { (-5.9f, -4.6f), (-3.3f, -0.65f), (0.65f, 3.45f), (4.75f, 5.9f) })
                 Box("Facade Pier", exterior, new Vector3(8.26f, 1.7f, (p.Item1 + p.Item2) * 0.5f), new Vector3(0.08f, 1.5f, p.Item2 - p.Item1), "Brick", collider: false);
             Box("Side Wall", exterior, new Vector3(0.2f, 2.9f, 5.72f), new Vector3(16.2f, 5.8f, 0.1f), "Brick", collider: false);
             Box("Side Wall", exterior, new Vector3(0.2f, 2.9f, -5.72f), new Vector3(16.2f, 5.8f, 0.1f), "Brick", collider: false);
