@@ -180,6 +180,7 @@ namespace Semblance.UI
             IsReading = false;
             messageText.text = message;
             messagePanel.SetActive(true);
+            FitMessagePanel();
             messageHideTime = Time.time + duration;
         }
 
@@ -194,8 +195,18 @@ namespace Semblance.UI
         {
             messageText.text = message + $"\n<size=65%><color=#{ColorUtility.ToHtmlStringRGB(textColor * 0.6f)}>[{GameInput.Glyph(GameInput.Interact)}] close</color></size>";
             messagePanel.SetActive(true);
+            FitMessagePanel();
             messageHideTime = float.PositiveInfinity;
             IsReading = true;
+        }
+
+        /// <summary>The panel grows to hold its text (a letter, a card) and shrinks back for a line.</summary>
+        private void FitMessagePanel()
+        {
+            var rect = messagePanel.GetComponent<RectTransform>();
+            messageText.ForceMeshUpdate();
+            float height = messageText.preferredHeight + 32f;
+            rect.sizeDelta = new Vector2(rect.sizeDelta.x, Mathf.Clamp(height, 130f, 600f));
         }
 
         public void DismissReading()

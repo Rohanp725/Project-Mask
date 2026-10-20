@@ -275,6 +275,58 @@ namespace Semblance.Tutorial
             }
         }
 
+        /// <summary>
+        /// The first encounter in the dark: the flashlight stays dead the whole time she's in the aisle, and the
+        /// red lamp over the locker flickers out as she comes level with it, then comes back once she's gone.
+        /// </summary>
+        private IEnumerator NothingToSeeHer(Func<bool> until)
+        {
+            var lockerFront = A("LockerFront").position;
+            Light lamp = null;
+            float best = 3.5f;
+            foreach (var l in emergencyLights)
+            {
+                if (l == null) continue;
+                float d = Vector3.Distance(l.transform.position, lockerFront);
+                if (d < best) { best = d; lamp = l; }
+            }
+            var fixtures = new List<Renderer>();
+            if (lamp != null)
+                foreach (var r in lamp.transform.parent.GetComponentsInChildren<Renderer>())
+                    if (r.name == "Emergency Lamp" && Vector3.Distance(r.transform.position, lamp.transform.position) < 1f) fixtures.Add(r);
+            bool lampOut = false;
+            while (!until())
+            {
+                Flashlight.Instance?.Kill(0.6f);
+                if (!lampOut && lamp != null && dog != null && dog.gameObject.activeSelf && Vector3.Distance(dog.transform.position, lockerFront) < 3.2f)
+                {
+                    lampOut = true;
+                    for (int i = 0; i < 7; i++)
+                    {
+                        lamp.enabled = !lamp.enabled;
+                        SetBulbs(fixtures, lamp.enabled);
+                        yield return new WaitForSeconds(UnityEngine.Random.Range(0.05f, 0.16f));
+                    }
+                    lamp.enabled = false;
+                    SetBulbs(fixtures, false);
+                    GameAudio.PlayAt("flashlight_click", lamp.transform.position, 0.4f, 0.5f, 12f);
+                }
+                yield return null;
+            }
+            if (lamp != null && lightsOut)
+            {
+                yield return new WaitForSeconds(1.5f);
+                for (int i = 0; i < 4; i++)
+                {
+                    lamp.enabled = !lamp.enabled;
+                    SetBulbs(fixtures, lamp.enabled);
+                    yield return new WaitForSeconds(UnityEngine.Random.Range(0.05f, 0.14f));
+                }
+                lamp.enabled = true;
+                SetBulbs(fixtures, true);
+            }
+        }
+
         /// <summary>Whenever the thing would be in the beam, the batteries give out. You never get a clean look.</summary>
         private IEnumerator KeepItDark(Func<bool> until)
         {
@@ -353,7 +405,7 @@ namespace Semblance.Tutorial
             Hint("Now ask about Teodoro (<b>About people...</b>), then choose <b>Look them over</b>: what you see goes in the notebook next to what she said.");
             yield return new WaitUntil(() => Asked("Alma Reyes", "About Teodoro Baptiste") && Asked("Alma Reyes", "observe"));
             Hint("Leave the conversation when you're done with her.");
-            yield return Card("What people tell you is testimony. What you see for yourself is observation. In the world, hold {focus} on someone to look closer.\n\nFaces are where the lies are. In Semblance, the parish records show how everyone used to look. And a shaken hand tells you something too: cold hands with a reason are a Tuesday. Cold hands with no reason are a note.");
+            yield return Card("What people tell you is testimony. What you see for yourself is observation. In the world, hold {focus} on someone to look closer.\n\nFaces are where the lies are. In Semblance, the parish records show how everyone used to look. And a handshake tells you something too. Cold hands with a reason behind them, a walk in from the fields, an hour in a cellar, mean nothing. Cold hands with no reason are worth a note.");
 
             // 5. The camera. The flash goes off; so do the lights.
             Hint("Reyes wants the evidence board on film: it's on the back wall, right of the clock. Press {camera} to raise the camera, {shoot} to take the photo.");
@@ -400,7 +452,9 @@ namespace Semblance.Tutorial
             GameAudio.Play("sting_soft", 0.7f);
             heart = GameAudio.Loop("heartbeat", null, 0.5f, bus: AudioBus.Ambience);
             Nerve.Instance?.Shock(9f);
-            Flashlight.Instance?.Kill(12f);
+            // Until she's gone again you get eye-shine and claws and nothing else: the batteries stay dead, and
+            // the alcove's red lamp gives out as she reaches it. Nobody gets a look at her in the first aisle.
+            StartCoroutine(NothingToSeeHer(() => !dog.gameObject.activeSelf));
             Hint("<b>The batteries are going, and it's coming down the aisle.</b>\n<size=80%>The alcove under the red lamp, on your right. Press {interact} on the locker to get inside.</size>");
             float wait = 0f;
             while (!dog.Arrived && wait < 22f) { wait += Time.deltaTime; yield return null; }
@@ -482,7 +536,7 @@ namespace Semblance.Tutorial
             hud.ShowMessage("It's a dog. An old, half-blind dog with grey on her muzzle, and she is very pleased to see you.", 5f);
             yield return new WaitForSeconds(2.2f);
             var teo = Resident.FindByName("Teodoro Baptiste");
-            if (closetDoor != null) { closetDoor.SetLocked(false); closetDoor.ForceOpen(true); }
+            if (closetDoor != null) { closetDoor.SetLocked(false); closetDoor.ForceOpen(true); closetDoor.FixOpen(); } // and it stays open: Teo's standing in it
             if (teo != null)
             {
                 var teoAgent = teo.GetComponent<UnityEngine.AI.NavMeshAgent>();

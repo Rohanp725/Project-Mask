@@ -27,7 +27,17 @@ namespace Semblance.World
             !isOpen && knock != null && knock.WantsKnock ? "Knock" :
             locked || (!isOpen && ClosedForBusiness) ? "Try door" : isOpen ? "Close door" : "Open door";
 
-        public override bool CanInteract => base.CanInteract && (knock == null || !knock.Busy);
+        public override bool CanInteract => base.CanInteract && !fixedOpen && (knock == null || !knock.Busy);
+
+        private bool fixedOpen;
+
+        /// <summary>Propped open for good (the closet, once Teo's out of it): no prompt, and nobody shuts it.</summary>
+        public void FixOpen()
+        {
+            locked = false;
+            isOpen = true;
+            fixedOpen = true;
+        }
 
         private Collider panel;
 
@@ -154,8 +164,9 @@ namespace Semblance.World
                 return;
             currentAngle = Mathf.MoveTowards(currentAngle, target, swingSpeed * Time.deltaTime);
             hinge.localRotation = closedRotation * Quaternion.Euler(0, currentAngle, 0);
-            // Once it starts to swing, the slab stops being a wall: nobody waits on a door to finish opening.
-            if (panel != null) panel.isTrigger = currentAngle >= 3f; // still there to look at and close, not to bump into
+            // While it swings, the slab stops being a wall: nobody waits on a door to finish opening. Once it's
+            // stopped, open or shut, it's a door again, and you walk round it.
+            if (panel != null) panel.isTrigger = currentAngle >= 3f && !Mathf.Approximately(currentAngle, target);
         }
     }
 }

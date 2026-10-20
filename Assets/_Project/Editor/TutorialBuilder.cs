@@ -162,26 +162,92 @@ namespace Semblance.EditorTools
         private static void WallZ(Transform parent, string name, float z, float xA, float xB, float yA, float yB, string material)
             => Box(name, parent, new Vector3((xA + xB) * 0.5f, (yA + yB) * 0.5f, z), new Vector3(xB - xA, yB - yA, 0.2f), material);
 
-        /// <summary>A door in a wall: hinge at the given corner, panel 0.9 wide swinging about it. Returns the Door.</summary>
-        private static World.Door TutorialDoor(Transform parent, string name, Vector3 hingePos, float yaw, bool locked = false, string lockedMessage = null, bool plate = false)
+        private enum DoorStyle { Office, Fire, Plank }
+
+        /// <summary>
+        /// A door in a 0.9 m opening. The frame (jambs, head, stops, architrave, threshold) stays put; only the panel
+        /// swings, on a hinge at the given corner, and the stops lap its edges so nothing shows round it when it's
+        /// shut. Office: a panelled door with a frosted light and a brass kick plate. Fire: painted steel with a
+        /// wired-glass vision panel, a closer and a push bar on the way out. Plank: a ledged and braced cupboard door.
+        /// </summary>
+        private static World.Door TutorialDoor(Transform parent, string name, Vector3 hingePos, float yaw, bool locked = false, string lockedMessage = null,
+            bool plate = false, DoorStyle style = DoorStyle.Office, bool lettering = false)
         {
-            var hinge = Group(name + " Hinge", parent);
-            hinge.localPosition = hingePos;
-            hinge.localRotation = Quaternion.Euler(0, yaw, 0);
-            var panel = Box(name, hinge, new Vector3(0.45f, 1.04f, 0), new Vector3(0.86f, 2.06f, 0.07f), "Door");
-            foreach (var face in new[] { -1f, 1f })
+            const float opening = 0.9f, height = 2.14f, pw = 0.81f;
+            string jamb = style == DoorStyle.Fire ? "Galvanized" : "Wood";
+            var frame = Group(name + " Frame", parent);
+            frame.localPosition = hingePos;
+            frame.localRotation = Quaternion.Euler(0, yaw, 0);
+            foreach (var x in new[] { 0.02f, opening - 0.02f })
+                Box("Jamb", frame, new Vector3(x, height * 0.5f, 0), new Vector3(0.04f, height, 0.3f), jamb, collider: false);
+            Box("Head", frame, new Vector3(opening * 0.5f, height - 0.02f, 0), new Vector3(opening, 0.04f, 0.3f), jamb, collider: false);
+            foreach (var z in new[] { -0.16f, 0.16f })
             {
-                Box("Knob Rose", hinge, new Vector3(0.77f, 1.0f, face * 0.04f), new Vector3(0.07f, 0.07f, 0.012f), "Brass", collider: false);
-                Box("Knob", hinge, new Vector3(0.77f, 1.0f, face * 0.07f), new Vector3(0.05f, 0.05f, 0.05f), "Brass", collider: false);
+                foreach (var x in new[] { -0.04f, opening + 0.04f })
+                    Box("Architrave", frame, new Vector3(x, height * 0.5f + 0.02f, z), new Vector3(0.08f, height + 0.08f, 0.02f), jamb, collider: false);
+                Box("Architrave", frame, new Vector3(opening * 0.5f, height + 0.02f, z), new Vector3(opening + 0.16f, 0.08f, 0.02f), jamb, collider: false);
             }
-            // Casing either side and over the top, so the opening reads as a doorway and not a hole.
-            foreach (var x in new[] { -0.05f, 0.95f })
-                Box("Casing", hinge, new Vector3(x, 1.05f, 0), new Vector3(0.08f, 2.14f, 0.3f), "Wood", collider: false);
-            Box("Casing Head", hinge, new Vector3(0.45f, 2.13f, 0), new Vector3(1.08f, 0.08f, 0.3f), "Wood", collider: false);
-            if (plate)
+            Box("Threshold", frame, new Vector3(opening * 0.5f, 0.01f, 0), new Vector3(opening, 0.02f, 0.32f), style == DoorStyle.Fire ? "Metal" : "Wood", collider: false);
+            // The door shuts against stops on the +z side and swings away to -z; the stops lap the panel's edges.
+            foreach (var x in new[] { 0.058f, opening - 0.058f })
+                Box("Stop", frame, new Vector3(x, (height - 0.04f) * 0.5f, 0.0375f), new Vector3(0.04f, height - 0.04f, 0.025f), jamb, collider: false);
+            Box("Stop", frame, new Vector3(opening * 0.5f, height - 0.055f, 0.0375f), new Vector3(opening - 0.04f, 0.04f, 0.025f), jamb, collider: false);
+
+            // The hinge knuckle sits on the swing face at the hinge jamb; the panel hangs off it.
+            var hinge = Group(name + " Hinge", frame);
+            hinge.localPosition = new Vector3(0.045f, 0, -0.03f);
+            foreach (var y in new[] { 0.3f, 1.05f, 1.8f })
+                Box("Hinge Knuckle", hinge, new Vector3(0, y, 0), new Vector3(0.02f, 0.1f, 0.02f), "Brass", collider: false);
+            string skin = style == DoorStyle.Fire ? "PlainSage" : "Door";
+            var panel = Box(name, hinge, new Vector3(pw * 0.5f, 1.04f, 0.03f), new Vector3(pw, 2.06f, 0.05f), skin);
+            float cx = pw * 0.5f, front = 0.03f + 0.025f, back = 0.03f - 0.025f;
+            if (style == DoorStyle.Office)
             {
-                var brass = Box("Door Plate", hinge, new Vector3(0.45f, 1.7f, 0.04f), new Vector3(0.26f, 0.08f, 0.006f), "Brass", collider: false);
-                brass.transform.SetParent(panel.transform, true); // it swings with the door
+                // A frosted light in the top half, a raised panel below, brass furniture.
+                Box("Light", hinge, new Vector3(cx, 1.55f, 0.03f), new Vector3(0.56f, 0.72f, 0.058f), "Glass", collider: false);
+                foreach (var z in new[] { front + 0.005f, back - 0.005f })
+                {
+                    Box("Glazing Bar", hinge, new Vector3(cx, 1.55f, z), new Vector3(0.6f, 0.03f, 0.006f), "Wood", collider: false);
+                    Box("Glazing Bar", hinge, new Vector3(cx, 1.55f, z), new Vector3(0.03f, 0.76f, 0.006f), "Wood", collider: false);
+                    if (lettering) Box("Lettering", hinge, new Vector3(cx, 1.72f, z), new Vector3(0.4f, 0.06f, 0.004f), "Writing", collider: false);
+                }
+                Box("Raised Panel", hinge, new Vector3(cx, 0.52f, 0.03f), new Vector3(0.56f, 0.64f, 0.056f), "Wood", collider: false);
+                Box("Kick Plate", hinge, new Vector3(cx, 0.13f, 0.03f), new Vector3(0.7f, 0.2f, 0.054f), "Brass", collider: false);
+                foreach (var face in new[] { -1f, 1f })
+                {
+                    Box("Knob Rose", hinge, new Vector3(pw - 0.09f, 1.0f, 0.03f + face * 0.03f), new Vector3(0.07f, 0.07f, 0.012f), "Brass", collider: false);
+                    Box("Knob", hinge, new Vector3(pw - 0.09f, 1.0f, 0.03f + face * 0.062f), new Vector3(0.05f, 0.05f, 0.05f), "Brass", collider: false);
+                }
+                if (plate)
+                    Box("Door Plate", hinge, new Vector3(cx, 1.1f, front + 0.003f), new Vector3(0.26f, 0.07f, 0.005f), "Brass", collider: false);
+            }
+            else if (style == DoorStyle.Fire)
+            {
+                // Steel: a wired-glass slot, a closer up top, a push bar on the way out and a lever on the way in.
+                Box("Wired Glass", hinge, new Vector3(cx + 0.1f, 1.5f, 0.03f), new Vector3(0.18f, 0.5f, 0.056f), "Glass", collider: false);
+                foreach (var z in new[] { front + 0.004f, back - 0.004f })
+                    for (int i = -1; i <= 1; i++)
+                        Box("Wire", hinge, new Vector3(cx + 0.1f + i * 0.05f, 1.5f, z), new Vector3(0.004f, 0.5f, 0.004f), "Metal", collider: false);
+                Box("Kick Plate", hinge, new Vector3(cx, 0.15f, 0.03f), new Vector3(pw - 0.04f, 0.26f, 0.054f), "Galvanized", collider: false);
+                Box("Push Bar", hinge, new Vector3(cx, 1.02f, front + 0.05f), new Vector3(pw - 0.2f, 0.05f, 0.04f), "Galvanized", collider: false);
+                foreach (var x in new[] { 0.14f, pw - 0.14f })
+                    Box("Bar Bracket", hinge, new Vector3(x, 1.02f, front + 0.025f), new Vector3(0.06f, 0.08f, 0.05f), "Metal", collider: false);
+                Box("Lever", hinge, new Vector3(pw - 0.12f, 1.02f, back - 0.03f), new Vector3(0.14f, 0.025f, 0.025f), "Metal", collider: false);
+                Box("Lever Rose", hinge, new Vector3(pw - 0.09f, 1.02f, back - 0.008f), new Vector3(0.06f, 0.06f, 0.012f), "Metal", collider: false);
+                Box("Closer", hinge, new Vector3(pw - 0.25f, 1.96f, back - 0.04f), new Vector3(0.24f, 0.07f, 0.06f), "Metal", collider: false);
+                Box("Closer Arm", hinge, new Vector3(pw - 0.1f, 2.0f, back - 0.09f), new Vector3(0.3f, 0.02f, 0.02f), "Metal", collider: false).transform.localRotation = Quaternion.Euler(0, 35f, 0);
+                Box("Fire Door Sign", hinge, new Vector3(cx, 1.78f, front + 0.003f), new Vector3(0.3f, 0.09f, 0.004f), "SignWhite", collider: false);
+                Box("Fire Door Text", hinge, new Vector3(cx, 1.78f, front + 0.006f), new Vector3(0.24f, 0.04f, 0.003f), "Writing", collider: false);
+            }
+            else
+            {
+                // Ledged and braced: two ledges and a diagonal on the inside, a latch and a ring on the out.
+                foreach (var y in new[] { 0.45f, 1.65f })
+                    Box("Ledge", hinge, new Vector3(cx, y, back - 0.012f), new Vector3(pw - 0.06f, 0.12f, 0.024f), "Wood", collider: false);
+                Box("Brace", hinge, new Vector3(cx, 1.05f, back - 0.012f), new Vector3(0.11f, 1.25f, 0.024f), "Wood", collider: false).transform.localRotation = Quaternion.Euler(0, 0, 32f);
+                Box("Latch", hinge, new Vector3(pw - 0.1f, 1.0f, front + 0.012f), new Vector3(0.14f, 0.03f, 0.02f), "Metal", collider: false);
+                Box("Ring Pull", hinge, new Vector3(pw - 0.1f, 0.94f, front + 0.02f), new Vector3(0.05f, 0.05f, 0.012f), "Metal", collider: false);
+                Box("Knob", hinge, new Vector3(pw - 0.1f, 1.0f, back - 0.03f), new Vector3(0.04f, 0.04f, 0.04f), "Wood", collider: false);
             }
             var door = panel.AddComponent<World.Door>();
             SetField(door, "hinge", hinge);
@@ -375,12 +441,12 @@ namespace Semblance.EditorTools
             WallZ(office, "Wall South", -5.6f, -8.2f, -6.5f, 0, h, wall);
             WallZ(office, "Wall South", -5.6f, -5.6f, 8.2f, 0, h, wall);
             WallZ(office, "Lintel", -5.6f, -6.5f, -5.6f, 2.14f, h, wall);
-            TutorialDoor(office, "Lobby Door", new Vector3(-6.5f, 0.1f, -5.6f), 0f, true, "Locked for the night. The lobby's dark, and the sheriff has the only key.");
+            TutorialDoor(office, "Lobby Door", new Vector3(-6.5f, 0.1f, -5.6f), 0f, true, "Locked for the night. The lobby's dark, and the sheriff has the only key.", lettering: true);
             // West: the stairwell door, under the exit sign.
             WallX(office, "Wall West", -8.1f, -5.7f, 2.5f, 0, h, wall);
             WallX(office, "Wall West", -8.1f, 3.4f, 5.7f, 0, h, wall);
             WallX(office, "Lintel", -8.1f, 2.5f, 3.4f, 2.14f, h, wall);
-            TutorialDoor(office, "Stairwell Door", new Vector3(-8.1f, 0.1f, 2.5f), -90f);
+            TutorialDoor(office, "Stairwell Door", new Vector3(-8.1f, 0.1f, 2.5f), -90f, style: DoorStyle.Fire);
             ExitSign(office, new Vector3(-7.95f, 2.42f, 2.95f), 90f);
             // East: three windows onto the rain. No glass: the room's open to the night, and the night to it.
             float[] windows = { -3.2f, 0f, 3.2f };
@@ -615,7 +681,7 @@ namespace Semblance.EditorTools
             Part("Office Skirting", office, new Vector3(6.2f, 0.17f, 2.78f), new Vector3(3.6f, 0.14f, 0.03f), "Wood");
             Box("Corner Post", office, new Vector3(4.4f, 1.65f, 2.7f), new Vector3(t + 0.02f, h, t + 0.02f), "Wood");
             Box("Corner Post", office, new Vector3(4.4f, 1.65f, -2.4f), new Vector3(t + 0.02f, h, t + 0.02f), "Wood");
-            TutorialDoor(office, "Klein's Door", new Vector3(4.4f, 0.1f, 0.2f), -90f, plate: true);
+            TutorialDoor(office, "Klein's Door", new Vector3(4.4f, 0.1f, 0.2f), -90f, plate: true, lettering: true);
             // The room: visitor's chair across the desk, cabinet in the corner, the hat and coat by the door, a bookcase.
             var cab = Piece("Filing Cabinet", office, new Vector3(7.6f, 0, -1.9f), 0f, new Vector3(0.5f, 1.32f, 0.62f), FloorY);
             Part("Body", cab, new Vector3(0, FloorY + 0.66f, 0), new Vector3(0.5f, 1.32f, 0.62f), "Galvanized");
@@ -729,7 +795,7 @@ namespace Semblance.EditorTools
             Box("Door Lintel", office, new Vector3(4.4f, 2.72f, -2.95f), new Vector3(t, h - 2.14f, 1.0f), "StoreWall");
             Segment(new Vector3(4.4f, 0, -2.4f), new Vector3(8.0f, 0, -2.4f), false);
             Box("Corner Post", office, new Vector3(4.4f, 1.65f, -2.4f), new Vector3(t + 0.02f, h, t + 0.02f), "Wood");
-            TutorialDoor(office, "Sheriff's Door", new Vector3(4.4f, 0.1f, -3.4f), -90f, true, "The sheriff's office. Locked, and his light's off. He went home at six like a man with a home.", plate: true);
+            TutorialDoor(office, "Sheriff's Door", new Vector3(4.4f, 0.1f, -3.4f), -90f, true, "The sheriff's office. Locked, and his light's off. He went home at six. He has somebody to go home to.", plate: true, lettering: true);
             // Inside: the big desk, the flag, the cabinet, the hat on the stand, his tube off.
             var desk = Table("Sheriff's Desk", office, new Vector3(6.4f, 0, -4.3f), 0f, 2.0f, 0.9f, "Wood", 0.78f);
             Part("Modesty Panel", desk, new Vector3(0, FloorY + 0.4f, 0.4f), new Vector3(1.9f, 0.74f, 0.03f), "Wood");
@@ -1014,7 +1080,7 @@ namespace Semblance.EditorTools
             WallX(stairwell, "Wall East", -8.1f, -5.0f, 4.6f, bottom, 0f, wall);
             WallX(stairwell, "Lintel", -8.1f, -5.9f, -5.0f, -1.4f, 0f, wall);
             WallX(stairwell, "Wall East Upper", -8.1f, -6.3f, -5.5f, 0f, top, wall);
-            TutorialDoor(stairwell, "Archive Door", new Vector3(-8.1f, -3.5f, -5.9f), 90f);
+            TutorialDoor(stairwell, "Archive Door", new Vector3(-8.1f, -3.5f, -5.9f), 90f, style: DoorStyle.Fire);
             // Handrail down the open side.
             var rail = Box("Handrail", stairwell, new Vector3(-8.35f, -0.8f, -1.5f), new Vector3(0.05f, 0.05f, 7.0f), "Metal", collider: false);
             rail.transform.localRotation = Quaternion.Euler(-31f, 0, 0);
@@ -1074,7 +1140,7 @@ namespace Semblance.EditorTools
             WallX(archive, "Lintel", 10.1f, -5.45f, -4.55f, -1.4f, top, wall);
             WallZ(archive, "Wall South", -11.1f, -8.2f, 10.2f, bottom, top, wall);
             WallZ(archive, "Wall North", -0.9f, -8.2f, 10.2f, bottom, top, wall);
-            var boilerDoor = TutorialDoor(archive, "Boiler Door", new Vector3(10.1f, floor, -5.45f), -90f);
+            var boilerDoor = TutorialDoor(archive, "Boiler Door", new Vector3(10.1f, floor, -5.45f), -90f, style: DoorStyle.Fire);
             Part("Door Placard", archive, new Vector3(9.995f, floor + 1.85f, -6.0f), new Vector3(0.008f, 0.14f, 0.4f), "SignWhite");
             Part("Door Placard Text", archive, new Vector3(9.989f, floor + 1.85f, -6.0f), new Vector3(0.004f, 0.06f, 0.32f), "Writing");
 
@@ -1361,7 +1427,7 @@ namespace Semblance.EditorTools
             WallZ(boiler, "Wall North", -2.1f, 12.45f, 16.2f, bottom, top, wall);
             WallZ(boiler, "Lintel", -2.1f, 11.55f, 12.45f, -1.4f, top, wall);
             var closetDoor = TutorialDoor(boiler, "Closet Door", new Vector3(11.55f, floor, -2.1f), 0f, true,
-                "Held shut from the other side. Something behind it is breathing, and trying not to.");
+                "Held shut from the other side. Something behind it is breathing, and trying not to.", style: DoorStyle.Plank);
 
             // ---- The closet behind it: Teo's, and Biscuit's. A sink, the mops, her blanket and bowls, his stool.
             Box("Closet Floor", boiler, new Vector3(12f, floor - 0.05f, -0.85f), new Vector3(2.4f, 0.1f, 2.5f), "Concrete");
