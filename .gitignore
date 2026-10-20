@@ -52,3 +52,7 @@ Thumbs.db
 # Compile-check scratch projects
 /_chk_*.csproj
 /_chk_*/
+
+# Reference sounds from other games/films: compared against, never committed
+/AudioReference/*
+!/AudioReference/README.md
