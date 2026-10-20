@@ -1,5 +1,7 @@
 # Sounds for Semblance
 
+**Links for every sound are in [SOURCES.md](SOURCES.md).**
+
 Drop the sounds you find into this folder. Once they're here, I'll trim them, level them, loop them and swap them in for the generated placeholders. Any slot you leave empty keeps its placeholder, so you can fill this in a few at a time.
 
 ## How to name and save the files
