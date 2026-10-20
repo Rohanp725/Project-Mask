@@ -54,7 +54,7 @@ namespace Semblance.Audio
         // Mix levels: ambience sits well under everything; cues sit on top.
         private static readonly Dictionary<AudioBus, float> BusLevel = new Dictionary<AudioBus, float>
         {
-            { AudioBus.Ambience, 0.6f }, { AudioBus.World, 1f }, { AudioBus.Cue, 1.15f },
+            { AudioBus.Ambience, 0.6f }, { AudioBus.World, 1f }, { AudioBus.Cue, 1f }, // cues were 1.15: the hunt's stacked peaks reached -0.7 dBFS
             { AudioBus.Voice, 0.9f }, { AudioBus.UI, 0.7f }, { AudioBus.Music, 0.8f },
         };
 

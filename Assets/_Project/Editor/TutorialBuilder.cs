@@ -82,6 +82,11 @@ namespace Semblance.EditorTools
             var boilerDoor = BuildArchive(archive, rng);
             var (breaker, closetDoor, furnaceGlow) = BuildBoilerRoom(boiler, rng);
             BuildExterior(exterior, rng);
+            // Each space's own acoustics for sounds in the world (the claws, knocks, doors, drips); the player's own steps are 2D.
+            Reverb(office, AudioReverbPreset.Room, new Vector3(0f, 1.6f, 0f), 6f, 10f);
+            Reverb(stairwell, AudioReverbPreset.StoneCorridor, new Vector3(-9.2f, -1.5f, -1f), 2.5f, 6.5f);
+            Reverb(archive, AudioReverbPreset.Hallway, new Vector3(1f, -2.2f, -6f), 6f, 11f);
+            Reverb(boiler, AudioReverbPreset.Room, new Vector3(13f, -2.2f, -5f), 2.5f, 5f);
 
             MarkStatic(env);
             foreach (var door in env.GetComponentsInChildren<World.Door>(true))
@@ -1918,6 +1923,12 @@ namespace Semblance.EditorTools
                     foreach (var wz in new[] { -1.4f, 1.4f })
                         Round("Wheel", car, new Vector3(x, 0.3f, wz), 0.6f, 0.24f, "HideBlack").transform.localRotation = Quaternion.Euler(0, 0, 90f);
             }
+        }
+
+        private static void Reverb(Transform root, AudioReverbPreset preset, Vector3 at, float min, float max)
+        {
+            var go = new GameObject("Reverb " + preset); go.transform.SetParent(root, false); go.transform.localPosition = at;
+            var zone = go.AddComponent<AudioReverbZone>(); zone.reverbPreset = preset; zone.minDistance = min; zone.maxDistance = max;
         }
 
         private static Material RainMaterial()

@@ -673,7 +673,7 @@ namespace Semblance.EditorTools
             Part("Grille", juke, new Vector3(0, FloorY + 0.45f, 0.305f), new Vector3(0.62f, 0.45f, 0.01f), "Metal");
             foreach (var x in new[] { -0.4f, 0.4f })
                 Part("Light Bar", juke, new Vector3(x, FloorY + 0.7f, 0.29f), new Vector3(0.06f, 1.1f, 0.04f), "SignNeon");
-            SoundEmitter(juke, new Vector3(0, 1f, 0), "jukebox_loop", 0.07f, 9f);
+            SoundEmitter(juke, new Vector3(0, 1f, 0), "jukebox_loop", 0.4f, 22f); // just above the room tone at the counter, 7 m away (0.16 / 15 m left it 10 dB under)
 
             Picture(root, new Vector3(-inX + 0.03f, 1.9f, 1.2f), 90f, new Vector2(0.5f, 0.38f));
             var earl = Picture(root, new Vector3(inX - 0.03f, 1.8f, -0.5f), -90f, new Vector2(0.4f, 0.5f));

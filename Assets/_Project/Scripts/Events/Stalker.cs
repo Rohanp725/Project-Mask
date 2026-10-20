@@ -250,7 +250,7 @@ namespace Semblance.Events
 
             float closeness = 1f - Mathf.InverseLerp(4f, 35f, distance);
             Closeness = closeness;
-            if (music) GameAudio.SetVolume(music, Mathf.Lerp(0.15f, 0.6f, closeness));
+            if (music) GameAudio.SetVolume(music, Mathf.Lerp(0.4f, 1f, closeness)); // 0.15-0.6 left it ~30 dB under the creature's steps
             // While it hunts, the world goes quiet around its footsteps.
             GameAudio.Duck(0.6f, 0.3f);
             if (Nerve.Instance != null) Nerve.Instance.ExternalDrain = seen ? 3f : 1f + closeness * 2f;
