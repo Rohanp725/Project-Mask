@@ -201,13 +201,16 @@ namespace Semblance.Dialogue
                         choices.Add(new Choice { Label = t.title, Asked = WasAsked(t.title), Current = t.title == currentTopic, Action = () => AskTopic(t) });
                     }
                     int people = inPew ? 0 : topics.Count(IsPersonTopic);
+                    // A page whose every entry has been asked greys out like a single question does.
                     if (people > 0)
-                        choices.Add(new Choice { Label = $"About people... <size=75%><color=#{accent}>({people})</color></size>", Action = () => { menu = Menu.People; RefreshChoices(); } });
+                        choices.Add(new Choice { Label = $"About people... <size=75%><color=#{accent}>({people})</color></size>",
+                            Asked = topics.Where(IsPersonTopic).All(t => WasAsked(t.title)), Action = () => { menu = Menu.People; RefreshChoices(); } });
                     var clues = inPew ? new List<ClueQuestion>() : ClueTopics.For(resident);
                     if (clues.Count > 0)
                     {
                         int fresh = clues.Count(q => !WasAsked(q.Key));
-                        choices.Add(new Choice { Label = $"About what I've found... <size=75%><color=#{accent}>({(fresh > 0 ? fresh + " new" : clues.Count.ToString())})</color></size>", Action = () => { menu = Menu.Clues; RefreshChoices(); } });
+                        choices.Add(new Choice { Label = $"About what I've found... <size=75%><color=#{accent}>({(fresh > 0 ? fresh + " new" : clues.Count.ToString())})</color></size>",
+                            Asked = fresh == 0, Action = () => { menu = Menu.Clues; RefreshChoices(); } });
                     }
                     choices.Add(new Choice { Label = "Look them over", Asked = WasAsked("observe"), Current = currentTopic == "observe", Action = () =>
                     {
@@ -219,8 +222,10 @@ namespace Semblance.Dialogue
                     {
                         currentTopic = "hands"; MarkAsked("hands"); Say(resident.ShakeHands()); RefreshChoices(); TopicAsked?.Invoke(resident, "hands");
                     } });
-                    if (ConfrontOptions().Count > 0)
-                        choices.Add(new Choice { Label = "<color=#c07050>Confront them...</color>", Action = () => { confronting = true; menu = Menu.Confront; RefreshChoices(); } });
+                    var confrontable = ConfrontOptions();
+                    if (confrontable.Count > 0)
+                        choices.Add(new Choice { Label = "<color=#c07050>Confront them...</color>", Asked = confrontable.All(o => WasAsked("confront|" + o.Item2.GetHashCode())),
+                            Action = () => { confronting = true; menu = Menu.Confront; RefreshChoices(); } });
                     choices.Add(new Choice { Label = "Leave", IsBack = true, Action = Close });
                     break;
                 }
