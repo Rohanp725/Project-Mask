@@ -30,6 +30,19 @@ namespace Semblance.Tutorial
         private float stride;
 
         public bool Arrived => agent != null && agent.enabled && !agent.pathPending && agent.remainingDistance < 0.35f;
+        /// <summary>Lights on, sat down, tail going: she can be petted.</summary>
+        public bool Happy => happy;
+
+        private float pettedUntil;
+
+        /// <summary>Somebody's making a fuss of her: she turns to them, the tail goes double, and she pants.</summary>
+        public void Petted(Vector3 from)
+        {
+            pettedUntil = Time.time + 2.5f;
+            var to = Vector3.ProjectOnPlane(from - transform.position, Vector3.up);
+            if (to.sqrMagnitude > 0.01f) transform.rotation = Quaternion.LookRotation(to);
+            if (Random.value < 0.35f) GameAudio.PlayAt("dog_bark", transform.position + Vector3.up * 0.4f, 0.35f, 1.15f, 15f);
+        }
         public float Speed => agent != null && agent.enabled ? agent.velocity.magnitude : 0f;
 
         private void Awake()
@@ -140,7 +153,8 @@ namespace Semblance.Tutorial
 
             if (tail != null)
             {
-                float wag = happy ? Mathf.Sin(Time.time * 14f) * 35f : Mathf.Sin(Time.time * 1.3f) * 4f;
+                bool petted = Time.time < pettedUntil;
+                float wag = petted ? Mathf.Sin(Time.time * 22f) * 50f : happy ? Mathf.Sin(Time.time * 14f) * 35f : Mathf.Sin(Time.time * 1.3f) * 4f;
                 tail.localRotation = tailRestRot * Quaternion.Euler(happy ? -20f : 25f, wag, 0);
             }
             if (head != null)
@@ -153,7 +167,7 @@ namespace Semblance.Tutorial
                 body.localRotation = Quaternion.Slerp(body.localRotation, Quaternion.Euler(-14f, 0, 0), Time.deltaTime * 3f);
 
             if (claws != null) claws.volume = Mathf.MoveTowards(claws.volume, Mathf.Clamp01(speed / 2.2f) * (mode == Mode.Follow ? 1f : 0.6f), Time.deltaTime * 3f);
-            if (pant != null) pant.volume = Mathf.MoveTowards(pant.volume, happy ? 0.3f : mode == Mode.Idle ? 0f : mode == Mode.Follow ? 0.8f : 0.42f, Time.deltaTime);
+            if (pant != null) pant.volume = Mathf.MoveTowards(pant.volume, Time.time < pettedUntil ? 0.55f : happy ? 0.3f : mode == Mode.Idle ? 0f : mode == Mode.Follow ? 0.8f : 0.42f, Time.deltaTime * 2f);
         }
 
         private void OnDisable()

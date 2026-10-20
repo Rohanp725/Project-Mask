@@ -51,7 +51,7 @@ namespace Semblance.Events
             EnteredTime = Time.time;
             InputLock.Push(this, Leave);
             Audio.GameAudio.PlayAt("door_creak_2", transform.position, 0.5f, 1.3f, 15f);
-            UI.PlayerHUD.Instance?.SetHint("Hiding. Hold your breath.", 0f);
+            UI.PlayerHUD.Instance?.SetHint("Hiding. Hold your breath.", 4f);
             enteredFrame = Time.frameCount;
         }
 
@@ -78,7 +78,7 @@ namespace Semblance.Events
             Occupied = null;
             LastLeftFrame = Time.frameCount;
             InputLock.Pop(this);
-            UI.PlayerHUD.Instance?.SetHint(null);
+            UI.PlayerHUD.Instance?.RestoreHint();
             UI.PlayerHUD.Instance?.SetPrompt(null);
             Audio.GameAudio.PlayAt("door_creak_1", transform.position, 0.5f, 1.2f, 15f);
         }

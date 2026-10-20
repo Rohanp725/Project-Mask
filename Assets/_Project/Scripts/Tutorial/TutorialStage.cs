@@ -541,7 +541,7 @@ namespace Semblance.Tutorial
             // 9. Lights. It's a dog.
             dog.Stay();
             if (chase != null) Destroy(chase.gameObject);
-            if (heart != null) StartCoroutine(FadeAudio(heart, 0f, 1.5f));
+            if (heart != null) { StartCoroutine(FadeAudio(heart, 0f, 1.5f)); Destroy(heart.gameObject, 1.6f); heart = null; }
             StartCoroutine(FadeAudio(drone, 0f, 4f));
             Nerve.ExtraDistress = 0f;
             Hint(null);
@@ -559,7 +559,7 @@ namespace Semblance.Tutorial
             wait = 0f;
             while (!dog.Arrived && wait < 7f) { wait += Time.deltaTime; yield return null; }
             dog.Sit();
-            Nerve.Instance?.Calm(45f);
+            Nerve.Instance?.Calm(100f); // the fright's over: no heartbeat left over from the chase
             hud.ShowMessage("It's a dog. An old, half-blind dog with grey on her muzzle, and she is very pleased to see you.", 5f);
             yield return new WaitForSeconds(2.2f);
             var teo = Resident.FindByName("Teodoro Baptiste");
@@ -618,15 +618,17 @@ namespace Semblance.Tutorial
 
         private static IEnumerator FadeAudio(AudioSource source, float to, float seconds)
         {
+            // Through the mixer: it sets every loop's volume each frame from its own level, so writing the
+            // source's volume directly does nothing.
             if (source == null) yield break;
-            float from = source.volume;
+            float from = GameAudio.GetVolume(source);
             for (float t = 0; t < seconds; t += Time.deltaTime)
             {
                 if (source == null) yield break;
-                source.volume = Mathf.Lerp(from, to, t / seconds);
+                GameAudio.SetVolume(source, Mathf.Lerp(from, to, t / seconds));
                 yield return null;
             }
-            if (source != null) source.volume = to;
+            if (source != null) GameAudio.SetVolume(source, to);
         }
     }
 }

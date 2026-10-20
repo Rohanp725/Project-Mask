@@ -98,8 +98,9 @@ namespace Semblance.UI
                     clockText.text = clock.Label + $"\n<size=75%><color=#{ColorUtility.ToHtmlStringRGB(textColor * 0.8f)}>{GameFlow.DateLine(clock.Day + (clock.Hour >= 24f ? 1 : 0))}</color></size>";
                 }
             }
-            if (hintText.gameObject.activeSelf && hintHideTime > 0 && Time.unscaledTime > hintHideTime)
-                hintText.gameObject.SetActive(false);
+            // A timed hint (car controls, a tip) sits over the standing objective; when it's done, the objective comes back.
+            if (hintHideTime > 0 && Time.unscaledTime > hintHideTime)
+                RestoreHint();
 
             // Hide the in-world HUD while a full screen (notebook, archive, menus) is open.
             canvas.enabled = !InputLock.IsLocked || InputLock.Top is Dialogue.DialogueUI || InputLock.Top is Events.HidingSpot;
@@ -153,6 +154,15 @@ namespace Semblance.UI
             hintText.gameObject.SetActive(!string.IsNullOrEmpty(text));
             hintText.text = text;
             hintHideTime = duration > 0 ? Time.unscaledTime + duration : 0f;
+        }
+
+        /// <summary>Back to the standing objective (after a timed hint, or climbing out of a hiding place).</summary>
+        public void RestoreHint()
+        {
+            var text = GameInput.Format(StandingHint);
+            hintText.gameObject.SetActive(!string.IsNullOrEmpty(text));
+            hintText.text = text;
+            hintHideTime = 0f;
         }
 
         public void SetClockVisible(bool visible) => clockText.gameObject.SetActive(visible);
