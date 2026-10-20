@@ -1,0 +1,2 @@
+# One line per file: file name | source URL | author | licence
+# example: door_creak_1.wav | https://freesound.org/s/12345/ | someuser | CC0
