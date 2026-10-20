@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace Semblance.Tutorial
 {
-    /// <summary>Biscuit, once the lights are back: look at her and press E to make a fuss of her.</summary>
+    /// <summary>Rio, once the lights are back: look at her and press E to make a fuss of her.</summary>
     [RequireComponent(typeof(TutorialDog))]
     public class DogPet : Interactable
     {
@@ -22,7 +22,7 @@ namespace Semblance.Tutorial
 
         private void Awake() => dog = GetComponent<TutorialDog>();
 
-        public override string Prompt => "Pet Biscuit";
+        public override string Prompt => "Pet Rio";
         public override bool CanInteract => base.CanInteract && dog != null && dog.Happy && Time.time >= readyAt;
 
         public override void Interact(PlayerInteractor interactor)

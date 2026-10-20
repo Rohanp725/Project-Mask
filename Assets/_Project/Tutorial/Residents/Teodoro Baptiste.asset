@@ -17,7 +17,7 @@ MonoBehaviour:
   age: 63
   possessive: his
   home: Barlow
-  bio: Has kept the county building clean, warm and lit since 1958. Lives with an old dog called Biscuit.
+  bio: Has kept the county building clean, warm and lit since 1958. Lives with an old dog called Rio.
   appearance:
     height: 0.98
     build: 1.1
@@ -56,7 +56,7 @@ MonoBehaviour:
   - Still here? Me too.
   aboutSelf: Been down here all night with the furnace. She's older than me and twice as mean. Don't tell Alma I'm in; she'll have me fixing the lobby door again.
   aboutTown: Semblance. Never been. My cousin delivers feed up that way. Says the dogs there don't bark at strangers, and he doesn't like it.
-  seenAnythingStrange: Biscuit won't go past the third row of shelves. Sits and stares at the wall. Dogs know things. Then again, she's half blind.
+  seenAnythingStrange: Rio won't go past the third row of shelves. Sits and stares at the wall. Dogs know things. Then again, she's half blind.
   foundersDay: 
   gossip:
   - title: About Alma Reyes

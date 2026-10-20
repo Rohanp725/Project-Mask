@@ -581,7 +581,7 @@ namespace Semblance.Tutorial
             {
                 var teoAgent = teo.GetComponent<UnityEngine.AI.NavMeshAgent>();
                 if (teoAgent != null) { teoAgent.enabled = true; if (teoAgent.isOnNavMesh) teoAgent.Warp(teo.transform.position); }
-                teo.DoorstepGreeting = "There she is. Biscuit, you old fool, come here. ...Detective. Sorry about the lights. Furnace trips the breaker when it turns cold, and I was up a ladder with a mop in my hand.";
+                teo.DoorstepGreeting = "There she is. Rio, you old fool, come here. ...Detective. Sorry about the lights. Furnace trips the breaker when it turns cold, and I was up a ladder with a mop in my hand.";
                 var mover = teo.GetComponent<ResidentMover>();
                 if (mover != null) mover.WalkTo(A("TeoOut").position);
             }

@@ -1541,7 +1541,7 @@ namespace Semblance.EditorTools
             var closetDoor = TutorialDoor(boiler, "Closet Door", new Vector3(11.55f, floor, -2.1f), 0f, true,
                 "Held shut from the other side. Something behind it is breathing, and trying not to.", style: DoorStyle.Plank);
 
-            // ---- The closet behind it: Teo's, and Biscuit's. A sink, the mops, her blanket and bowls, his stool.
+            // ---- The closet behind it: Teo's, and Rio's. A sink, the mops, her blanket and bowls, his stool.
             Box("Closet Floor", boiler, new Vector3(12f, floor - 0.05f, -0.85f), new Vector3(2.4f, 0.1f, 2.5f), "Concrete");
             Box("Closet Ceiling", boiler, new Vector3(12f, top + 0.06f, -0.85f), new Vector3(2.4f, 0.12f, 2.5f), "ConcreteDark");
             WallX(boiler, "Closet Wall", 10.9f, -2.1f, 0.4f, bottom, top, wall);
@@ -1850,11 +1850,11 @@ namespace Semblance.EditorTools
             return mat;
         }
 
-        // ------------------------------------------------------------ Biscuit
+        // ------------------------------------------------------------ Rio
 
         private static TutorialDog BuildDog(Transform parent, Vector3 position)
         {
-            var dog = new GameObject("Biscuit");
+            var dog = new GameObject("Rio");
             dog.transform.SetParent(parent, false);
             dog.transform.position = position;
             var body = Group("Body", dog.transform);
@@ -1954,7 +1954,7 @@ namespace Semblance.EditorTools
             p.age = 63;
             p.possessive = "his";
             p.home = "Barlow";
-            p.bio = "Has kept the county building clean, warm and lit since 1958. Lives with an old dog called Biscuit.";
+            p.bio = "Has kept the county building clean, warm and lit since 1958. Lives with an old dog called Rio.";
             p.appearance = new ResidentAppearance
             {
                 height = 0.98f, build = 1.1f, skin = new Color(0.55f, 0.4f, 0.3f), hairColor = new Color(0.7f, 0.7f, 0.68f), eyeColor = new Color(0.2f, 0.14f, 0.1f),
@@ -1968,7 +1968,7 @@ namespace Semblance.EditorTools
             p.greetings = new[] { "Evening, Detective. Mind the floor, it's wet.", "Still here? Me too." };
             p.aboutSelf = "Been down here all night with the furnace. She's older than me and twice as mean. Don't tell Alma I'm in; she'll have me fixing the lobby door again.";
             p.aboutTown = "Semblance. Never been. My cousin delivers feed up that way. Says the dogs there don't bark at strangers, and he doesn't like it.";
-            p.seenAnythingStrange = "Biscuit won't go past the third row of shelves. Sits and stares at the wall. Dogs know things. Then again, she's half blind.";
+            p.seenAnythingStrange = "Rio won't go past the third row of shelves. Sits and stares at the wall. Dogs know things. Then again, she's half blind.";
             p.foundersDay = "";
             p.gossip = new List<DialogueTopic> { new DialogueTopic("About Alma Reyes", "Alma feeds my dog when she thinks I'm not looking. Thirty years and she thinks I don't know. She's a good one.") };
         }

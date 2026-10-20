@@ -5,7 +5,7 @@ using UnityEngine.AI;
 namespace Semblance.Tutorial
 {
     /// <summary>
-    /// Biscuit. In the dark she's two points of eye-shine and claws on concrete, coming down the aisle, stopping
+    /// Rio. In the dark she's two points of eye-shine and claws on concrete, coming down the aisle, stopping
     /// dead whenever the light's on her. With the lights up she's an old half-blind dog who's very pleased to see you.
     /// Built from boxes by the tutorial builder; this drives the legs, the tail and the sounds.
     /// </summary>
