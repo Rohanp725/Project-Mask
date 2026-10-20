@@ -348,9 +348,13 @@ namespace Semblance.EditorTools
                 float t = i / (float)Rate;
                 float beat = (t * bpm / 60f) % 1f;
                 float kick = Mathf.Sin(2 * Mathf.PI * (60f - beat * 30f) * t) * Mathf.Exp(-beat * 9f);
+                float half = (t * bpm / 30f) % 1f;
+                float kick2 = Mathf.Sin(2 * Mathf.PI * (52f - half * 26f) * t) * Mathf.Exp(-half * 14f) * 0.5f;
                 float pulse = Mathf.Sin(2 * Mathf.PI * 73.4f * t) * (0.5f + 0.5f * Mathf.Sign(Mathf.Sin(2 * Mathf.PI * bpm / 30f * t))) * 0.35f;
-                float screech = Mathf.Sin(2 * Mathf.PI * (1400f + 60f * Mathf.Sin(t * 3f)) * t) * 0.04f;
-                b[i] = kick * 0.8f + pulse + screech;
+                float sub = Mathf.Sin(2 * Mathf.PI * 41f * t) * 0.3f;
+                float screech = Mathf.Sin(2 * Mathf.PI * (1400f + 60f * Mathf.Sin(t * 3f)) * t) * (0.06f + 0.05f * Mathf.Sin(2 * Mathf.PI * 7f * t));
+                float rise = Mathf.Sin(2 * Mathf.PI * (190f + 30f * Mathf.Sin(t * 0.7f)) * t) * 0.14f * (0.5f + 0.5f * Mathf.Sin(2 * Mathf.PI * bpm / 15f * t));
+                b[i] = kick * 0.9f + kick2 + pulse + sub + screech + rise;
             }
             Normalize(b, 0.7f);
             return b;

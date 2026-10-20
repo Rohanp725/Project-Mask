@@ -327,6 +327,31 @@ namespace Semblance.Tutorial
             }
         }
 
+        /// <summary>The chase, heard: her growl right behind you every few seconds, a stinger when she's close.</summary>
+        private IEnumerator OnYourHeels(Func<bool> until)
+        {
+            float nextGrowl = Time.time + 1.5f, nextSting = Time.time + 4f;
+            while (!until())
+            {
+                if (dog != null && dog.gameObject.activeSelf)
+                {
+                    float d = Vector3.Distance(dog.transform.position, player.position);
+                    if (Time.time > nextGrowl)
+                    {
+                        nextGrowl = Time.time + UnityEngine.Random.Range(2f, 3.5f);
+                        GameAudio.PlayAt("growl", dog.transform.position + Vector3.up * 0.4f, 1f, UnityEngine.Random.Range(0.7f, 0.9f), 30f);
+                    }
+                    if (d < 3.5f && Time.time > nextSting)
+                    {
+                        nextSting = Time.time + 5f;
+                        GameAudio.Play("stinger_1", 0.7f, 0.9f);
+                        Nerve.Instance?.Shock(6f);
+                    }
+                }
+                yield return null;
+            }
+        }
+
         /// <summary>Whenever the thing would be in the beam, the batteries give out. You never get a clean look.</summary>
         private IEnumerator KeepItDark(Func<bool> until)
         {
@@ -496,10 +521,12 @@ namespace Semblance.Tutorial
             {
                 dog.Appear(A("ChaseFrom").position, Vector3.forward);
                 dog.Follow(4.5f);
-                GameAudio.Play("sting_soft", 0.8f, 0.8f);
-                chase = GameAudio.Loop("chase_loop", null, 0.35f, bus: AudioBus.Ambience);
-                if (heart != null) StartCoroutine(FadeAudio(heart, 0.6f, 2f));
-                Nerve.ExtraDistress = 0.75f;
+                GameAudio.Play("stinger_2", 0.9f, 0.85f);
+                chase = GameAudio.Loop("chase_loop", null, 0.8f, bus: AudioBus.Cue);
+                if (heart == null) heart = GameAudio.Loop("heartbeat", null, 0f, bus: AudioBus.Cue);
+                StartCoroutine(FadeAudio(heart, 0.9f, 1.2f));
+                StartCoroutine(OnYourHeels(() => breakerPulled));
+                Nerve.ExtraDistress = 0.95f;
                 Nerve.Instance?.Shock(12f);
                 Hint("<b>It's behind you.</b> Don't turn around. {sprint} to run: down the long aisle past the cage, along the end wall, up to the EXIT sign. Reset the breaker.");
                 StartCoroutine(KeepItDark(() => breakerPulled));

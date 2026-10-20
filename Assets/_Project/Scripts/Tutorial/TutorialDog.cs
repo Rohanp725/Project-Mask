@@ -152,8 +152,8 @@ namespace Semblance.Tutorial
             if (mode == Mode.Sit && body != null)
                 body.localRotation = Quaternion.Slerp(body.localRotation, Quaternion.Euler(-14f, 0, 0), Time.deltaTime * 3f);
 
-            if (claws != null) claws.volume = Mathf.MoveTowards(claws.volume, Mathf.Clamp01(speed / 2.2f) * 0.6f, Time.deltaTime * 3f);
-            if (pant != null) pant.volume = Mathf.MoveTowards(pant.volume, happy ? 0.3f : mode == Mode.Idle ? 0f : 0.42f, Time.deltaTime);
+            if (claws != null) claws.volume = Mathf.MoveTowards(claws.volume, Mathf.Clamp01(speed / 2.2f) * (mode == Mode.Follow ? 1f : 0.6f), Time.deltaTime * 3f);
+            if (pant != null) pant.volume = Mathf.MoveTowards(pant.volume, happy ? 0.3f : mode == Mode.Idle ? 0f : mode == Mode.Follow ? 0.8f : 0.42f, Time.deltaTime);
         }
 
         private void OnDisable()
